@@ -64,6 +64,7 @@ parser = argparse.ArgumentParser(description='''
 
 parser.add_argument('src', nargs='+', action='store', help='Source file (.rdump) or files (numbered)')
 parser.add_argument('-roms', nargs='+', default=['Plus', 'SE', 'II', 'Portable', 'IIci', 'SuperMario'])
+parser.add_argument('-pt', action='store_true', help='Print raw module tokens')
 parser.add_argument('-pm', action='store_true', help='Print information about modules and code references')
 parser.add_argument('-pr', action='store_true', help='Print information about ROM references')
 parser.add_argument('-oo', action='store', help='Base destination path to dump resources as raw files')
@@ -211,15 +212,16 @@ for num, data, annotations in lpch_list:
         tokens.append(tok)
         if tok[0] == 'end': break
 
-    # daccum = 0
-    # for i, (a, b) in enumerate(tokens):
-    #     if a == 'distance':
-    #         daccum += b
-    #         print('%02d'%i, a, hex(b), '='+hex(daccum))
-    #     elif b is None:
-    #         print('%02d'%i, a)
-    #     else:
-    #         print('%02d'%i, a, hex(b))
+    if args.pt:
+        daccum = 0
+        for i, (a, b) in enumerate(tokens):
+            if a == 'distance':
+                daccum += b
+                print('%02d'%i, a, hex(b), '='+hex(daccum))
+            elif b is None:
+                print('%02d'%i, a)
+            else:
+                print('%02d'%i, a, hex(b))
 
 
     jt_offset = 0
