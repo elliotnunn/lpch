@@ -66,6 +66,7 @@ parser.add_argument('src', nargs='+', action='store', help='Source file (.rdump)
 parser.add_argument('-roms', nargs='+', default=['Plus', 'SE', 'II', 'Portable', 'IIci', 'SuperMario'])
 parser.add_argument('-pm', action='store_true', help='Print information about modules and code references')
 parser.add_argument('-pr', action='store_true', help='Print information about ROM references')
+parser.add_argument('-oo', action='store', help='Base destination path to dump resources as raw files')
 parser.add_argument('-oc', action='store', help='Base destination path to dump code files')
 parser.add_argument('-oe', action='store', help='Base destination path to dump code files with refs changed to NOPs')
 
@@ -94,6 +95,8 @@ large_rom_table = []
 large_jump_table = []
 
 for num, data, annotations in lpch_list:
+    if args.oo: open(args.oo + str(num), 'wb').write(data)
+
     if exact_log(num) is not None:
         is_single = True
     else:
