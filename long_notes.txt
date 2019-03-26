@@ -1,0 +1,137 @@
+# This is a manually compiled file showing the layout of the "linked patches" in System 7.1.0
+# patch_rip.py is used to grab the code from each 'lpch' resource, which is then fed into IDA and
+# compared to the SuperMario sources.
+# The idea is to get the linked patches building to a byte-perfect System 7.1
+# (This is one of the last steps to a perfect 7.1 from the SuperMario sources!!!!!)
+
+# Unhappy suspicion: the Power Manager will be very hard to restore to its old state
+
+# Format:
+# <hex offset> <file> <symbol>
+
+lpch 1		1614b(1432b)		Plus
+0 SCSILinkPatch.a SCSIBusyPlusInstall
+C FileMgrPatches.a SaveD1AcrossBTDelete
+1E FileMgrPatches.a SaveD3AcrossBTSearch
+30 FileMgrPatches.a SaveD1AcrossBTInsert
+42 FileMgrPatches.a SaveD3AcrossBTGetRecord
+54 FileMgrPatches.a KillCheckRemountSickestWay
+8C LaterFileMgrPatches.a MountVolPatch
+BA LaterFileMgrPatches.a MFSRenamePatch
+E4 ???
+F0 AllB&WQDPatch.a PatchStdRgnPlus
+150 AllB&WQDPatch.a MyPutRgn
+	1B2 DrawPicturePlusSE.a FixPStdBits
+	1BC DrawPciture32Patch.a FixStdGetPicInGetPicData
+1C6 ???
+2EA Mouse.a MouseMapping
+49A ResourceMgrPatches.a UpdateResFileNewHandleFailure
+4D0 ResourceMgrPatches.a UpdateResFileDisposeHandleCleanup
+512 ResourceMgrPatches.a FixSuperLoadEquates
+540 ResourceMgrPatches.a BadMapCheckInCheckMap
+57E ???
+
+lpch 2		208b(172b)		SE
+0 ???
+24 SonyPatches.a SetupDCDDriveNumberForSE
+2E BrightnessPatches.a ClassicBrightPatch
+90 BrightnessPatches.a csCodeCheck
+
+lpch 3		9443b(9056b)		Plus,SE
+
+lpch 4		9594b(9220b)		II
+0 MMUPatches.a SwapHMMU
+5A MMUPatches.a InstallSwapPMMU
+90 MMUPatches.a SwapPMMU
+178 MenuMgrPatch.a SetClipForCallDrawMDEF
+1AC MenuMgrPatchII.a IIDeleteMenu
+1EC MenuMgrPatchII.a IIGetMHandle
+214 MenuMgrPatchII.a IIBothMenuSelects
+530 MenuMgrPatchII.a IIMenuSelect
+692 MenuMgrPatchII.a IIHiliteMenuFix
+6A6 MenuMgrPatchII.a IIMenuSelectFix
+6F2 MenuMgrPatchII.a IIMenuMgrSysErrors
+720 MenuMgrPatchII.a IIGetItemCmd
+728 MenuMgrPatchII.a IISetItemCmd
+730 MenuMgrPatchII.a IIInsertMenu
+7E4 MenuMgrPatchII.a IICountMItems
+822 MenuMgrPatchII.a IIDrawMenuBar
+834 MenuMgrPatchII.a IIDelMenuItem
+864 MenuMgrPatchII.a IICalcMenuSize
+880 MenuMgrPatchII.a IISetMenuBar
+88A MenuMgrPatchII.a IIAppendOrInsertItem
+990 MenuMgrPatchII.a IIDelMCEntries
+9E2 MenuMgrPatchII.a AfterLoadResourceInGetTheMProc
+A22 SlotMgrPatch.a InstallSlot
+A74 SlotMgrPatch.a CopyBlock
+A94 SlotMgrPatch.a RestartSlotMgr
+AC0 SlotMgrPatch.a sInfoMerge
+... C8E EOF
+?????
+C7A SlotMgrInit.a InitJmpTbl
+1214 SlotMgrInit.a Secondary_Init
+1332 SlotMgr.a SlotMgr
+... 21E6 EOF
+21E6 DialogMgrPatches.a DrawItemSetPort
+2214 DialogMgrPatches.a DisposDialogFix
+2236 DialogMgrPatches.a NoIctbDisposeInCloseDialog
+2250 DialogMgrPatches.a NoDetachResourceInDoColor
+2264 DialogMgrPatches.a DuplicateColorTableInNewDialog
+228A QuickDrawPatches.a CharExtraFixDiv
+22BC QuickDrawPatches.a RgnOpStackSpace
+232C WindowMgrPatches.a NoChangeInGrowWindow
+234A WindowMgrPatches.a DoActivatePalette
+2368 WindowMgrPatches.a MoveWindowActivatePalette
+... 23EA EOF
+?????
+
+
+lpch 6		1883b(1806b)		SE,II
+
+lpch 7		1170b(962b)		Plus,SE,II
+
+lpch 8		5638b(5528b)		Portable
+0 AllB&WQDPatch.a PortablePatchStdPoly
+24 DrawPicturePortable.a PortableDrawPicture
+...A20 EOF
+A20 ??? PowerMgrPatch that has since disappeared
+
+???
+1172 PowerMgrPatches.a SCCWakeFix
+11AE PowerMgrPatches.a SndWatch
+???
+12B0 PowerMgr.a MPPOpen (this one goes to 13DE)
+13DA PowerMgrPatches.a InitializeStrings
+1440 PowerMgrPatches.a LoadString
+1450 PowerMgrPatches.a GetDetachRes
+1460 SonyPatches.a RecalPatch
+14BE backlightpatch.a BklightInstall
+
+lpch 10		69b(36b)		SE,Portable
+
+lpch 11		21849b(21094b)		Plus,SE,Portable
+
+lpch 15		19949b(19750b)		Plus,SE,II,Portable
+
+lpch 16		25488b(24488b)		IIci
+
+lpch 20		25282b(24986b)		II,IIci
+
+lpch 22		219b(166b)		SE,II,IIci
+
+lpch 23		32b(16b)		Plus,SE,II,IIci
+
+lpch 24		767b(640b)		Portable,IIci
+
+lpch 27		23b(0b)		Plus,SE,Portable,IIci
+
+lpch 28		842b(688b)		II,Portable,IIci
+
+lpch 30		168b(96b)		SE,II,Portable,IIci
+
+lpch 31		254504b(247434b)		Plus,SE,II,Portable,IIci
+
+lpch 32		13b(0b)		SuperMario
+
+lpch 63		2746b(0b)		Plus,SE,II,Portable,IIci,SuperMario
+
