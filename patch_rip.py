@@ -213,7 +213,6 @@ for num, data, annotations in lpch_list:
         if tok[0] == 'end': break
 
     # Mutate the tokens list to merge the 'prev=' tokens
-    # (do it here, not coded yet)
     for i in reversed(range(len(tokens) - 1)):
         if tokens[i+1][0].startswith('prev='):
             assert tokens[i][0] == 'distance'
