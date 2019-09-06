@@ -46,7 +46,12 @@ class Mod:
         self.jt_entry = -1
 
     def __str__(self):
-        return '%x:%x/jt%d entries=(%s) refs=(%s)' % (self.start, self.stop, self.jt_entry, ', '.join(str(x) for x in self.entry_points), ', '.join('%x'%x for x in self.references))
+        x = '%05x jt%d:' % (self.start, self.jt_entry)
+
+        leave = sorted(self.references + self.entry_points, key=lambda x: x.offset)
+
+        x += ''.join('\n  ' + str(s) for s in leave)
+        return x
 
 
 class Ent:
@@ -55,7 +60,42 @@ class Ent:
         self.jt_entry = -1
 
     def __str__(self):
-        return '%x/jt%d' % (self.offset, self.jt_entry)
+        return '%05x jt%d:' % (self.offset, self.jt_entry)
+
+
+class Ref:
+    def __init__(self):
+        self.offset = -1
+        self.opcode = -1
+        self.jt_entry = -1
+        self.force_resident = False
+
+    @property
+    def assembly(self):
+        try:
+            x = (
+                'leaY x,A0',
+                'leaY x,A1',
+                'leaY x,A2',
+                'leaY x,A3',
+                'leaY x,A4',
+                'leaY x,A5',
+                'leaY x,A6',
+                'leaY x,A7',
+                'peaY x',
+                'jsrY x',
+                'jmpY x',
+            )[self.opcode]
+        except IndexError:
+            x = 'unknownY x'
+
+        x = x.replace('x', 'jt%d' % self.jt_entry)
+        x = x.replace('Y', 'Resident' if self.force_resident else '')
+
+        return x    
+
+    def __str__(self):
+        return '%05x %s' % (self.offset, self.assembly)
 
 
 parser = argparse.ArgumentParser(description='''
@@ -240,6 +280,7 @@ for num, data, annotations in lpch_list:
 
     modules.append(Mod())
     modules[-1].start = 0
+    modules[-1].__hack_refhead = -1
 
     for tok, arg in tokens:
         if tok == 'skipjt':
@@ -253,6 +294,7 @@ for num, data, annotations in lpch_list:
             modules[-1].jt_entry = jt_offset
             modules.append(Mod())
             modules[-1].start = cur_offset
+            modules[-1].__hack_refhead = -1
 
             jt_offset += 1
 
@@ -264,7 +306,7 @@ for num, data, annotations in lpch_list:
             jt_offset += 1
 
         if tok == 'distance=ref_list_head':
-            modules[-1].references.append(cur_offset)
+            modules[-1].__hack_refhead = cur_offset
 
     modules.pop()
 
@@ -272,15 +314,21 @@ for num, data, annotations in lpch_list:
 
 
     for m in modules:
-        if m.references:
-            ofs, = m.references
-            while 1:
-                dist_to_next, = struct.unpack_from('>H', code, offset=ofs)
-                dist_to_next &= 0x7FFF
-                dist_to_next *= 2
-                if dist_to_next == 0: break
-                ofs += dist_to_next
-                m.references.append(ofs)
+        if m.__hack_refhead == -1: continue
+
+        while 1:
+            word1, word2 = struct.unpack_from('>HH', code, offset=m.__hack_refhead)
+
+            m.references.append(Ref())
+            m.references[-1].offset = m.__hack_refhead
+            m.references[-1].jt_entry = word2 & 0xFFF
+            m.references[-1].opcode = word2 >> 12
+            m.references[-1].force_resident = bool(word1 & 0x8000)
+
+            dist_to_next = word1 & 0x7FFF
+            dist_to_next *= 2
+            if dist_to_next == 0: break
+            m.__hack_refhead += dist_to_next
 
 
     if args.pm:
@@ -292,7 +340,7 @@ for num, data, annotations in lpch_list:
     # Now edit the code to look more sexier...
     for m in modules:
         for r in m.references:
-            edited_code[r:r+4] = b'NqNq'
+            edited_code[r.offset:r.offset+4] = b'NqNq'
     if args.oe:
         open(args.oe + str(num), 'wb').write(edited_code)
 
