@@ -187,6 +187,7 @@ for num, data in lpch_list:
     code = data[idx:idx+code_size]; idx += code_size
 
 
+    if not is_all: print()
     print('lpch %d\t\t%db(%db)\t\t%s' % (num, len(data), code_size, ','.join(matches_roms)))
 
 
