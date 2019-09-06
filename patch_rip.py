@@ -344,7 +344,12 @@ for num, data, annotations in lpch_list:
     # Now edit the code to look more sexier...
     for m in modules:
         for r in m.references:
-            edited_code[r.offset:r.offset+4] = b'NqNq'
+            try:
+                opcode = [0x206D,0x226D,0x246D,0x266D,0x286D,0x2A6D,0x2C6D,0x2E6D,0x2F2D,0x4EAD,0x4EED][r.opcode]
+                nu = struct.pack('>HH', opcode, r.jt_entry * 6)
+            except IndexError:
+                nu = b'NqNq'
+            edited_code[r.offset:r.offset+4] = nu
     if args.oe:
         open(args.oe + str(num), 'wb').write(edited_code)
 
