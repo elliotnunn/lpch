@@ -287,16 +287,17 @@ for num, data, annotations in lpch_list:
             jt_offset += arg
 
         if tok.startswith('distance'):
+            if modules[-1].jt_entry == -1:
+                modules[-1].jt_entry = jt_offset
+                jt_offset += 1
+
             cur_offset += arg
 
         if tok == 'distance': # to end of module
             modules[-1].stop = cur_offset
-            modules[-1].jt_entry = jt_offset
             modules.append(Mod())
             modules[-1].start = cur_offset
             modules[-1].__hack_refhead = -1
-
-            jt_offset += 1
 
         if tok == 'distance=entry_not_module':
             modules[-1].entry_points.append(Ent())
