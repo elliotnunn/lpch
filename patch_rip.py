@@ -51,7 +51,7 @@ class Mod:
     def __str__(self):
         x = '%05x %s:' % (self.start, name(self.jt_entry))
 
-        leave = sorted(self.references + self.entry_points, key=lambda x: x.offset)
+        leave = sorted(self.entry_points + self.references, key=lambda x: x.offset)
 
         x += ''.join('\n  ' + str(s) for s in leave)
         return x
