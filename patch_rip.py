@@ -5,6 +5,9 @@ import math
 import struct
 
 
+def name(jt_offset):
+    return 'R%04X' % (jt_offset * 6)
+
 def parse_res_file(f):
     import macresources
 
@@ -46,7 +49,7 @@ class Mod:
         self.jt_entry = -1
 
     def __str__(self):
-        x = '%05x jt%d:' % (self.start, self.jt_entry)
+        x = '%05x %s:' % (self.start, name(self.jt_entry))
 
         leave = sorted(self.references + self.entry_points, key=lambda x: x.offset)
 
@@ -60,7 +63,7 @@ class Ent:
         self.jt_entry = -1
 
     def __str__(self):
-        return '%05x jt%d:' % (self.offset, self.jt_entry)
+        return '%05x %s:' % (self.offset, name(self.jt_entry))
 
 
 class Ref:
@@ -89,7 +92,7 @@ class Ref:
         except IndexError:
             x = 'unknownY x'
 
-        x = x.replace('x', 'jt%d' % self.jt_entry)
+        x = x.replace('x', name(self.jt_entry))
         x = x.replace('Y', 'Resident' if self.force_resident else '')
 
         return x    
