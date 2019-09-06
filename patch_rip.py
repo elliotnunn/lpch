@@ -212,10 +212,20 @@ for num, data, annotations in lpch_list:
         tokens.append(tok)
         if tok[0] == 'end': break
 
+    # Mutate the tokens list to merge the 'prev=' tokens
+    # (do it here, not coded yet)
+    for i in reversed(range(len(tokens) - 1)):
+        if tokens[i+1][0].startswith('prev='):
+            assert tokens[i][0] == 'distance'
+            tokens[i] = (tokens[i][0] + tokens[i+1][0][4:],) + tokens[i][1:]
+            del tokens[i+1]
+
+    # From here on, a 'distance' token can be treated as 'distance=module_end'
+
     if args.pt:
         daccum = 0
         for i, (a, b) in enumerate(tokens):
-            if a == 'distance':
+            if a.startswith('distance'):
                 daccum += b
                 print('%02d'%i, a, hex(b), '='+hex(daccum))
             elif b is None:
@@ -232,23 +242,30 @@ for num, data, annotations in lpch_list:
     modules.append(Mod())
     modules[-1].start = 0
 
-    i = 0
-    while tokens[i][0] != 'end':
-        a, b = tokens[i]; i += 1
+    for tok, arg in tokens:
+        if tok == 'skipjt':
+            jt_offset += arg
 
-        if a == 'distance':
-            cur_offset += b
-            if tokens[i][0] == 'prev=entry_not_module':
-                i += 1
-                modules[-1].entry_points.append(Ent())
-                modules[-1].entry_points[-1].offset = cur_offset
-            elif tokens[i][0] == 'prev=ref_list_head':
-                i += 1
-                modules[-1].references.append(cur_offset)
-            else:
-                modules[-1].stop = cur_offset
-                modules.append(Mod())
-                modules[-1].start = cur_offset
+        if tok.startswith('distance'):
+            cur_offset += arg
+
+        if tok == 'distance': # to end of module
+            modules[-1].stop = cur_offset
+            modules[-1].jt_entry = jt_offset
+            modules.append(Mod())
+            modules[-1].start = cur_offset
+
+            jt_offset += 1
+
+        if tok == 'distance=entry_not_module':
+            modules[-1].entry_points.append(Ent())
+            modules[-1].entry_points[-1].offset = cur_offset
+            modules[-1].entry_points[-1].jt_entry = jt_offset
+
+            jt_offset += 1
+
+        if tok == 'distance=ref_list_head':
+            modules[-1].references.append(cur_offset)
 
     modules.pop()
 
