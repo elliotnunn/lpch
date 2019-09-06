@@ -39,11 +39,19 @@ def exact_log(n):
     if n != 1: return None
     return sh
 
+def count_bits(n):
+    cnt = 0
+    while n:
+        if n & 1: cnt += 1
+        n >>= 1
+    return cnt
+
 
 class Mod:
     def __init__(self):
         self.entry_points = []
         self.references = []
+        self.rom_references = []
         self.start = -1
         self.stop = -1
         self.jt_entry = -1
@@ -51,7 +59,7 @@ class Mod:
     def __str__(self):
         x = '%05x %s:' % (self.start, name(self.jt_entry))
 
-        leave = sorted(self.entry_points + self.references, key=lambda x: x.offset)
+        leave = sorted(self.entry_points + self.references + self.rom_references, key=lambda x: x.offset)
 
         x += ''.join('\n  ' + str(s) for s in leave)
         return x
@@ -101,6 +109,15 @@ class Ref:
         return '%05x %s' % (self.offset, self.assembly)
 
 
+class RomRef:
+    def __init__(self):
+        self.offset = -1
+        self.romofs_pairs = []
+
+    def __str__(self):
+        return '%05x %s' % (self.offset, ', '.join('(%s,$%x)' % (k, v) for k, v in self.romofs_pairs))
+
+
 parser = argparse.ArgumentParser(description='''
     Very hacky. 
 ''')
@@ -121,9 +138,6 @@ if len(args.src) == 1:
 else:
     lpch_list = parse_raw_files(args.src)
 
-# Add an "annotations" field...
-lpch_list = [(a,b,[]) for (a,b) in lpch_list]
-
 
 # Check that we have the right number of declared ROMs...
 roms_now = len(args.roms)
@@ -133,12 +147,15 @@ if roms_now != roms_at_build:
     print('Warning: %d ROMs specified but there were %d at build time' % (roms_now, roms_at_build))
 
 
+# Sort the ROMs so that the most inclusive ones come first
+lpch_list.sort(key=lambda rsrc: (-count_bits(rsrc[0]), rsrc[0]))
+
 ########################################################################
 
 large_rom_table = []
 large_jump_table = []
 
-for num, data, annotations in lpch_list:
+for num, data in lpch_list:
     if args.oo: open(args.oo + str(num), 'wb').write(data)
 
     if exact_log(num) is not None:
@@ -146,7 +163,7 @@ for num, data, annotations in lpch_list:
     else:
         is_single = False
 
-    if num == lpch_list[-1][0]:
+    if num == lpch_list[0][0]:
         is_all = True
     else:
         is_all = False
@@ -168,7 +185,6 @@ for num, data, annotations in lpch_list:
 
     code_size, = struct.unpack_from('>I', data, offset=idx); idx += 4
     code = data[idx:idx+code_size]; idx += code_size
-    annotations[:] = [None] * code_size
 
 
     print('lpch %d\t\t%db(%db)\t\t%s' % (num, len(data), code_size, ','.join(matches_roms)))
@@ -185,12 +201,13 @@ for num, data, annotations in lpch_list:
     rom_table = []
     if rom_table_start is not None:
         while 1:
-            this_dict = {}
-            for r in matches_roms:
+            romofs_pairs = []
+            for r in reversed(matches_roms): # data packed from newest to oldest rom
                 the_int = int.from_bytes(data[idx:idx+3], byteorder='big'); idx += 3
-                this_dict[r] = the_int & 0x7FFFFF
+                romofs_pairs.append((r, the_int & 0x7FFFFF))
+            romofs_pairs.reverse()
 
-            rom_table.append(this_dict)
+            rom_table.append(romofs_pairs)
 
             if the_int & 0x800000:
                 break
@@ -213,10 +230,13 @@ for num, data, annotations in lpch_list:
         else:
             rom_exception_table.append(the_int)
 
+    rom_references = [] # this is what we can salvage from the foregoing overcooked code
     for code_offset in rom_exception_table:
         while 1:
             link, which_rom_part = struct.unpack_from('>HH', code, offset=code_offset)
-            annotations[code_offset] = (4, 'rom_reference', which_rom_part) # offset within large_rom_table
+            rom_references.append(RomRef())
+            rom_references[-1].offset = code_offset
+            rom_references[-1].romofs_pairs = large_rom_table[which_rom_part]
             if link == 0: break
             code_offset += 4 + 2 * link
 
@@ -315,6 +335,10 @@ for num, data, annotations in lpch_list:
     modules.pop()
 
     if modules: assert modules[-1].stop == code_size
+
+
+    for m in modules:
+        m.rom_references = [r for r in rom_references if m.start <= r.offset < m.stop]
 
 
     for m in modules:
