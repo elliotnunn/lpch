@@ -52,12 +52,13 @@ class Mod:
         self.entry_points = []
         self.references = []
         self.rom_references = []
-        self.start = -1
+        self.offset = -1
         self.stop = -1
         self.jt_entry = -1
+        self.rsrc_id = 0
 
     def __str__(self):
-        x = '%05x %s:' % (self.start, name(self.jt_entry))
+        x = '%05x %s:' % (self.offset, name(self.jt_entry))
 
         leave = sorted(self.entry_points + self.references + self.rom_references, key=lambda x: x.offset)
 
@@ -127,6 +128,7 @@ parser.add_argument('-roms', nargs='+', default=['Plus', 'SE', 'II', 'Portable',
 parser.add_argument('-pt', action='store_true', help='Print raw module tokens')
 parser.add_argument('-pm', action='store_true', help='Print information about modules and code references')
 parser.add_argument('-pr', action='store_true', help='Print information about ROM references')
+parser.add_argument('-pj', action='store_true', help='Print jump table')
 parser.add_argument('-oo', action='store', help='Base destination path to dump resources as raw files')
 parser.add_argument('-oc', action='store', help='Base destination path to dump code files')
 parser.add_argument('-oe', action='store', help='Base destination path to dump code files with refs changed to NOPs')
@@ -154,6 +156,8 @@ lpch_list.sort(key=lambda rsrc: (-count_bits(rsrc[0]), rsrc[0]))
 
 large_rom_table = []
 large_jump_table = []
+
+all_modules = []
 
 for num, data in lpch_list:
     if args.oo: open(args.oo + str(num), 'wb').write(data)
@@ -303,8 +307,9 @@ for num, data in lpch_list:
     modules = []
 
     modules.append(Mod())
-    modules[-1].start = 0
+    modules[-1].offset = 0
     modules[-1].__hack_refhead = -1
+    modules[-1].rsrc_id = num
 
     for tok, arg in tokens:
         if tok == 'skipjt':
@@ -320,8 +325,9 @@ for num, data in lpch_list:
         if tok == 'distance': # to end of module
             modules[-1].stop = cur_offset
             modules.append(Mod())
-            modules[-1].start = cur_offset
+            modules[-1].offset = cur_offset
             modules[-1].__hack_refhead = -1
+            modules[-1].rsrc_id = num
 
         if tok == 'distance=entry_not_module':
             modules[-1].entry_points.append(Ent())
@@ -339,7 +345,7 @@ for num, data in lpch_list:
 
 
     for m in modules:
-        m.rom_references = [r for r in rom_references if m.start <= r.offset < m.stop]
+        m.rom_references = [r for r in rom_references if m.offset <= r.offset < m.stop]
 
 
     for m in modules:
@@ -378,9 +384,34 @@ for num, data in lpch_list:
     if args.oe:
         open(args.oe + str(num), 'wb').write(edited_code)
 
+    all_modules.extend(modules)
+
 
 for el in large_rom_table:
     assert el is not None
+
+
+if args.pj:
+    nums = sorted(num for num, data in lpch_list)
+    INDENT = 6
+    WIDTH = INDENT * len(nums) + 4
+
+    line = ''
+    for i, n in enumerate(nums):
+        line = line.ljust(i * INDENT)
+        line += ' ' * ((INDENT+1)//2)
+        line += '%02d' % n
+    print(line)
+
+    all_modules.sort(key=lambda mod: mod.jt_entry)
+    for mod in all_modules:
+        for mod_ent in [mod] + mod.entry_points:
+            line = ' ' * (INDENT * nums.index(mod.rsrc_id))
+            line += '%02d+%05x' % (mod.rsrc_id, mod_ent.offset)
+            line = line.ljust(WIDTH)
+            if isinstance(mod_ent, Ent): line += ' '
+            line += name(mod_ent.jt_entry)
+            print(line)
 
 # print(large_jump_table)
 # print(large_rom_table)
