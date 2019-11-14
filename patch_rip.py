@@ -161,6 +161,8 @@ large_jump_table = []
 
 all_modules = []
 
+code_list = [] # this is getting hackier and hackier
+
 for num, data in lpch_list:
     if args.oo: open(args.oo + str(num), 'wb').write(data)
 
@@ -191,6 +193,7 @@ for num, data in lpch_list:
 
     code_size, = struct.unpack_from('>I', data, offset=idx); idx += 4
     code = data[idx:idx+code_size]; idx += code_size
+    code_list.append(code)
 
 
     if args.pt or args.pm or args.pr:
@@ -407,6 +410,21 @@ if args.pj:
     headerline = '-' * WIDTH + '\n' + headerline + '\n' + '-' * WIDTH
     # headerline = headerline.ljust(WIDTH).replace(' ', '-')
 
+    def print_code(start, stop, prefix=''):
+        ALIGN = 32
+        ofs = start
+
+        while ofs < stop:
+            ofs2 = ofs + ALIGN; ofs2 -= ofs2 % ALIGN; ofs2 = min(ofs2, stop)
+            line = code[ofs:ofs2]
+            if not line: break
+            line = ''.join(chr(x) if 32 <= x < 127 else '.' for x in line)
+            line = ' ' * WIDTH + prefix + ' ' * (ofs % ALIGN) + line
+
+            print(line)
+
+            ofs = ofs2
+
     all_modules.sort(key=lambda mod: mod.jt_entry)
     prev_rsrc_id = None
     for mod in all_modules:
@@ -416,23 +434,32 @@ if args.pj:
 
         everything = sorted([mod] + mod.entry_points + mod.references + mod.rom_references, key=lambda x: x.offset)
 
-        indent = ''
+        code = code_list[nums.index(mod.rsrc_id)]
+
+        last_printed = 0
+
         for mod_ent in everything:
-            if isinstance(mod_ent, Ent): indent = '  '
+            print_code(last_printed, mod_ent.offset, '      ')
 
             # Left column
             line = ' ' * (INDENT * nums.index(mod.rsrc_id))
             line += '%05x' % mod_ent.offset
             line = line.ljust(WIDTH)
 
-            line += indent
+            if isinstance(mod_ent, Ent): line = '  '
 
-            if not isinstance(mod_ent, Mod): line += ' '
             if isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent):
-                line += name(mod_ent.jt_entry)
+                line += name(mod_ent.jt_entry) + ':'
             else:
                 line += '  ' + str(mod_ent)
             print(line)
+
+            if isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent):
+                last_printed = mod_ent.offset
+            else:
+                last_printed = mod_ent.offset + 4 # close enough
+
+        print_code(last_printed, len(code), '      ')
 
 # print(large_jump_table)
 # print(large_rom_table)
