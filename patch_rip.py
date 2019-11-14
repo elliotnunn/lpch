@@ -72,7 +72,7 @@ class Ent:
         self.jt_entry = -1
 
     def __str__(self):
-        return '%05x %s:' % (self.offset, name(self.jt_entry))
+        return name(self.jt_entry)
 
 
 class Ref:
@@ -84,22 +84,24 @@ class Ref:
 
     @property
     def assembly(self):
-        try:
-            x = (
-                'leaY x,A0',
-                'leaY x,A1',
-                'leaY x,A2',
-                'leaY x,A3',
-                'leaY x,A4',
-                'leaY x,A5',
-                'leaY x,A6',
-                'leaY x,A7',
-                'peaY x',
-                'jsrY x',
-                'jmpY x',
-            )[self.opcode]
-        except IndexError:
-            x = 'unknownY x'
+        x = (
+            'leaY x,A0',
+            'leaY x,A1',
+            'leaY x,A2',
+            'leaY x,A3',
+            'leaY x,A4',
+            'leaY x,A5',
+            'leaY x,A6',
+            'leaY x,A7',
+            'peaY x',
+            'jsrY x',
+            'jmpY x',
+            'unknown11Y x',
+            'unknown12Y x',
+            'unknown13Y x',
+            'unknown14Y x',
+            'dcImportY x',
+        )[self.opcode]
 
         x = x.replace('x', name(self.jt_entry))
         x = x.replace('Y', 'Resident' if self.force_resident else '')
@@ -107,7 +109,7 @@ class Ref:
         return x    
 
     def __str__(self):
-        return '%05x %s' % (self.offset, self.assembly)
+        return self.assembly
 
 
 class RomRef:
@@ -116,7 +118,7 @@ class RomRef:
         self.romofs_pairs = []
 
     def __str__(self):
-        return '%05x %s' % (self.offset, ', '.join('(%s,$%x)' % (k, v) for k, v in self.romofs_pairs))
+        return ','.join('(%s,$%x)' % (k, v) for k, v in self.romofs_pairs)
 
 
 parser = argparse.ArgumentParser(description='''
@@ -191,8 +193,9 @@ for num, data in lpch_list:
     code = data[idx:idx+code_size]; idx += code_size
 
 
-    if not is_all: print()
-    print('lpch %d\t\t%db(%db)\t\t%s' % (num, len(data), code_size, ','.join(matches_roms)))
+    if args.pt or args.pm or args.pr:
+        if not is_all: print()
+        print('lpch %d\t\t%db(%db)\t\t%s' % (num, len(data), code_size, ','.join(matches_roms)))
 
 
     if args.oc:
@@ -393,24 +396,42 @@ for el in large_rom_table:
 
 if args.pj:
     nums = sorted(num for num, data in lpch_list)
-    INDENT = 6
+    INDENT = 4
     WIDTH = INDENT * len(nums) + 4
 
-    line = ''
+    headerline = ''
     for i, n in enumerate(nums):
-        line = line.ljust(i * INDENT)
-        line += ' ' * ((INDENT+1)//2)
-        line += '%02d' % n
-    print(line)
+        headerline = headerline.ljust(i * INDENT)
+        headerline += ' ' * ((INDENT+1)//2)
+        headerline += '%02d' % n
+    headerline = '-' * WIDTH + '\n' + headerline + '\n' + '-' * WIDTH
+    # headerline = headerline.ljust(WIDTH).replace(' ', '-')
 
     all_modules.sort(key=lambda mod: mod.jt_entry)
+    prev_rsrc_id = None
     for mod in all_modules:
-        for mod_ent in [mod] + mod.entry_points:
+        if mod.rsrc_id != prev_rsrc_id: # print header when changing resources
+            print(headerline)
+            prev_rsrc_id = mod.rsrc_id
+
+        everything = sorted([mod] + mod.entry_points + mod.references + mod.rom_references, key=lambda x: x.offset)
+
+        indent = ''
+        for mod_ent in everything:
+            if isinstance(mod_ent, Ent): indent = '  '
+
+            # Left column
             line = ' ' * (INDENT * nums.index(mod.rsrc_id))
-            line += '%02d+%05x' % (mod.rsrc_id, mod_ent.offset)
+            line += '%05x' % mod_ent.offset
             line = line.ljust(WIDTH)
-            if isinstance(mod_ent, Ent): line += ' '
-            line += name(mod_ent.jt_entry)
+
+            line += indent
+
+            if not isinstance(mod_ent, Mod): line += ' '
+            if isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent):
+                line += name(mod_ent.jt_entry)
+            else:
+                line += '  ' + str(mod_ent)
             print(line)
 
 # print(large_jump_table)
