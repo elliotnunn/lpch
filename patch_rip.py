@@ -3,10 +3,26 @@
 import argparse
 import math
 import struct
+import re
+from collections import defaultdict
 
 
+COND_NAMES = ['Plus', 'SE', 'II', 'Portable', 'IIci', 'SuperMario',
+    'noPatchProtector', 'notVM', 'notAUX', 'hasHMMU', 'hasPMMU',
+    'hasMemoryDispatch', 'has800KDriver', 'hasFDHDDriver', 'hasIWM',
+    'hasEricksonOverpatchMistake', 'hasEricksonSoundMgr', 'notEricksonSoundMgr',
+    'using24BitHeaps', 'using32BitHeaps', 'notTERROR', 'hasTERROR', 'hasC96',
+    'hasPwrMgr']
+
+
+global_sym_names = {}
 def name(jt_offset):
-    return 'R%04X' % (jt_offset * 6)
+    retval = 'R%03X' % jt_offset
+    betterval = global_sym_names.get(jt_offset, None)
+    if betterval:
+        return retval + '/' + betterval
+    else:
+        return retval
 
 def parse_res_file(f):
     import macresources
@@ -58,12 +74,7 @@ class Mod:
         self.rsrc_id = 0
 
     def __str__(self):
-        x = '%05x %s:' % (self.offset, name(self.jt_entry))
-
-        leave = sorted(self.entry_points + self.references + self.rom_references, key=lambda x: x.offset)
-
-        x += ''.join('\n  ' + str(s) for s in leave)
-        return x
+        return 'PROC ' + name(self.jt_entry)
 
 
 class Ent:
@@ -72,7 +83,7 @@ class Ent:
         self.jt_entry = -1
 
     def __str__(self):
-        return name(self.jt_entry)
+        return 'ENTRY ' + name(self.jt_entry)
 
 
 class Ref:
@@ -111,14 +122,19 @@ class Ref:
     def __str__(self):
         return self.assembly
 
-
+global_romref_names = {}
 class RomRef:
     def __init__(self):
         self.offset = -1
         self.romofs_pairs = []
 
     def __str__(self):
-        return ','.join('(%s,$%x)' % (k, v) for k, v in self.romofs_pairs)
+        retval = ','.join('(%s,$%x)' % (k, v) for k, v in self.romofs_pairs)
+        betterval = global_romref_names.get(retval, None)
+        if betterval:
+            return 'ROM ' + betterval
+        else:
+            return retval
 
 
 parser = argparse.ArgumentParser(description='''
@@ -131,9 +147,13 @@ parser.add_argument('-pt', action='store_true', help='Print raw module tokens')
 parser.add_argument('-pm', action='store_true', help='Print information about modules and code references')
 parser.add_argument('-pr', action='store_true', help='Print information about ROM references')
 parser.add_argument('-pj', action='store_true', help='Print jump table')
+parser.add_argument('-pp', action='store_true', help='Print patch names')
+parser.add_argument('-rh', action='store', help='LinkedPatches.lib, so we know how to name ROM references')
+parser.add_argument('-sh', action='store', help='output of LinkedPatch -l, so we know how to name symbols')
 parser.add_argument('-oo', action='store', help='Base destination path to dump resources as raw files')
 parser.add_argument('-oc', action='store', help='Base destination path to dump code files')
 parser.add_argument('-oe', action='store', help='Base destination path to dump code files with refs changed to NOPs')
+parser.add_argument('-w', action='store', dest='width', type=int, default=128, help='Width in chars')
 
 args = parser.parse_args()
 
@@ -153,6 +173,29 @@ if roms_now != roms_at_build:
 
 # Sort the ROMs so that the most inclusive ones come first
 lpch_list.sort(key=lambda rsrc: (-count_bits(rsrc[0]), rsrc[0]))
+
+########################################################################
+
+# LinkedPatches.lib, so we know how to name ROM references
+# mutates global_romref_names, which the RomRef class can read
+if args.rh:
+    library = open(args.rh, 'rb').read()
+    name_map = defaultdict(list)
+    for m in re.finditer(rb'BIND\$([A-Za-z0-9@%]+)\$(\d+)\$(\d+)\$', library):
+        name_map[m.group(1).decode('ascii')].append((int(m.group(2)), int(m.group(3))))
+    for rname, rlist in name_map.items():
+        rlist.sort()
+        keystring = ','.join('(%s,$%x)' % (COND_NAMES[k], v) for k, v in rlist)
+        global_romref_names[keystring] = rname
+
+# output of LinkedPatch -l, so we know how to name symbols
+if args.sh:
+    for l in open(args.sh):
+        l = l.split()
+        if len(l) == 2:
+            sym_number = int(l[0], 16)
+            sym_name = l[1]
+            global_sym_names[sym_number] = sym_name
 
 ########################################################################
 
@@ -213,12 +256,16 @@ for num, data in lpch_list:
     if rom_table_start is not None:
         while 1:
             romofs_pairs = []
+            human_readable_idx = idx
             for r in reversed(matches_roms): # data packed from newest to oldest rom
                 the_int = int.from_bytes(data[idx:idx+3], byteorder='big'); idx += 3
                 romofs_pairs.append((r, the_int & 0x7FFFFF))
             romofs_pairs.reverse()
 
             rom_table.append(romofs_pairs)
+
+            if args.pr:
+                print(','.join('(%s,$%x)' % (k, v) for k, v in romofs_pairs))
 
             if the_int & 0x800000:
                 break
@@ -307,6 +354,35 @@ for num, data in lpch_list:
                 print('%02d'%i, a, hex(b))
 
 
+    if is_all:
+        patches = defaultdict(list) # mapping from jt number to (trap, cond_names)
+        curjt = 0
+        end_of_table = False
+        while not end_of_table:
+            conds = int.from_bytes(data[idx:idx+3], byteorder='big'); idx += 3
+            #print('conds', hex(conds))
+            cond_names = []
+            for i, n in enumerate(COND_NAMES):
+                if conds & (1 << i): cond_names.append(n)
+            cond_names = ','.join(cond_names)
+
+            while 1:
+                delta = data[idx]; idx += 1
+                #print('  delta', hex(delta))
+                if delta == 254:
+                    break # get new condition set
+                elif delta == 255:
+                    delta, = struct.unpack_from('>H', data, idx); idx += 2
+                    #print('  delta2', hex(delta))
+                    if delta == 0:
+                        end_of_table = True; break
+                curjt += delta
+
+                trap, = struct.unpack_from('>H', data, idx); idx += 2
+                #print('  trap', hex(trap))
+                patches[curjt].append((trap, cond_names))
+
+
     jt_offset = 0
     cur_offset = 0
 
@@ -383,7 +459,7 @@ for num, data in lpch_list:
         for r in m.references:
             try:
                 opcode = [0x206D,0x226D,0x246D,0x266D,0x286D,0x2A6D,0x2C6D,0x2E6D,0x2F2D,0x4EAD,0x4EED][r.opcode]
-                nu = struct.pack('>HH', opcode, r.jt_entry * 6)
+                nu = struct.pack('>HH', opcode, r.jt_entry)
             except IndexError:
                 nu = b'NqNq'
             edited_code[r.offset:r.offset+4] = nu
@@ -397,69 +473,84 @@ for el in large_rom_table:
     assert el is not None
 
 
+if args.pp:
+    for jt, v in patches.items():
+        for trap, cond_names in v:
+            print(f'    MakePatch {name(jt)}, _{trap:04X}, ({cond_names})')
+
+
 if args.pj:
-    nums = sorted(num for num, data in lpch_list)
-    INDENT = 4
-    WIDTH = INDENT * len(nums) + 4
+    nums = [num for num, data in lpch_list]
 
-    headerline = ''
-    for i, n in enumerate(nums):
-        headerline = headerline.ljust(i * INDENT)
-        headerline += ' ' * ((INDENT+1)//2)
-        headerline += '%02d' % n
-    headerline = '-' * WIDTH + '\n' + headerline + '\n' + '-' * WIDTH
-    # headerline = headerline.ljust(WIDTH).replace(' ', '-')
+    def render_line(ofs, line):
+        return '%05x: %s' % (ofs, line)
 
-    def print_code(start, stop, prefix=''):
-        ALIGN = 32
+    def render_code(start, stop):
         ofs = start
 
         while ofs < stop:
-            ofs2 = ofs + ALIGN; ofs2 -= ofs2 % ALIGN; ofs2 = min(ofs2, stop)
+            ofs2 = ofs + args.width; ofs2 -= ofs2 % args.width; ofs2 = min(ofs2, stop)
             line = code[ofs:ofs2]
-            if not line: break
-            line = ''.join(chr(x) if 32 <= x < 127 else '.' for x in line)
-            line = ' ' * WIDTH + prefix + ' ' * (ofs % ALIGN) + line
+            if not line:
+                print('expected', stop, 'got', len(code))
+                raise ValueError()
+            line = bytes(x if (32 < x and x != 127 and x != 0xF0 and x < 127) else 46 for x in line).decode('mac_roman')
+            line = ' ' * (ofs % args.width) + line
 
-            print(line)
+            yield render_line(ofs, line)
 
             ofs = ofs2
 
+    def render_offset(ofs, line):
+        return '%05x: %s%s' % (ofs, ' ' * (ofs % args.width), line)
+
+    def render_sep(ofs):
+        return '%05x: %s' % (ofs, '=' * args.width)
+
+    last_rsrc = -1
+    rsrc_print_progress = [0] * len(nums)
+
     all_modules.sort(key=lambda mod: mod.jt_entry)
-    prev_rsrc_id = None
     for mod in all_modules:
-        if mod.rsrc_id != prev_rsrc_id: # print header when changing resources
-            print(headerline)
-            prev_rsrc_id = mod.rsrc_id
+        rsrc_idx = nums.index(mod.rsrc_id)
 
         everything = sorted([mod] + mod.entry_points + mod.references + mod.rom_references, key=lambda x: x.offset)
-
-        code = code_list[nums.index(mod.rsrc_id)]
-
+        code = code_list[rsrc_idx]
         last_printed = 0
 
-        for mod_ent in everything:
-            print_code(last_printed, mod_ent.offset, '      ')
+        leftside = str(mod.rsrc_id).zfill(2) + ':'
+        def myprint(*args, **kwargs):
+            if args: args = (leftside + str(args[0]), *args[1:])
+            return print(*args, **kwargs)
 
-            # Left column
-            line = ' ' * (INDENT * nums.index(mod.rsrc_id))
-            line += '%05x' % mod_ent.offset
-            line = line.ljust(WIDTH)
+        def print_up_to(ofs):
+            for jank in render_code(rsrc_print_progress[rsrc_idx], ofs):
+                myprint(jank)
+            rsrc_print_progress[rsrc_idx] = ofs
 
-            if isinstance(mod_ent, Ent): line = '  '
+        if last_rsrc != mod.rsrc_id:
+            myprint(render_sep(mod.offset))
+            matches_roms = []
+            for i, r in enumerate(args.roms):
+                if (mod.rsrc_id >> i) & 1: matches_roms.append(r)
+            myprint(render_line(mod.offset, ','.join(matches_roms)))
+            # print()
+            last_rsrc = mod.rsrc_id
 
-            if isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent):
-                line += name(mod_ent.jt_entry) + ':'
-            else:
-                line += '  ' + str(mod_ent)
-            print(line)
+        for mod_ent in everything + [None]:
+            print_up_to(mod_ent.offset if mod_ent else mod.stop)
 
-            if isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent):
-                last_printed = mod_ent.offset
-            else:
-                last_printed = mod_ent.offset + 4 # close enough
+            if mod_ent:
+                myprint(render_offset(mod_ent.offset, '(' + str(mod_ent) + ')'))
 
-        print_code(last_printed, len(code), '      ')
+                try:
+                    for trap, cond_names in patches[mod_ent.jt_entry]:
+                        myprint(render_offset(mod_ent.offset, f'${trap:X},({cond_names})'))
+                except AttributeError:
+                    pass
+
+                if not (isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent)):
+                    rsrc_print_progress[rsrc_idx] += 4 # close enough
 
 # print(large_jump_table)
 # print(large_rom_table)
