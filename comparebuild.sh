@@ -6,28 +6,20 @@ VANILLA=~/Documents/mac/primary/Sys710x.rdump
 SUPERMARIO=~/Documents/mac/supermario/worktree/cube-e
 BUILT=$SUPERMARIO/BuildResults/System/System.rdump
 
-WIDTHS="16 32 64"
-
-MODE=-pj
 RH="-rh $SUPERMARIO/BuildResults/System/Lib/LinkedPatches.lib"
 SH="-sh $SUPERMARIO/BuildResults/System/Text/LinkPatchJumpTbl"
+COMMON="-w 16 $RH $SH"
 
-for WIDTH in $WIDTHS; do
-	DEST=lpchdmp$WIDTH.txt
-	COLUMN=$((10 + $WIDTH*5/4 + 4))
+for MODE in pt pm pr pj pjh pp; do
 	(
-		paste \
-			<(./patch_rip.py $VANILLA $MODE -w $WIDTH $RH $SH | cut -c -$(($COLUMN-1)) ) \
-			<(./patch_rip.py $BUILT   $MODE -w $WIDTH $RH $SH ) \
-		| expand -t $COLUMN
-	)>/tmp/$DEST &
+		./patch_rip.py -$MODE $COMMON $BUILT   >/tmp/elliot-$MODE-lpch
+		./patch_rip.py -$MODE $COMMON $VANILLA >/tmp/apple-$MODE-lpch; echo >>/tmp/apple-$MODE-lpch
+
+		git diff --no-index -U999999999 /tmp/elliot-$MODE-lpch /tmp/apple-$MODE-lpch >lpch-$MODE.patch
+		true
+	) &
 done
 
 for job in `jobs -p`; do
-    wait $job
-done
-
-for WIDTH in $WIDTHS; do
-	DEST=lpchdmp$WIDTH.txt
-	mv /tmp/$DEST $DEST
+	wait $job
 done

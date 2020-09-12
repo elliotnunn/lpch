@@ -17,10 +17,10 @@ COND_NAMES = ['Plus', 'SE', 'II', 'Portable', 'IIci', 'SuperMario',
 
 global_sym_names = {}
 def name(jt_offset):
-    retval = 'R%03X' % jt_offset
+    retval = '%03X' % jt_offset
     betterval = global_sym_names.get(jt_offset, None)
     if betterval:
-        return retval + '/' + betterval
+        return retval + ' ' + betterval
     else:
         return retval
 
@@ -147,6 +147,7 @@ parser.add_argument('-pt', action='store_true', help='Print raw module tokens')
 parser.add_argument('-pm', action='store_true', help='Print information about modules and code references')
 parser.add_argument('-pr', action='store_true', help='Print information about ROM references')
 parser.add_argument('-pj', action='store_true', help='Print jump table')
+parser.add_argument('-pjh', action='store_true', help='Print jump table (hex)')
 parser.add_argument('-pp', action='store_true', help='Print patch names')
 parser.add_argument('-rh', action='store', help='LinkedPatches.lib, so we know how to name ROM references')
 parser.add_argument('-sh', action='store', help='output of LinkedPatch -l, so we know how to name symbols')
@@ -265,7 +266,8 @@ for num, data in lpch_list:
             rom_table.append(romofs_pairs)
 
             if args.pr:
-                print(','.join('(%s,$%x)' % (k, v) for k, v in romofs_pairs))
+                rom_lookup_name = ','.join('(%s,$%x)' % (k, v) for k, v in romofs_pairs)
+                print(global_romref_names.get(rom_lookup_name, rom_lookup_name))
 
             if the_int & 0x800000:
                 break
@@ -474,13 +476,15 @@ for el in large_rom_table:
 
 
 if args.pp:
-    for jt, v in patches.items():
+    for jt, v in sorted(patches.items()):
         for trap, cond_names in v:
             print(f'    MakePatch {name(jt)}, _{trap:04X}, ({cond_names})')
 
 
-if args.pj:
+if args.pj or args.pjh:
     nums = [num for num, data in lpch_list]
+
+    CHARWID = 2.5 if args.pjh else 1 # for hex
 
     def render_line(ofs, line):
         return '%05x: %s' % (ofs, line)
@@ -494,15 +498,18 @@ if args.pj:
             if not line:
                 print('expected', stop, 'got', len(code))
                 raise ValueError()
-            line = bytes(x if (32 < x and x != 127 and x != 0xF0 and x < 127) else 46 for x in line).decode('mac_roman')
-            line = ' ' * (ofs % args.width) + line
+            if args.pjh:
+                line = ' '.join(line[o:o+2].hex() for o in range(0, len(line), 2))
+            else:
+                line = bytes(x if (32 < x and x != 127 and x != 0xF0 and x < 127) else 46 for x in line).decode('mac_roman')
+            line = ' ' * int(CHARWID * (ofs % args.width)) + line
 
             yield render_line(ofs, line)
 
             ofs = ofs2
 
     def render_offset(ofs, line):
-        return '%05x: %s%s' % (ofs, ' ' * (ofs % args.width), line)
+        return '%05x: %s%s' % (ofs, ' ' * int(CHARWID * (ofs % args.width)), line)
 
     def render_sep(ofs):
         return '%05x: %s' % (ofs, '=' * args.width)
