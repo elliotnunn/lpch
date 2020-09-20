@@ -1,34 +1,33 @@
-Everything I know about the obscure "linked patch" system
-programming/binary interface in System 7.1-??
+The "Linked Patches" are an unusual 68k code format in the System
+resource fork of Mac OS 7-9. They contain initialization code to run at
+boot and runtime code for installation in RAM-based vector tables.
 
-The idea was to provide a macro-based interface that a 68k assembly
-programmer could use to create RAM-based "patches" for a newly booted
-MacOS system. Similar patches were needed even in the original Macintosh
-System Software to fix bugs in the shipping ROM. Runtime patching also
-came to be used to add new software features to old Mac models. But
-writing a patch in pure 68k assembly, especially a "come-from" patch,
-was very tedious and usually required self-modifying code.
+The first Linked Patches shipped in the interdependent 'lpch' resources
+of System 7.0.
 
-The linked patches incrementally improved that situation. Here is a
-summary of the design decisions made:
+From System 7.5, 'gpch' resources contained groups of functionally
+related 'lpch' resources. A group could be loaded or not according to
+the host machine. This was controlled by one 'gusd' and multiple 'gtbl'
+resource.
 
-- A library of 68k macros provided a nearly-declarative way to describe
-  to installation process for a given patch.
-- The runtime RAM usage was minimised by separating installation from
-  runtime code, and by segmenting each code module at build time
-  according to its target ROM releases.
-- Advantage was taken of the huge commonality carefully between
-  Macintosh ROM releases, which was painstakingly maintained by binary
-  patching and "overpatching".
-- Object files containing patches woulod be linked into resources by a
-  full linker, making dead code elimination available and allowing the
-  direct inclusion of code originally meant for a ROM build.
-- Runtime self-modification of code was done almost entirely by a
-  generic runtime loader, instead of allowing each patch writer to come
-  up with a unique and uniquely buggy solution.
-- Special assembly facilities were made available to ease the writing of
-  come-from patches (patches that wrested control from a buggy segment
-  of ROM by hijacking a possibly unrelated trap in the vicinity).
-  Specifically, it was easy to describe the address of the target trap
-  and to produce code that would test that the trap was indeed being
-  called from that address.
+`patch_rip.py` is a Python 3 script to dump a group of 'lpch' resources
+(or a single 'gpch' resource) to text.
+
+
+## Usage
+
+First, `pip3 install macresources` to get the `rfx` command-line tool,
+which exposes the resources inside a resource fork like regular files.
+
+Then point `patch_rip.py` at the System file of interest:
+
+    rfx ./patch_rip.py System/..namedfork/rsrc//lpch/   # macOS 10's kernel resource fork support
+    rfx ./patch_rip.py System.hqx//lpch/                # BinHex file
+    rfx ./patch_rip.py System//lpch/                    # Rez file named "System.rdump"
+
+To dump a numbered 'gpch' file instead, replace `//lpch/`, which expands
+to a path for each lpch resource, with `//gpch/NNN`, which expands to a
+single path.
+
+The output is not disassembled, but it is annotated with the known
+locations of specialised "jsr" instructions, etc.

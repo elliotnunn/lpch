@@ -1,566 +1,10497 @@
 #!/usr/bin/env python3
 
+# Sorry about the long list. I didn't want to put this in a separate file.
+ROMLOCS = {
+    ('Plus', 0x001f8): 'Trap0_53',
+    ('Plus', 0x00c7a): 'InitFS',
+    ('Plus', 0x00d4c): 'InitEvents',
+    ('Plus', 0x00ec4): 'PutIcon',
+    ('Plus', 0x01142): 'SysError',
+    ('Plus', 0x011dc): 'SysBeep',
+    ('Plus', 0x019ca): 'Enqueue',
+    ('Plus', 0x019f0): 'Dequeue',
+    ('Plus', 0x01ce6): 'ShowCrsr', #leak
+    ('Plus', 0x01e72): 'ScrnBitMap',
+    ('Plus', 0x01f38): 'PinRect',
+    ('Plus', 0x01f4a): 'Dispatch',
+    ('Plus', 0x01fba): 'SetTrapAddress',
+    ('Plus', 0x0200a): 'GetTrapAddress',
+    ('Plus', 0x023be): 'Read',
+    ('Plus', 0x0242e): 'Write',
+    ('Plus', 0x02442): 'Control',
+    ('Plus', 0x02450): 'Status',
+    ('Plus', 0x02476): 'KillIO',
+    ('Plus', 0x024ca): 'DrvrInstall',
+    ('Plus', 0x02528): 'DrvrRemove',
+    ('Plus', 0x02558): 'AddDrive',
+    ('Plus', 0x02764): 'OSEventAvail',
+    ('Plus', 0x027ec): 'GetOSEvent',
+    ('Plus', 0x028a6): 'FSQUEUESYNC', #leak
+    ('Plus', 0x028aa): 'FSQUEUE', #leak
+    ('Plus', 0x02912): 'FSAsync', #leak
+    ('Plus', 0x0295e): 'CMDDONE', #leak
+    ('Plus', 0x029f2): 'AfterExtFSHook', #leak
+    ('Plus', 0x02a6c): 'InitQueue',
+    ('Plus', 0x02aae): 'AfterMountVolInDSHook', #leak
+    ('Plus', 0x02b30): 'AfterSysErrorInDSHook', #leak
+    ('Plus', 0x02b66): 'FromWaitForDsk', #leak
+    ('Plus', 0x02be8): 'DSExit', #leak
+    ('Plus', 0x02d1e): 'MarkVCB', #leak
+    ('Plus', 0x02d20): 'MarkVCBTime', #leak
+    ('Plus', 0x02d28): 'MarkVCBDirty', #leak
+    ('Plus', 0x02d2e): 'FlushMDB', #leak
+    ('Plus', 0x02df8): 'MountVol',
+    ('Plus', 0x02e4c): 'OldMtVolAfterFSQueue', #leak
+    ('Plus', 0x02ffa): 'After2ndAccessBTInMountVol', #leak
+    ('Plus', 0x03010): 'VCBLoop', #leak
+    ('Plus', 0x03138): 'MtVolOK', #leak
+    ('Plus', 0x03190): 'MtCheck', #leak
+    ('Plus', 0x0332e): 'AfterUpdateFreeInMtCheck', #leak
+    ('Plus', 0x0336e): 'DsposVBlks', #leak
+    ('Plus', 0x033a2): 'DsposVCB', #leak
+    ('Plus', 0x0340a): 'AfterBTOpenInAccessBT', #leak
+    ('Plus', 0x03414): 'FindDrive', #leak
+    ('Plus', 0x0343a): 'Offline',
+    ('Plus', 0x034a0): 'FlushBuffersAtflVCaches', #leak
+    ('Plus', 0x034d6): 'FlushBuffersAtflBufExit', #leak
+    ('Plus', 0x034e0): 'Eject',
+    ('Plus', 0x0355e): 'OfflineEjectCallsFlushBuffers', #leak
+    ('Plus', 0x03564): 'OfflineEjectCallsMFSFlush', #leak
+    ('Plus', 0x03598): 'EjectIt', #leak
+    ('Plus', 0x035b4): 'UnmountVol',
+    ('Plus', 0x035be): 'FlushVFiles', #leak
+    ('Plus', 0x035fc): 'FlushVol',
+    ('Plus', 0x03616): 'FlUnMntAfterMFSCheck', #leak
+    ('Plus', 0x03622): 'FlUnMntCallsFlushBuffers', #leak
+    ('Plus', 0x03638): 'CkExtFS', #leak
+    ('Plus', 0x03642): 'DTRMV3', #leak
+    ('Plus', 0x03650): 'DtrmV1', #leak
+    ('Plus', 0x03788): 'DtrmV2', #leak
+    ('Plus', 0x03824): 'GetVolInfo',
+    ('Plus', 0x03a76): 'CVFLGS', #leak
+    ('Plus', 0x03ada): 'SetVol',
+    ('Plus', 0x03bb4): 'FillWDCB', #leak
+    ('Plus', 0x03f00): 'MFSFlush', #leak
+    ('Plus', 0x03ff2): 'GT1STFCB', #leak
+    ('Plus', 0x03ffa): 'GTNXTFCB', #leak
+    ('Plus', 0x04002): 'Gt1stMatch', #leak
+    ('Plus', 0x04010): 'GtNxtMatch', #leak
+    ('Plus', 0x04032): 'FOpen1', #leak
+    ('Plus', 0x0416c): 'PermssnChk', #leak
+    ('Plus', 0x041e2): 'Create',
+    ('Plus', 0x04258): 'PUSHCNAME', #leak
+    ('Plus', 0x04288): 'POPCNAME', #leak
+    ('Plus', 0x04294): 'MFSOpen', #leak
+    ('Plus', 0x043a0): 'Gt1stWDCB', #leak
+    ('Plus', 0x043a8): 'GtNxtWDCB', #leak
+    ('Plus', 0x0440c): 'Delete',
+    ('Plus', 0x04498): 'AfterVolCheckInRename', #leak
+    ('Plus', 0x04554): 'AfterCMRenameCNInRename', #leak
+    ('Plus', 0x045ae): 'AfterCMGetCNinRename', #leak
+    ('Plus', 0x045f8): 'RNmVol1', #leak
+    ('Plus', 0x0460e): 'RNmVol@70', #leak
+    ('Plus', 0x046de): 'ChgMFlLock', #leak
+    ('Plus', 0x04852): 'SetFilType',
+    ('Plus', 0x0488a): 'SetFilLock',
+    ('Plus', 0x04894): 'RstFilLock',
+    ('Plus', 0x048d6): 'SetFileInfo',
+    ('Plus', 0x0497a): 'CkFilMod', #leak
+    ('Plus', 0x04990): 'FNDFILNAME', #leak
+    ('Plus', 0x04a4e): 'AfterCMGetCNInFndFilName', #leak
+    ('Plus', 0x04aba): 'EXTOFFLINCK', #leak
+    ('Plus', 0x04ae2): 'GetFileInfo',
+    ('Plus', 0x04ec6): 'TFSVCBTST', #leak
+    ('Plus', 0x04f10): 'GetFPos',
+    ('Plus', 0x04f14): 'SetFPos',
+    ('Plus', 0x05144): 'FlushFile',
+    ('Plus', 0x05168): 'FClose', #leak
+    ('Plus', 0x051e8): 'AfterTruncateFile', #leak
+    ('Plus', 0x05340): 'GetEOF',
+    ('Plus', 0x05352): 'RfnCall', #leak
+    ('Plus', 0x0548e): 'Allocate',
+    ('Plus', 0x054c0): 'SetEOF',
+    ('Plus', 0x059e0): 'AfterReadBMInUpdateFree', #leak
+    ('Plus', 0x05a1e): 'AfterGetBMBlkInReadBM', #leak
+    ('Plus', 0x05a9e): 'AfterGetBlockInGetBMBlk', #leak
+    ('Plus', 0x05ed0): 'XFFLUSH', #leak
+    ('Plus', 0x0604e): 'AfterCMSetupInCMCreateCN', #leak
+    ('Plus', 0x06194): 'AfterCMSetupInCMDeleteCN', #leak
+    ('Plus', 0x06238): 'CMGETCN', #leak
+    ('Plus', 0x06242): 'AfterCMSetupInCMGetCN', #leak
+    ('Plus', 0x062c6): 'AfterCMSetupInCMMoveCN', #leak
+    ('Plus', 0x06462): 'CMRenameCN', #leak
+    ('Plus', 0x0646c): 'AfterCMSetupInCMRenameCN', #leak
+    ('Plus', 0x0656c): 'CMUpdateCN', #leak
+    ('Plus', 0x06576): 'AfterCMSetupInCMUpdateCN', #leak
+    ('Plus', 0x065a0): 'CMSETUP', #leak
+    ('Plus', 0x065ae): 'UpdVCnts', #leak
+    ('Plus', 0x065be): 'UpdRtCnts', #leak
+    ('Plus', 0x065d8): 'BUILDKEY', #leak
+    ('Plus', 0x06606): 'CMFLUSH', #leak
+    ('Plus', 0x06678): 'LocCNode', #leak
+    ('Plus', 0x06698): 'LOCCREC', #leak
+    ('Plus', 0x066c2): 'UPDCNAME', #leak
+    ('Plus', 0x0671c): 'BTDELETE', #leak
+    ('Plus', 0x068c2): 'BTFlush', #leak
+    ('Plus', 0x06928): 'BTGETRECORD', #leak
+    ('Plus', 0x069ea): 'BTINSERT', #leak
+    ('Plus', 0x06d4a): 'BTSEARCH', #leak
+    ('Plus', 0x06dd6): 'BTUPDATE', #leak
+    ('Plus', 0x06e02): 'BTCleanUp', #leak
+    ('Plus', 0x06e10): 'BTSetUp', #leak
+    ('Plus', 0x0706c): 'RotateLt', #leak
+    ('Plus', 0x0715c): 'SplitLt', #leak
+    ('Plus', 0x071e4): 'TreeSearch', #leak
+    ('Plus', 0x072a0): 'BuildIRec', #leak
+    ('Plus', 0x072c2): 'CHKNODE', #leak
+    ('Plus', 0x0734e): 'ClrNode', #leak
+    ('Plus', 0x0736a): 'DeleteRec', #leak
+    ('Plus', 0x073ba): 'GetLtSib', #leak
+    ('Plus', 0x073c4): 'GetRtSib', #leak
+    ('Plus', 0x073f6): 'GetMaxKey', #leak
+    ('Plus', 0x0746e): 'GetRecA', #leak
+    ('Plus', 0x0748a): 'InitNode', #leak
+    ('Plus', 0x074bc): 'InsertRec', #leak
+    ('Plus', 0x0752e): 'LocBTCB', #leak
+    ('Plus', 0x07538): 'LOCREC', #leak
+    ('Plus', 0x0756a): 'LocTPR', #leak
+    ('Plus', 0x07646): 'UpdDRec', #leak
+    ('Plus', 0x07668): 'UpdIKey', #leak
+    ('Plus', 0x076c6): 'FLUSHCACHE', #leak
+    ('Plus', 0x07b2a): 'CACHERDIP', #leak
+    ('Plus', 0x082c6): 'InitCursor',
+    ('Plus', 0x082d6): 'SetCursor',
+    ('Plus', 0x082f2): 'HideCursor',
+    ('Plus', 0x082f8): 'ShowCursor',
+    ('Plus', 0x082fe): 'ShieldCursor',
+    ('Plus', 0x0832e): 'ObscureCursor',
+    ('Plus', 0x08334): 'BitNot',
+    ('Plus', 0x0833c): 'BitAnd',
+    ('Plus', 0x08344): 'BitXor',
+    ('Plus', 0x0834e): 'BitOr',
+    ('Plus', 0x08356): 'BitShift',
+    ('Plus', 0x0836c): 'BitTst',
+    ('Plus', 0x0837a): 'BitSet',
+    ('Plus', 0x08384): 'BitClr',
+    ('Plus', 0x0839c): 'Random',
+    ('Plus', 0x083ee): 'ForeColor',
+    ('Plus', 0x083f2): 'BackColor',
+    ('Plus', 0x08400): 'ColorBit',
+    ('Plus', 0x0840e): 'GetMaskTable',
+    ('Plus', 0x08438): 'MaskTab', #leak
+    ('Plus', 0x08498): 'PatExpand', #leak
+    ('Plus', 0x08560): 'ColorMap', #leak
+    ('Plus', 0x085d4): 'GetPixel',
+    ('Plus', 0x08608): 'StuffHex',
+    ('Plus', 0x08642): 'XorSlab', #leak
+    ('Plus', 0x08686): 'DrawSlab', #leak
+    ('Plus', 0x08716): 'SlabMode', #leak
+    ('Plus', 0x08770): 'FastSlabMode', #leak
+    ('Plus', 0x08798): 'PlusSetHSize', #leak
+    ('Plus', 0x087a6): 'InitGraf',
+    ('Plus', 0x0886c): 'OpenPort',
+    ('Plus', 0x08884): 'InitPort',
+    ('Plus', 0x08904): 'ClosePort',
+    ('Plus', 0x0891c): 'SetStdProcs',
+    ('Plus', 0x08956): 'LocalToGlobal',
+    ('Plus', 0x0895e): 'GlobalToLocal',
+    ('Plus', 0x0898a): 'AddPt',
+    ('Plus', 0x08992): 'SubPt',
+    ('Plus', 0x089b0): 'SetPort',
+    ('Plus', 0x089b8): 'GetPort',
+    ('Plus', 0x089c2): 'GrafDevice',
+    ('Plus', 0x089c8): 'SetPBits',
+    ('Plus', 0x089e0): 'BackPat',
+    ('Plus', 0x089ee): 'PortSize',
+    ('Plus', 0x08a0e): 'MovePortTo',
+    ('Plus', 0x08a3a): 'SetOrigin',
+    ('Plus', 0x08a6e): 'ClipRect',
+    ('Plus', 0x08a80): 'SetClip',
+    ('Plus', 0x08aa0): 'SetPt',
+    ('Plus', 0x08aaa): 'EqualPt',
+    ('Plus', 0x08ab6): 'StdText',
+    ('Plus', 0x08c62): 'TextFace',
+    ('Plus', 0x08c6e): 'DrawChar',
+    ('Plus', 0x08c7c): 'CharWidth',
+    ('Plus', 0x08c94): 'TextFont',
+    ('Plus', 0x08c98): 'TextMode',
+    ('Plus', 0x08c9c): 'TextSize',
+    ('Plus', 0x08ca2): 'SpaceExtra',
+    ('Plus', 0x08cae): 'DrawString',
+    ('Plus', 0x08cc0): 'DrawText',
+    ('Plus', 0x08cd8): 'StringWidth',
+    ('Plus', 0x08ce8): 'TextWidth',
+    ('Plus', 0x08d50): 'StdTxMeas',
+    ('Plus', 0x08df6): 'MeasureText',
+    ('Plus', 0x08e84): 'GetFontInfo',
+    ('Plus', 0x09668): 'StdLine',
+    ('Plus', 0x0967c): 'StdLineRtn', #leak
+    ('Plus', 0x096e8): 'StdLineNotPic', #leak
+    ('Plus', 0x096fa): 'LineTo',
+    ('Plus', 0x09710): 'Line',
+    ('Plus', 0x09728): 'MoveTo',
+    ('Plus', 0x09734): 'Move',
+    ('Plus', 0x097c0): 'HidePen',
+    ('Plus', 0x097c4): 'ShowPen',
+    ('Plus', 0x097d0): 'GetPenState',
+    ('Plus', 0x097d4): 'SetPenState',
+    ('Plus', 0x097f6): 'GetPen',
+    ('Plus', 0x09806): 'PenSize',
+    ('Plus', 0x09814): 'PenMode',
+    ('Plus', 0x0981a): 'PenPat',
+    ('Plus', 0x0982e): 'PenNormal',
+    ('Plus', 0x09e7e): 'StdRect',
+    ('Plus', 0x09e96): 'StdRectRtn', #leak
+    ('Plus', 0x09ea4): 'StdRectNotPic', #leak
+    ('Plus', 0x09ee0): 'PushVerb', #leak
+    ('Plus', 0x09f12): 'FillRect',
+    ('Plus', 0x09f28): 'FrameRect',
+    ('Plus', 0x09f2c): 'PaintRect',
+    ('Plus', 0x09f30): 'EraseRect',
+    ('Plus', 0x09f34): 'InverRect',
+    ('Plus', 0x09f58): 'DrawRect', #leak
+    ('Plus', 0x0a082): 'SetRect',
+    ('Plus', 0x0a090): 'EqualRect',
+    ('Plus', 0x0a0aa): 'EmptyRect',
+    ('Plus', 0x0a0c4): 'OffsetRect',
+    ('Plus', 0x0a0d6): 'InsetRect',
+    ('Plus', 0x0a110): 'RSect', #leak
+    ('Plus', 0x0a184): 'UnionRect',
+    ('Plus', 0x0a1c2): 'Pt2Rect',
+    ('Plus', 0x0a1f8): 'PtInRect',
+    ('Plus', 0x0ac70): 'StdRRect',
+    ('Plus', 0x0aca8): 'StdRRectRtn', #leak
+    ('Plus', 0x0acb6): 'StdRRectNotPic', #leak
+    ('Plus', 0x0ad02): 'FrameRoundRect',
+    ('Plus', 0x0ad06): 'PaintRoundRect',
+    ('Plus', 0x0ad0a): 'EraseRoundRect',
+    ('Plus', 0x0ad0e): 'InverRoundRect',
+    ('Plus', 0x0ad12): 'FillRoundRect',
+    ('Plus', 0x0ad4c): 'StdOval',
+    ('Plus', 0x0ad64): 'StdOvalRtn', #leak
+    ('Plus', 0x0ad72): 'StdOvalNotPic', #leak
+    ('Plus', 0x0add4): 'FrameOval',
+    ('Plus', 0x0add8): 'PaintOval',
+    ('Plus', 0x0addc): 'EraseOval',
+    ('Plus', 0x0ade0): 'InvertOval',
+    ('Plus', 0x0ade4): 'FillOval',
+    ('Plus', 0x0af58): 'StdArc',
+    ('Plus', 0x0af70): 'StdArcRtn', #leak
+    ('Plus', 0x0af8e): 'StdArcNotPic', #leak
+    ('Plus', 0x0afd6): 'FrameArc',
+    ('Plus', 0x0afda): 'PaintArc',
+    ('Plus', 0x0afde): 'EraseArc',
+    ('Plus', 0x0afe2): 'InvertArc',
+    ('Plus', 0x0afe6): 'FillArc',
+    ('Plus', 0x0b17e): 'FromDrawArc', #leak
+    ('Plus', 0x0b654): 'SeekMask', #leak
+    ('Plus', 0x0b790): 'AngleFromSlope',
+    ('Plus', 0x0b7ce): 'SlopeFromAngle',
+    ('Plus', 0x0b8f2): 'PtToAngle',
+    ('Plus', 0x0b982): 'StdPoly',
+    ('Plus', 0x0b9f8): 'FramePoly',
+    ('Plus', 0x0b9fc): 'PaintPoly',
+    ('Plus', 0x0ba00): 'ErasePoly',
+    ('Plus', 0x0ba04): 'InvertPoly',
+    ('Plus', 0x0ba08): 'FillPoly',
+    ('Plus', 0x0ba3e): 'OpenPoly',
+    ('Plus', 0x0ba72): 'ClosePoly',
+    ('Plus', 0x0bae0): 'KillPoly',
+    ('Plus', 0x0bae8): 'OffsetPoly',
+    ('Plus', 0x0bb04): 'MapPoly',
+    ('Plus', 0x0bb60): 'FrPoly', #leak
+    ('Plus', 0x0bbf6): 'StdRgn',
+    ('Plus', 0x0bc0e): 'StdRgnRtn', #leak
+    ('Plus', 0x0bc20): 'StdRgnNotPic', #leak
+    ('Plus', 0x0bc46): 'NotRgn', #leak
+    ('Plus', 0x0bc4c): 'NotFr', #leak
+    ('Plus', 0x0bc5c): 'FrameRgn',
+    ('Plus', 0x0bc60): 'PaintRgn',
+    ('Plus', 0x0bc64): 'EraseRgn',
+    ('Plus', 0x0bc68): 'InverRgn',
+    ('Plus', 0x0bc6c): 'FillRgn',
+    ('Plus', 0x0bd4e): 'NewRgn',
+    ('Plus', 0x0bd72): 'DisposRgn',
+    ('Plus', 0x0bd7a): 'OpenRgn',
+    ('Plus', 0x0bda8): 'CloseRgn',
+    ('Plus', 0x0bdfe): 'CopyRgn',
+    ('Plus', 0x0be4c): 'SetEmptyRgn',
+    ('Plus', 0x0be58): 'SetRecRgn',
+    ('Plus', 0x0beb4): 'RectRgn',
+    ('Plus', 0x0bec2): 'OfsetRgn',
+    ('Plus', 0x0bef4): 'InsetRgn',
+    ('Plus', 0x0bf90): 'EmptyRgn',
+    ('Plus', 0x0bfa0): 'EqualRgn',
+    ('Plus', 0x0bfde): 'SectRgn',
+    ('Plus', 0x0bfe2): 'UnionRgn',
+    ('Plus', 0x0bfe6): 'DiffRgn',
+    ('Plus', 0x0bfea): 'XorRgn',
+    ('Plus', 0x0c0d4): 'PtInRgn',
+    ('Plus', 0x0c134): 'RectInRgn',
+    ('Plus', 0x0c1ba): 'TrimRect', #leak
+    ('Plus', 0x0c218): 'MapRgn',
+    ('Plus', 0x0c2c6): 'InitRgn', #leak
+    ('Plus', 0x0c424): 'AfterStackSpaceInRgnOp', #leak
+    ('Plus', 0x0c47e): 'AfterBufferSizeCalcInRgnOp', #leak
+    ('Plus', 0x0c8a0): 'PlusNotRect', #leak
+    ('Plus', 0x0c8ba): 'PlusPutRgnDone', #leak
+    ('Plus', 0x0c8cc): 'StdBits',
+    ('Plus', 0x0ca06): 'StdBitsStart2', #leak
+    ('Plus', 0x0ca0a): 'StdBitsOK', #leak
+    ('Plus', 0x0ca0c): 'StdBitsNotPic', #leak
+    ('Plus', 0x0ca4a): 'CopyBits',
+    ('Plus', 0x0caf0): 'CopyMask',
+    ('Plus', 0x0cd30): 'SeedFill',
+    ('Plus', 0x0cd38): 'CalcMask',
+    ('Plus', 0x0cdbc): 'SeedFill', #leak
+    ('Plus', 0x0ce7c): 'GoHome', #leak
+    ('Plus', 0x0ce8e): 'ScrollRect',
+    ('Plus', 0x0cf8c): 'PackBits',
+    ('Plus', 0x0d01c): 'UnpackBits',
+    ('Plus', 0x0d09a): 'XRGNBLT', #leak
+    ('Plus', 0x0d0d2): 'BackToROM', #leak
+    ('Plus', 0x0d52e): 'SetupStretch', #leak
+    ('Plus', 0x0d8d0): 'StdComment',
+    ('Plus', 0x0d930): 'StdGetPic',
+    ('Plus', 0x0d956): 'StdPutPic',
+    ('Plus', 0x0d9d6): 'PicComment',
+    ('Plus', 0x0d9ec): 'OpenPicture',
+    ('Plus', 0x0da20): 'OpenPictptchEntry', #leak
+    ('Plus', 0x0da9e): 'OpenPictDone', #leak
+    ('Plus', 0x0daa8): 'ClosePicture',
+    ('Plus', 0x0dab6): 'ClosePictptchEntry', #leak
+    ('Plus', 0x0dabc): 'ClosePictptchEntryNew', #leak
+    ('Plus', 0x0dade): 'ClosePictGoHome', #leak
+    ('Plus', 0x0dae4): 'KillPicture',
+    ('Plus', 0x0daec): 'DrawPicture',
+    ('Plus', 0x0dbe8): 'DPQuit', #leak
+    ('Plus', 0x0dc0c): 'DPGoHome', #leak
+    ('Plus', 0x0dcd8): 'XClip', #leak
+    ('Plus', 0x0dce4): 'XClip2', #leak
+    ('Plus', 0x0dd5e): 'XPnSize', #leak
+    ('Plus', 0x0dda2): 'GetVers', #leak
+    ('Plus', 0x0ddc6): 'OvalEnd', #leak
+    ('Plus', 0x0dde6): 'XOrigin', #leak
+    ('Plus', 0x0de68): 'LNOK', #leak
+    ('Plus', 0x0dede): 'TextOP', #leak
+    ('Plus', 0x0df22): 'RectOP', #leak
+    ('Plus', 0x0df3c): 'RRectOP', #leak
+    ('Plus', 0x0df5e): 'OvalOP', #leak
+    ('Plus', 0x0df82): 'ArcOP', #leak
+    ('Plus', 0x0df9c): 'PolyOP', #leak
+    ('Plus', 0x0dfce): 'RgnOP', #leak
+    ('Plus', 0x0e0c8): 'Bits', #leak
+    ('Plus', 0x0e0dc): 'CommentOP', #leak
+    ('Plus', 0x0e100): 'LongCom', #leak
+    ('Plus', 0x0e1fa): 'GetRect', #leak
+    ('Plus', 0x0e25e): 'Kill1', #leak
+    ('Plus', 0x0e266): 'Abort', #leak
+    ('Plus', 0x0e26e): 'Done', #leak
+    ('Plus', 0x0e28e): 'PutPicData', #leak
+    ('Plus', 0x0e2a4): 'DPutPicByte', #leak
+    ('Plus', 0x0e2aa): 'PutPicByte', #leak
+    ('Plus', 0x0e2bc): 'PutPicWord', #leak
+    ('Plus', 0x0e2ce): 'PutPicLong', #leak
+    ('Plus', 0x0e32c): 'PutPicRgn', #leak
+    ('Plus', 0x0e512): 'ScalePt',
+    ('Plus', 0x0e56a): 'MapPt',
+    ('Plus', 0x0e5cc): 'MapRect',
+    ('Plus', 0x0e5e4): 'InitFonts',
+    ('Plus', 0x0f166): 'GetFNum',
+    ('Plus', 0x0f1d8): 'SetFontLock',
+    ('Plus', 0x0f20e): 'RealFont',
+    ('Plus', 0x0f260): 'SetFScaleDisabl',
+    ('Plus', 0x0f274): 'FontMetrics',
+    ('Plus', 0x0f4e0): 'UnloadSeg',
+    ('Plus', 0x0f522): 'FlushApplVBLs', #leak
+    ('Plus', 0x0f556): 'Chain',
+    ('Plus', 0x0f55c): 'Launch',
+    ('Plus', 0x0f6d8): 'ExitToShell',
+    ('Plus', 0x0f710): 'GetAppParms',
+    ('Plus', 0x0f790): 'Trap0_37',
+    ('Plus', 0x0f7aa): 'WriteParam',
+    ('Plus', 0x0f7ca): 'ReadDateTime',
+    ('Plus', 0x0f7d4): 'SetDateTime',
+    ('Plus', 0x0f7dc): 'Delay',
+    ('Plus', 0x0f7ee): 'CmpString',
+    ('Plus', 0x0fcc2): 'InitUtil',
+    ('Plus', 0x0fe18): 'ReadXPRam',
+    ('Plus', 0x0fe22): 'WriteXPRam',
+    ('Plus', 0x0fe76): 'SetAppBase',
+    ('Plus', 0x0ffbe): 'CompactMem', #leak
+    ('Plus', 0x0ffee): 'PurgeMem',
+    ('Plus', 0x1000a): 'PurgeSpace',
+    ('Plus', 0x10014): 'FreeMem',
+    ('Plus', 0x10070): 'SetGrowZone',
+    ('Plus', 0x1007a): 'SetApplLimit',
+    ('Plus', 0x1009e): 'StackSpace',
+    ('Plus', 0x100ae): 'MaxApplZone',
+    ('Plus', 0x100d6): 'Trap1_1E',
+    ('Plus', 0x100f2): 'DisposPtr',
+    ('Plus', 0x10108): 'GetPtrSize',
+    ('Plus', 0x1011c): 'PtrZone',
+    ('Plus', 0x1013a): 'NewEmptyHandle',
+    ('Plus', 0x1014e): 'Trap1_22',
+    ('Plus', 0x10170): 'Trap1_23',
+    ('Plus', 0x1019c): 'Trap1_24',
+    ('Plus', 0x101dc): 'EmptyHandle',
+    ('Plus', 0x10230): 'Trap1_29',
+    ('Plus', 0x10244): 'HPurge',
+    ('Plus', 0x1024e): 'HNoPurge',
+    ('Plus', 0x10274): 'MoreMasters',
+    ('Plus', 0x1033a): 'MoveRest', #leak
+    ('Plus', 0x10354): 'AfterBsrDoCompactInGoCont', #leak
+    ('Plus', 0x103b0): 'MNSFinish', #leak
+    ('Plus', 0x103dc): 'FindRgnTop', #leak
+    ('Plus', 0x10416): 'FillStkBuf', #leak
+    ('Plus', 0x10454): 'DoCompact', #leak
+    ('Plus', 0x1045e): 'DerefHandle',
+    ('Plus', 0x104c6): 'MMHPrologue',
+    ('Plus', 0x10570): 'PurgeHeap',
+    ('Plus', 0x105fc): 'FromPurgeHeap', #leak
+    ('Plus', 0x10656): 'FromCGZ', #leak
+    ('Plus', 0x1068e): 'FromBCS', #leak
+    ('Plus', 0x106a2): 'BFindS',
+    ('Plus', 0x107ac): 'FromHBlock', #leak
+    ('Plus', 0x107b2): 'CompactHp',
+    ('Plus', 0x10808): 'FromCompact', #leak
+    ('Plus', 0x10b18): 'FromMakePtr', #leak
+    ('Plus', 0x10b34): 'BackMPS', #leak
+    ('Plus', 0x10c0c): 'FromRelocRel', #leak
+    ('Plus', 0x10cc0): 'BlockMove',
+    ('Plus', 0x10f30): 'GetKeys',
+    ('Plus', 0x10f4c): 'Button',
+    ('Plus', 0x10f5e): 'TickCount',
+    ('Plus', 0x10fa0): 'GetMouse',
+    ('Plus', 0x10fb6): 'StillDown',
+    ('Plus', 0x10fde): 'WaitMouseUp',
+    ('Plus', 0x10ffc): 'EventAvail',
+    ('Plus', 0x11000): 'GetNextEvent',
+    ('Plus', 0x1108a): 'AfterOSEventAvailInGetNextEvent', #leak
+    ('Plus', 0x1108e): 'AfterGetOSEventInGetNextEvent', #leak
+    ('Plus', 0x110b0): 'FromGNECommon', #leak
+    ('Plus', 0x110f8): 'AfterGetResourceInTryFKey', #leak
+    ('Plus', 0x1112c): 'DoneGNE', #leak
+    ('Plus', 0x11136): 'AfterGetMouseInGetNextEvent', #leak
+    ('Plus', 0x111ac): 'NewString',
+    ('Plus', 0x111c4): 'SetString',
+    ('Plus', 0x111e8): 'InsertWindow', #leak
+    ('Plus', 0x11220): 'DeleteWindow', #leak
+    ('Plus', 0x11238): 'CalcVis',
+    ('Plus', 0x11290): 'CalcVBehind',
+    ('Plus', 0x112d4): 'ClipAbove',
+    ('Plus', 0x112f8): 'PaintOne',
+    ('Plus', 0x11328): 'AfterFirstSectRgnInGoPaintOne', #leak
+    ('Plus', 0x1132e): 'AfterClipAbove', #leak
+    ('Plus', 0x11346): 'AfterSectRgnInGoPaintOne', #leak
+    ('Plus', 0x1134c): 'EraseInROM', #leak
+    ('Plus', 0x11350): 'SkipEraseInROM', #leak
+    ('Plus', 0x11376): 'TestClip', #leak
+    ('Plus', 0x11396): 'NoDeskHook', #leak
+    ('Plus', 0x113a2): 'PaintBehind',
+    ('Plus', 0x1140e): 'SaveOld',
+    ('Plus', 0x1143c): 'DrawNew',
+    ('Plus', 0x11484): 'AfterPaintBehindInDrawNew', #leak
+    ('Plus', 0x1149c): 'ShowHide',
+    ('Plus', 0x114b8): 'AfterSaveOldInShowHide', #leak
+    ('Plus', 0x114c0): 'AfterCalcRgnCallInShowHide', #leak
+    ('Plus', 0x114de): 'GetWMgrPort',
+    ('Plus', 0x114e8): 'CheckUpdate',
+    ('Plus', 0x1157c): 'InitWindows',
+    ('Plus', 0x11642): 'NewWindow',
+    ('Plus', 0x11712): 'PaintNewOne', #leak
+    ('Plus', 0x11776): 'CloseWindow',
+    ('Plus', 0x1178c): 'AfterKillControlsInCloseWindow', #leak
+    ('Plus', 0x117aa): 'AfterDisposeRgnInCloseWindow', #leak
+    ('Plus', 0x117e6): 'MakeDeactive', #leak
+    ('Plus', 0x11804): 'DisposWindow',
+    ('Plus', 0x11812): 'ShowWindow',
+    ('Plus', 0x11832): 'AfterShowHideInShowWindow', #leak
+    ('Plus', 0x1183a): 'HideWindow',
+    ('Plus', 0x11864): 'GetWRefCon',
+    ('Plus', 0x11872): 'SetWRefCon',
+    ('Plus', 0x11882): 'SetWindowPic',
+    ('Plus', 0x11888): 'GetWindowPic',
+    ('Plus', 0x1188e): 'GetWTitle',
+    ('Plus', 0x118a6): 'SetWTitle',
+    ('Plus', 0x118fa): 'AfterUnionRgnInSetWTitle', #leak
+    ('Plus', 0x11924): 'DeltaPoint',
+    ('Plus', 0x11974): 'MoveWindow',
+    ('Plus', 0x119ae): 'AfterOffsetRgnInMoveWindow', #leak
+    ('Plus', 0x119ba): 'NoBTF0', #leak
+    ('Plus', 0x119e8): 'AfterPaintBehindInMoveWindow', #leak
+    ('Plus', 0x119fe): 'AfterPaintOneInMoveWindow', #leak
+    ('Plus', 0x11a20): 'CallMBarProc', #leak
+    ('Plus', 0x11a20): 'CallWindow', #leak
+    ('Plus', 0x11a44): 'AfterLoadResourceInCallWindow', #leak
+    ('Plus', 0x11a5a): 'CallDWindow', #leak
+    ('Plus', 0x11a68): 'CallWCalc', #leak
+    ('Plus', 0x11a84): 'HiliteWindow',
+    ('Plus', 0x11abe): 'ClipGAbove', #leak
+    ('Plus', 0x11ac4): 'SizeWindow',
+    ('Plus', 0x11b18): 'ZoomWindow',
+    ('Plus', 0x11b7e): 'TrackGoAway',
+    ('Plus', 0x11b86): 'TrackBox',
+    ('Plus', 0x11bf4): 'SelectWindow',
+    ('Plus', 0x11bfc): 'FromSelectWindow', #leak
+    ('Plus', 0x11c14): 'PostDoActivate', #leak
+    ('Plus', 0x11c18): 'PreSkipUnHilite', #leak
+    ('Plus', 0x11c24): 'BringToFront',
+    ('Plus', 0x11c28): 'BTF1', #leak
+    ('Plus', 0x11ca2): 'AfterPaintOneInBringToFront', #leak
+    ('Plus', 0x11ca6): 'FromBTF1', #leak
+    ('Plus', 0x11cc0): 'SendBehind',
+    ('Plus', 0x11cd0): 'AfterFrontWindowInSendBehind', #leak
+    ('Plus', 0x11ce8): 'AfterSelectWindowInSendBehind', #leak
+    ('Plus', 0x11d06): 'AfterCalcVBehindInSendBehind', #leak
+    ('Plus', 0x11d0a): 'AfterPaintBehindInSendBehind', #leak
+    ('Plus', 0x11d16): 'BeginUpdate',
+    ('Plus', 0x11d50): 'EndUpdate',
+    ('Plus', 0x11d72): 'FrontWindow',
+    ('Plus', 0x11d9c): 'DragWindow',
+    ('Plus', 0x11e0c): 'FromDragWindow', #leak
+    ('Plus', 0x11e8c): 'AfterPenModeInDragTheRgn', #leak
+    ('Plus', 0x11f8e): 'InvalRgn',
+    ('Plus', 0x11f90): 'IvalCommon', #leak
+    ('Plus', 0x11fce): 'InvalRect',
+    ('Plus', 0x11fec): 'ValidRgn',
+    ('Plus', 0x11ff0): 'ValidRect',
+    ('Plus', 0x11ff4): 'GrowWindow',
+    ('Plus', 0x120f6): 'FindWindow',
+    ('Plus', 0x1217a): 'DrawGrowIcon',
+    ('Plus', 0x12198): 'InitMenus',
+    ('Plus', 0x121fe): 'ClearMenuBar',
+    ('Plus', 0x1220e): 'InsertMenu',
+    ('Plus', 0x122ae): 'DeleteMenu',
+    ('Plus', 0x12350): 'DrawMenuBar',
+    ('Plus', 0x123da): 'HiliteMenu',
+    ('Plus', 0x12404): 'EnableItem',
+    ('Plus', 0x12420): 'DisableItem',
+    ('Plus', 0x1246e): 'MenuSelect',
+    ('Plus', 0x1279e): 'GetMenuBar',
+    ('Plus', 0x127b2): 'SetMenuBar',
+    ('Plus', 0x127c2): 'DisposMenu',
+    ('Plus', 0x127d8): 'FlashMenuBar',
+    ('Plus', 0x128ac): 'GetItmIcon',
+    ('Plus', 0x128b0): 'SetItmIcon',
+    ('Plus', 0x128b4): 'GetItmStyle',
+    ('Plus', 0x128b8): 'SetItmStyle',
+    ('Plus', 0x128bc): 'GetItmMark',
+    ('Plus', 0x128c0): 'SetItmMark',
+    ('Plus', 0x128c4): 'CheckItem',
+    ('Plus', 0x128e4): 'MenuKey',
+    ('Plus', 0x12960): 'GetItem',
+    ('Plus', 0x12994): 'CalcMenuSize',
+    ('Plus', 0x129ca): 'NewMenu',
+    ('Plus', 0x12a1a): 'AppendMenu',
+    ('Plus', 0x12a22): 'InsMenuItem',
+    ('Plus', 0x12b7e): 'GetMHandle',
+    ('Plus', 0x12b9e): 'DelMenuItem',
+    ('Plus', 0x12bd0): 'SetItem',
+    ('Plus', 0x12c16): 'SetMFlash',
+    ('Plus', 0x12c20): 'AddResMenu',
+    ('Plus', 0x12c28): 'InsertResMenu',
+    ('Plus', 0x12cfc): 'CountMItems',
+    ('Plus', 0x12d18): 'PlotIcon',
+    ('Plus', 0x12d54): 'NewControl',
+    ('Plus', 0x12e1e): 'AfterSectRectInCallControl', #leak
+    ('Plus', 0x12e58): 'AfterLoadResourceInCallControl', #leak
+    ('Plus', 0x12e96): 'DisposControl',
+    ('Plus', 0x12e9c): 'EraseControlInDisposeControl', #leak
+    ('Plus', 0x12e9e): 'AfterEraseControlInDisposeControl', #leak
+    ('Plus', 0x12eba): 'KillControls',
+    ('Plus', 0x12ecc): 'Trap1_16D',
+    ('Plus', 0x12ed6): 'ShowControl',
+    ('Plus', 0x12ef4): 'HideControl',
+    ('Plus', 0x12f0e): 'MoveControl',
+    ('Plus', 0x12f4c): 'GetCRefCon',
+    ('Plus', 0x12f5a): 'SetCRefCon',
+    ('Plus', 0x12f6a): 'GetCtlAction',
+    ('Plus', 0x12f6e): 'SetCtlAction',
+    ('Plus', 0x12f72): 'SizeControl',
+    ('Plus', 0x12f9a): 'HiliteControl',
+    ('Plus', 0x12fc6): 'GetCTitle',
+    ('Plus', 0x12fde): 'SetCTitle',
+    ('Plus', 0x13002): 'AfterSetHandleSizeInSetCTitle', #leak
+    ('Plus', 0x13010): 'GoTstVisInSetCTitle', #leak
+    ('Plus', 0x13020): 'GetCtlValue',
+    ('Plus', 0x1302e): 'GetMinCtl',
+    ('Plus', 0x13032): 'GetMaxCtl',
+    ('Plus', 0x13036): 'SetCtlValue',
+    ('Plus', 0x13078): 'SetMinCtl',
+    ('Plus', 0x1307c): 'SetMaxCtl',
+    ('Plus', 0x13080): 'TestControl',
+    ('Plus', 0x130ae): 'DragControl',
+    ('Plus', 0x13160): 'TrackControl',
+    ('Plus', 0x1324e): 'UpdtControls',
+    ('Plus', 0x1325e): 'DrawControls',
+    ('Plus', 0x132e6): 'FindControl',
+    ('Plus', 0x13376): 'InitResources',
+    ('Plus', 0x135b8): 'AfterMaxBlockInGetMaxLoad', #leak
+    ('Plus', 0x135d2): 'GetMaxLoadAfterPreLock', #leak
+    ('Plus', 0x135d6): 'GetMaxLoad@4', #leak
+    ('Plus', 0x135fa): 'SizeFits', #leak
+    ('Plus', 0x136b4): 'AfterBsrReadDataInNewMap', #leak
+    ('Plus', 0x13708): 'RsrcZoneInit',
+    ('Plus', 0x1379c): 'AfterOpenRFInORFCommon', #leak
+    ('Plus', 0x137a6): 'CreateResFile',
+    ('Plus', 0x137aa): 'AfterStdZEntryInCreateResFile', #leak
+    ('Plus', 0x137bc): 'AfterCreateInCreateResFile', #leak
+    ('Plus', 0x1381a): 'OpenRFPerm',
+    ('Plus', 0x1382e): 'UseResFile',
+    ('Plus', 0x13838): 'GetResFileAttrs',
+    ('Plus', 0x13844): 'SetResFileAttrs',
+    ('Plus', 0x13910): 'UpdateResFIle',
+    ('Plus', 0x139c2): 'AfterNewHandleInUpdateResFile', #leak
+    ('Plus', 0x13a0c): 'AfterDisposeHandleInUpdateResFile', #leak
+    ('Plus', 0x13bd2): 'CloseResFile',
+    ('Plus', 0x13c76): 'Count1Resources',
+    ('Plus', 0x13c7a): 'CountResources',
+    ('Plus', 0x13ca0): 'Get1IxResource',
+    ('Plus', 0x13ca4): 'GetIndResource',
+    ('Plus', 0x13d3c): 'Count1Types',
+    ('Plus', 0x13d40): 'CountTypes',
+    ('Plus', 0x13d86): 'Get1IxType',
+    ('Plus', 0x13d8a): 'GetIndType',
+    ('Plus', 0x13dac): 'Unique1ID',
+    ('Plus', 0x13db0): 'UniqueID',
+    ('Plus', 0x13dea): 'Get1Resource',
+    ('Plus', 0x13e2e): 'Get1NamedResour',
+    ('Plus', 0x13e32): 'GetNamedResource',
+    ('Plus', 0x13ef2): 'GetRsrcCnt', #leak
+    ('Plus', 0x13f4e): 'StdZEntry', #leak
+    ('Plus', 0x13f52): 'Std1Entry', #leak
+    ('Plus', 0x13f86): 'SwapROMMap', #leak
+    ('Plus', 0x1400c): 'RStdExit', #leak
+    ('Plus', 0x141fc): 'RREntry6', #leak
+    ('Plus', 0x1424a): 'RdData', #leak
+    ('Plus', 0x14250): 'AfterReadInRdData', #leak
+    ('Plus', 0x14254): 'WrData', #leak
+    ('Plus', 0x14268): 'SaveRegs', #leak
+    ('Plus', 0x142b4): 'SpaceAt', #leak
+    ('Plus', 0x1435c): 'CheckGrowAt1', #leak
+    ('Plus', 0x1436c): 'AfterSetEOFInCheckGrow', #leak
+    ('Plus', 0x143cc): 'LoadResource',
+    ('Plus', 0x1440a): 'ReleaseResource',
+    ('Plus', 0x14434): 'DetachResource',
+    ('Plus', 0x1444c): 'ChangedResource',
+    ('Plus', 0x14482): 'WriteResource',
+    ('Plus', 0x144bc): 'HomeResFile',
+    ('Plus', 0x144e4): 'SetResPurge',
+    ('Plus', 0x14504): 'SetResLoad',
+    ('Plus', 0x1450e): 'CurResFile',
+    ('Plus', 0x14516): 'ResError',
+    ('Plus', 0x1451e): 'Trap1_1AC',
+    ('Plus', 0x1452e): 'Trap1_1AE',
+    ('Plus', 0x14538): 'GetResAttrs',
+    ('Plus', 0x1454c): 'SetResAttrs',
+    ('Plus', 0x14570): 'RefHandle', #leak
+    ('Plus', 0x1457e): 'GetResInfo',
+    ('Plus', 0x145c4): 'SetResInfo',
+    ('Plus', 0x1460e): 'AddResource',
+    ('Plus', 0x14622): 'AddNewRefWithoutUpdate', #leak
+    ('Plus', 0x146e8): 'RmveResource',
+    ('Plus', 0x1477a): 'AddName', #leak
+    ('Plus', 0x147f4): 'AfterSetHandleSizeInResizeMap', #leak
+    ('Plus', 0x1483a): 'AfterResizeMapInRmveName', #leak
+    ('Plus', 0x14858): 'At9InRmveName', #leak
+    ('Plus', 0x14864): 'SizeRsrc',
+    ('Plus', 0x14886): 'MaxSizeRsrc',
+    ('Plus', 0x1489a): 'Trap1_1C5',
+    ('Plus', 0x148b2): 'InitDialogs',
+    ('Plus', 0x148cc): 'InitDialogContinue', #leak
+    ('Plus', 0x14968): 'StopAlert',
+    ('Plus', 0x1496c): 'NoteAlert',
+    ('Plus', 0x14970): 'CautionAlert',
+    ('Plus', 0x14974): 'Alert',
+    ('Plus', 0x14a90): 'GetNewDialog',
+    ('Plus', 0x14ac8): 'NewDialog',
+    ('Plus', 0x14b48): 'ClaimEvent', #leak
+    ('Plus', 0x14b60): 'IsDialogEvent',
+    ('Plus', 0x14b6e): 'IsDiaAfterClaimEvent', #leak
+    ('Plus', 0x14b96): 'IsDiaNotDlgExit', #leak
+    ('Plus', 0x14b9a): 'DialogSelect',
+    ('Plus', 0x14bae): 'DSAfterClaimEvent', #leak
+    ('Plus', 0x14bd6): 'DSNotMineExit', #leak
+    ('Plus', 0x14bda): 'ModalDialog',
+    ('Plus', 0x14c50): 'DialogStdEntry', #leak
+    ('Plus', 0x14c68): 'DrawDialog',
+    ('Plus', 0x14c80): 'UpdtDialog',
+    ('Plus', 0x14c9e): 'CloseDialog',
+    ('Plus', 0x14cc0): 'AfterDisposeHandleInCloseDialog', #leak
+    ('Plus', 0x14d24): 'DisposDialog',
+    ('Plus', 0x14d5a): 'CouldDialog',
+    ('Plus', 0x14d68): 'CouldAlert',
+    ('Plus', 0x14da8): 'FromGetADHndl', #leak
+    ('Plus', 0x14db4): 'FreeDialog',
+    ('Plus', 0x14dc2): 'FreeAlert',
+    ('Plus', 0x14e0e): 'ParamText',
+    ('Plus', 0x14e32): 'ErrorSound',
+    ('Plus', 0x14e3a): 'GetDItem',
+    ('Plus', 0x14e80): 'SetDItem',
+    ('Plus', 0x14eb6): 'GetIText',
+    ('Plus', 0x14ed6): 'SetIText',
+    ('Plus', 0x14f26): 'AfterValidRectInSetIText', #leak
+    ('Plus', 0x14f38): 'SelIText',
+    ('Plus', 0x14f92): 'HideDItem',
+    ('Plus', 0x14ff0): 'ShowDItem',
+    ('Plus', 0x15064): 'FindDItem',
+    ('Plus', 0x15268): 'AfterH2HinDoStatic', #leak
+    ('Plus', 0x15286): 'skipParam', #leak
+    ('Plus', 0x1537a): 'TEKeyFromEventAD', #leak
+    ('Plus', 0x154d2): 'AfterTEAutoViewInSetNewEdit', #leak
+    ('Plus', 0x15508): 'FrameOut', #leak
+    ('Plus', 0x15588): 'Munger',
+    ('Plus', 0x155b6): 'XMunger',
+    ('Plus', 0x156ec): 'HandToHand',
+    ('Plus', 0x1570a): 'PtrToXHand',
+    ('Plus', 0x15712): 'PtrToHand',
+    ('Plus', 0x1572c): 'HandAndHand',
+    ('Plus', 0x15750): 'PtrAndHand',
+    ('Plus', 0x15760): 'MethodDispatch',
+    ('Plus', 0x157b2): 'LongMul',
+    ('Plus', 0x157de): 'FracMul',
+    ('Plus', 0x157e6): 'FixMul',
+    ('Plus', 0x15880): 'FixPtStdEntry', #leak
+    ('Plus', 0x158b0): 'FracDiv',
+    ('Plus', 0x158b6): 'FixDiv',
+    ('Plus', 0x15900): 'FracSqrt',
+    ('Plus', 0x15974): 'LoWord',
+    ('Plus', 0x1597c): 'HiWord',
+    ('Plus', 0x15986): 'FixRound',
+    ('Plus', 0x159a6): 'FracCos',
+    ('Plus', 0x159ae): 'FracSin',
+    ('Plus', 0x15a56): 'FixATan2',
+    ('Plus', 0x15a78): 'AtLabel2InFixATan', #leak
+    ('Plus', 0x15b18): 'Fix2X',
+    ('Plus', 0x15b1e): 'Frac2X',
+    ('Plus', 0x15b4a): 'X2Fix',
+    ('Plus', 0x15b50): 'X2Frac',
+    ('Plus', 0x15bac): 'Fix2Long',
+    ('Plus', 0x15bb0): 'Frac2Fix',
+    ('Plus', 0x15bcc): 'Long2Fix',
+    ('Plus', 0x15bd0): 'Fix2Frac',
+    ('Plus', 0x15c20): 'SysEvtDoneSEvt', #leak
+    ('Plus', 0x15c2a): 'SysEvtAfterFrontWindow', #leak
+    ('Plus', 0x15c40): 'SearchWindow', #leak
+    ('Plus', 0x15ca0): 'SystemClick',
+    ('Plus', 0x15cdc): 'AfterLoadResourceInSystemClick', #leak
+    ('Plus', 0x15cf8): 'AfterFrontWindowInSystemClick', #leak
+    ('Plus', 0x15d58): 'AfterTrackGoAwayInSystemClick', #leak
+    ('Plus', 0x15d72): 'SystemTask',
+    ('Plus', 0x15dee): 'SystemMenu',
+    ('Plus', 0x15e36): 'SysEdit',
+    ('Plus', 0x15e64): 'OpenDeskAcc',
+    ('Plus', 0x15eb2): 'CloseDeskAcc',
+    ('Plus', 0x15ecc): 'GetPattern',
+    ('Plus', 0x15ee6): 'GetCursor',
+    ('Plus', 0x15eee): 'GetString',
+    ('Plus', 0x15ef6): 'GetIcon',
+    ('Plus', 0x15efe): 'GetPicture',
+    ('Plus', 0x15f06): 'GetNewWindow',
+    ('Plus', 0x15f1e): 'FromGetNewWind', #leak
+    ('Plus', 0x15f50): 'AfterReleaseResourceInGetNewWindow', #leak
+    ('Plus', 0x15f5c): 'GetNewControl',
+    ('Plus', 0x15fa2): 'AfterReleaseResourceInGetNewControl', #leak
+    ('Plus', 0x15fac): 'GetRMenu',
+    ('Plus', 0x1602a): 'GetNewMBar',
+    ('Plus', 0x1608e): 'TEGetText',
+    ('Plus', 0x1609a): 'TEInit',
+    ('Plus', 0x160c0): 'TEDispose',
+    ('Plus', 0x160de): 'TextBox',
+    ('Plus', 0x161bc): 'TESetText',
+    ('Plus', 0x16200): 'TECalText',
+    ('Plus', 0x1623a): 'TESetSelect',
+    ('Plus', 0x16266): 'TENew',
+    ('Plus', 0x162e0): 'TEUpdate',
+    ('Plus', 0x1630e): 'TEClick',
+    ('Plus', 0x167ae): 'TECopy',
+    ('Plus', 0x167d4): 'TECut',
+    ('Plus', 0x167e2): 'TEDelete',
+    ('Plus', 0x16a62): 'TEActivate',
+    ('Plus', 0x16a84): 'TEDeactivate',
+    ('Plus', 0x16a9a): 'TEIdle',
+    ('Plus', 0x16ac2): 'TEPaste',
+    ('Plus', 0x16b80): 'TEInsert',
+    ('Plus', 0x16bec): 'TESetJust',
+    ('Plus', 0x16c12): 'TEScroll',
+    ('Plus', 0x16c54): 'TEPinScroll',
+    ('Plus', 0x16cc0): 'TESelView',
+    ('Plus', 0x16d2c): 'TEAutoView',
+    ('Plus', 0x16dac): 'InfoScrap',
+    ('Plus', 0x16e26): 'UnloadScrap',
+    ('Plus', 0x16e5a): 'LodeScrap',
+    ('Plus', 0x16e8e): 'ZeroScrap',
+    ('Plus', 0x16eda): 'GetScrap',
+    ('Plus', 0x16f4a): 'PutScrap',
+    ('Plus', 0x16f70): 'PutScrapExit', #leak
+    ('Plus', 0x16f80): 'DoPutAppendMem', #leak
+    ('Plus', 0x16f8e): 'DoPutAppendFile', #leak
+    ('Plus', 0x16f90): 'InitPack',
+    ('Plus', 0x16fb2): 'InitAllPacks',
+    ('Plus', 0x17032): 'Pack0',
+    ('Plus', 0x17034): 'Pack1',
+    ('Plus', 0x17036): 'Pack2',
+    ('Plus', 0x17038): 'Pack3',
+    ('Plus', 0x1703a): 'Pack4',
+    ('Plus', 0x1703c): 'Pack5',
+    ('Plus', 0x1703e): 'Pack6',
+    ('Plus', 0x17040): 'Pack7',
+    ('Plus', 0x17042): 'Pack8',
+    ('Plus', 0x17044): 'Pack9',
+    ('Plus', 0x17046): 'Pack10',
+    ('Plus', 0x17048): 'Pack11',
+    ('Plus', 0x1704a): 'Pack12',
+    ('Plus', 0x1704c): 'Pack13',
+    ('Plus', 0x1704e): 'Pack14',
+    ('Plus', 0x17050): 'Pack15',
+    ('Plus', 0x17052): 'Secs2Date',
+    ('Plus', 0x170ca): 'Date2Secs',
+    ('Plus', 0x175d2): 'InsTime',
+    ('Plus', 0x175e0): 'RmvTime',
+    ('Plus', 0x175fa): 'PrimeTime',
+    ('Plus', 0x1784c): '_DRVR_2_.Print',
+    ('Plus', 0x179c0): '_DRVR_3_.Sound',
+    ('Plus', 0x17d30): '_DRVR_4_.Sony',
+    ('Plus', 0x18040): 'CkDrvNum', #leak
+    ('Plus', 0x18718): 'Seek', #leak
+    ('Plus', 0x1890a): 'RWPowerUp', #leak
+    ('Plus', 0x19230): 'FmtTrkRet', #leak
+    ('Plus', 0x194ae): 'EmptyPD', #leak
+    ('Plus', 0x194ca): 'SyncCallRtn', #leak
+    ('Plus', 0x19da0): '_DRVR_10_.ATP',
+    ('Plus', 0x1a6fa): '_DRVR_9_.MPP',
+    ('Plus', 0x1b6d0): '_SERD_0_',
+    ('Plus', 0x1bf40): '_MDEF_0_',
+    ('Plus', 0x1c346): '_WDEF_0_',
+    ('Plus', 0x1c9e0): '_PACK_7_',
+    ('Plus', 0x1cf2e): '_PACK_5_',
+    ('Plus', 0x1df94): '_PACK_4_',
+    ('Plus', 0x1f154): '_CURS_2_',
+    ('Plus', 0x1f1a0): '_CURS_3_',
+    ('Plus', 0x1f1ec): '_CURS_1_',
+    ('Plus', 0x1f238): '_CURS_4_',
+    ('Plus', 0x1f284): '_FONT_0_Chicago',
+    ('Plus', 0x1f28c): '_FONT_12_',
+    ('SE', 0x00022): 'DISPOFF',
+    ('SE', 0x00026): 'CRITICAL',
+    ('SE', 0x00048): 'STARTINIT1',
+    ('SE', 0x000d2): 'BOOTRETRY',
+    ('SE', 0x0016e): 'JMPTBLINIT',
+    ('SE', 0x00170): 'JMPTBL2',
+    ('SE', 0x0017e): 'FILLWITHONES',
+    ('SE', 0x0018e): 'COMPBOOTSTACK',
+    ('SE', 0x0019c): 'SETUPSYSAPPZONE',
+    ('SE', 0x001da): 'DRAWBEEPSCREEN',
+    ('SE', 0x00228): 'INITADBVARS',
+    ('SE', 0x0023c): 'INITHIMEMGLOBALS',
+    ('SE', 0x00262): 'INITGLOBALVARS',
+    ('SE', 0x0030c): 'SWITCHGOODIES',
+    ('SE', 0x00340): 'WDCBSWOS',
+    ('SE', 0x00342): 'PMSPSWOS',
+    ('SE', 0x00344): 'INITSWITCHERTABLE',
+    ('SE', 0x00358): 'GETPRAM',
+    ('SE', 0x00396): 'INITXVECTTABLES',
+    ('SE', 0x003ee): 'WHICHCPU',
+    ('SE', 0x0041c): 'SETUPTIMEK',
+    ('SE', 0x004b4): 'INITSCSIGLOBALS',
+    ('SE', 0x004ce): 'INITSCSI',
+    ('SE', 0x004e6): 'INITIWMGLOBALS',
+    ('SE', 0x004f0): 'INITIWM',
+    ('SE', 0x00520): 'INITVIAGLOBALS',
+    ('SE', 0x0052a): 'INITVIA',
+    ('SE', 0x0054e): 'VIATIMERENABLES',
+    ('SE', 0x00562): 'INITSCCGLOBALS',
+    ('SE', 0x00598): 'INITSCC',
+    ('SE', 0x005ba): 'WRITESCC',
+    ('SE', 0x005ca): 'INITVIDGLOBALS',
+    ('SE', 0x005e6): 'INITCRSRVARS',
+    ('SE', 0x005f6): 'INITCRSRMGR',
+    ('SE', 0x00666): 'GNEFILTER',
+    ('SE', 0x006da): 'INITDISPATCHER',
+    ('SE', 0x0076e): 'INITIOMGR',
+    ('SE', 0x007ca): 'INITMEMMGR',
+    ('SE', 0x007e8): 'INITRSRCMGR',
+    ('SE', 0x007f8): 'INITTIMERMGR',
+    ('SE', 0x00b34): 'MOUSEINIT',
+    ('SE', 0x00b7a): 'INITFS',
+    ('SE', 0x00c64): 'INITEVENTS',
+    ('SE', 0x00c8e): 'FINDSTARTUPDEVICE',
+    ('SE', 0x00cc8): 'GETDEFAULTSTARTUP',
+    ('SE', 0x00cd2): 'SETDEFAULTSTARTUP',
+    ('SE', 0x00cdc): 'INTERNALWAIT',
+    ('SE', 0x00d04): 'EMBARKONSEARCH',
+    ('SE', 0x00d24): 'WAITFORINTERNAL',
+    ('SE', 0x00d86): 'LOADDRIVERS',
+    ('SE', 0x00d9a): 'PLANSTRATEGY',
+    ('SE', 0x00da6): 'FINDNEXTCANDIDATE',
+    ('SE', 0x00dba): 'NEXTDQENTRY',
+    ('SE', 0x00dca): 'SELECTDEVICE',
+    ('SE', 0x00de8): 'CHECKMOUSEEJECT',
+    ('SE', 0x00df4): 'GETSTARTUPINFO',
+    ('SE', 0x00e14): 'REACTTOFAILURE',
+    ('SE', 0x00e30): 'VISUALUPDATE',
+    ('SE', 0x00e6c): 'ENABLEXFLASH',
+    ('SE', 0x00e72): 'SHOWSUCCESS',
+    ('SE', 0x00e86): 'EJECTME',
+    ('SE', 0x00e94): 'ISREJECT',
+    ('SE', 0x00ea6): 'ISITFLOPORDEF',
+    ('SE', 0x00eba): 'ISITFLOPPY',
+    ('SE', 0x00ec2): 'ISITHD20',
+    ('SE', 0x00eca): 'ISITSCSI',
+    ('SE', 0x00ede): 'ISITANYTHING',
+    ('SE', 0x00ee2): 'NEVERAGAIN',
+    ('SE', 0x00ef4): 'INBOOTMASK',
+    ('SE', 0x00f12): 'SHOWDEVICEFAIL',
+    ('SE', 0x00f1e): 'SHOWPLAINDISK',
+    ('SE', 0x00f24): 'SHOWDISKQ',
+    ('SE', 0x00f2c): 'SHOWDISKX',
+    ('SE', 0x00f34): 'PLOTDISK',
+    ('SE', 0x00f76): 'QMARK',
+    ('SE', 0x00f94): 'XMARK',
+    ('SE', 0x00fe2): 'GETTIMEOUT',
+    ('SE', 0x00fec): 'SETTIMEOUT',
+    ('SE', 0x01008): 'GETWAITFLAGS',
+    ('SE', 0x01012): 'SETWAITFLAGS',
+    ('SE', 0x01028): 'DISABLEDYNWAIT',
+    ('SE', 0x0103a): 'ENABLEDYNWAIT',
+    ('SE', 0x0104c): 'DISABLEPERMWAIT',
+    ('SE', 0x0105e): 'ENABLEPERMWAIT',
+    ('SE', 0x01070): 'GETRAWTIMEOUT',
+    ('SE', 0x01082): 'SETRAWTIMEOUT',
+    ('SE', 0x01092): 'CRITERR',
+    ('SE', 0x01176): 'HAPPYMAC',
+    ('SE', 0x011aa): 'PUTSYMBOL',
+    ('SE', 0x011ba): 'PUTICON',
+    ('SE', 0x01284): 'SYSERRINIT',
+    ('SE', 0x012c6): 'DEBUGGER',
+    ('SE', 0x0130e): 'DEBUGPROLOG',
+    ('SE', 0x01320): 'TODEEPSHIT',
+    ('SE', 0x0136c): 'GENEXCPS',
+    ('SE', 0x01384): 'IRQEXCEPTION',
+    ('SE', 0x01386): 'SYSTEMERROR',
+    ('SE', 0x013a2): 'SYSERR2',
+    ('SE', 0x013f4): 'ALLOCFAKERGNS',
+    ('SE', 0x01442): 'DSERRORHANDLER',
+    ('SE', 0x019e8): 'MEMTEST',
+    ('SE', 0x01bde): 'STARTTEST1',
+    ('SE', 0x01d3e): 'RAMTEST',
+    ('SE', 0x01db0): 'TESTMANAGER',
+    ('SE', 0x029b4): 'SYSTEMBEEP',
+    ('SE', 0x029ea): 'BOOTBEEP',
+    ('SE', 0x02adc): 'DEQUEUE',
+    ('SE', 0x02b24): 'INITQUEUE',
+    ('SE', 0x02b56): 'LVL2INT',
+    ('SE', 0x02b86): 'SPURIOUS',
+    ('SE', 0x02b88): 'EXTBINT',
+    ('SE', 0x02b94): 'EXTAINT',
+    ('SE', 0x02bba): 'ONESECINT',
+    ('SE', 0x02be4): 'VBLINT',
+    ('SE', 0x02ca0): 'VREMOVE',
+    ('SE', 0x02cb4): 'CORESTUB',
+    ('SE', 0x02cce): 'ATRAP68010',
+    ('SE', 0x02cd6): 'EMT1010',
+    ('SE', 0x02d3e): 'SETTRAPADDRESS',
+    ('SE', 0x02d8e): 'GETTRAPADDRESS',
+    ('SE', 0x02dba): 'FETCH',
+    ('SE', 0x02dfe): 'STASH',
+    ('SE', 0x02e06): 'IODONE',
+    ('SE', 0x02f82): 'OPEN',
+    ('SE', 0x03124): 'CLOSE',
+    ('SE', 0x0315c): 'READ',
+    ('SE', 0x031cc): 'WRITE',
+    ('SE', 0x031e0): 'CONTROL',
+    ('SE', 0x031ee): 'STATUS',
+    ('SE', 0x03214): 'KILLIO',
+    ('SE', 0x03268): 'DRVRINSTALL',
+    ('SE', 0x032c6): 'DRVRREMOVE',
+    ('SE', 0x032f6): 'ADDDRIVE',
+    ('SE', 0x03574): 'GEmptyAddr', #leak
+    ('SE', 0x03588): 'FDBSHIFTINT',
+    ('SE', 0x03880): 'ADBOP',
+    ('SE', 0x03ac0): 'KbdDrvr', #leak
+    ('SE', 0x03c7e): 'ADBREINIT',
+    ('SE', 0x03c9e): 'INITADBDRVR',
+    ('SE', 0x03cf2): 'COUNTADBS',
+    ('SE', 0x03d0c): 'GETINDADB',
+    ('SE', 0x03d38): 'GETADBINFO',
+    ('SE', 0x03d3e): 'SETADBINFO',
+    ('SE', 0x03d4c): 'FindFDBInfo', #leak
+    ('SE', 0x03e18): 'KEYTRANS',
+    ('SE', 0x03f5e): 'OSEVENTAVAIL',
+    ('SE', 0x03fe6): 'GETOSEVENT',
+    ('SE', 0x04004): 'FLUSHEVENTS',
+    ('SE', 0x042e8): 'FSQUEUESYNC', #leak
+    ('SE', 0x042ec): 'FSQUEUE', #leak
+    ('SE', 0x04354): 'FSAsync', #leak
+    ('SE', 0x043a0): 'CMDDONE', #leak
+    ('SE', 0x04434): 'AfterExtFSHook', #leak
+    ('SE', 0x044ae): 'FINITQUEUE',
+    ('SE', 0x044c8): 'DSHOOK',
+    ('SE', 0x044f0): 'AfterMountVolInDSHook', #leak
+    ('SE', 0x04572): 'AfterSysErrorInDSHook', #leak
+    ('SE', 0x045a8): 'FromWaitForDsk', #leak
+    ('SE', 0x04630): 'DSExit', #leak
+    ('SE', 0x04698): 'DIVUP',
+    ('SE', 0x046ac): 'ROUNDALLOC',
+    ('SE', 0x046ee): 'GETVCBRFN',
+    ('SE', 0x04766): 'MARKVCB',
+    ('SE', 0x04768): 'MARKVCBTIME',
+    ('SE', 0x04770): 'MarkVCBDirty', #leak
+    ('SE', 0x04776): 'FLUSHMDB',
+    ('SE', 0x04838): 'MAKESTKPB',
+    ('SE', 0x0484a): 'MOUNTVOL',
+    ('SE', 0x0489e): 'OldMtVolAfterFSQueue', #leak
+    ('SE', 0x04a4c): 'After2ndAccessBTInMountVol', #leak
+    ('SE', 0x04b86): 'MtVolOK', #leak
+    ('SE', 0x04bde): 'MtCheck', #leak
+    ('SE', 0x04dae): 'AfterUpdateFreeInMtCheck', #leak
+    ('SE', 0x04db8): 'VBMCHK',
+    ('SE', 0x04df4): 'DsposVCB', #leak
+    ('SE', 0x04e28): 'DsposVBlks', #leak
+    ('SE', 0x04e90): 'AfterBTOpenInAccessBT', #leak
+    ('SE', 0x04e9a): 'FINDDRIVE',
+    ('SE', 0x04ec0): 'OFFLINE',
+    ('SE', 0x04f26): 'FlushBuffersAtflVCaches', #leak
+    ('SE', 0x04f5c): 'FlushBuffersAtflBufExit', #leak
+    ('SE', 0x04f66): 'EJECT',
+    ('SE', 0x04fe4): 'OfflineEjectCallsFlushBuffers', #leak
+    ('SE', 0x04fea): 'OfflineEjectCallsMFSFlush', #leak
+    ('SE', 0x0501e): 'EjectIt', #leak
+    ('SE', 0x0503a): 'UNMOUNTVOL',
+    ('SE', 0x05044): 'FlushVFiles', #leak
+    ('SE', 0x05082): 'FLUSHVOL',
+    ('SE', 0x0509c): 'FlUnMntAfterMFSCheck', #leak
+    ('SE', 0x050a8): 'FlUnMntCallsFlushBuffers', #leak
+    ('SE', 0x050be): 'CkExtFS', #leak
+    ('SE', 0x050c4): 'VCKEXTFS',
+    ('SE', 0x050ce): 'DTRMV3', #leak
+    ('SE', 0x050d4): 'VDTRMV3',
+    ('SE', 0x050e2): 'DtrmV1', #leak
+    ('SE', 0x050e8): 'VDTRMV1',
+    ('SE', 0x0521a): 'DtrmV2', #leak
+    ('SE', 0x052b2): 'GETVOLINFO',
+    ('SE', 0x0545a): 'SETVOLINFO',
+    ('SE', 0x05502): 'CVFLGS', #leak
+    ('SE', 0x05516): 'GETVOL',
+    ('SE', 0x05566): 'SETVOL',
+    ('SE', 0x055a6): 'SETDIR',
+    ('SE', 0x055da): 'GETDIR',
+    ('SE', 0x055fe): 'OPENWD',
+    ('SE', 0x05640): 'FillWDCB', #leak
+    ('SE', 0x056aa): 'CLOSEWD',
+    ('SE', 0x056e4): 'GETWDINFO',
+    ('SE', 0x0599a): 'MFSFlush', #leak
+    ('SE', 0x05a8c): 'GT1STFCB', #leak
+    ('SE', 0x05a94): 'GTNXTFCB', #leak
+    ('SE', 0x05a9c): 'Gt1stMatch', #leak
+    ('SE', 0x05aaa): 'GtNxtMatch', #leak
+    ('SE', 0x05ab4): 'OPENRF',
+    ('SE', 0x05abe): 'FILEOPEN',
+    ('SE', 0x05ac4): 'VFILEOPEN',
+    ('SE', 0x05acc): 'FOpen1', #leak
+    ('SE', 0x05c06): 'PermssnChk', #leak
+    ('SE', 0x05c0c): 'VPERMSSNCHK',
+    ('SE', 0x05c70): 'CREATEDIR',
+    ('SE', 0x05c7c): 'FILECREATE',
+    ('SE', 0x05cf8): 'PUSHCNAME', #leak
+    ('SE', 0x05d28): 'POPCNAME', #leak
+    ('SE', 0x05d34): 'MFSOpen', #leak
+    ('SE', 0x05e3a): 'Gt1stWDCB', #leak
+    ('SE', 0x05e42): 'GtNxtWDCB', #leak
+    ('SE', 0x05ea6): 'FILEDELETE',
+    ('SE', 0x05f1c): 'RENAME',
+    ('SE', 0x05f32): 'AfterVolCheckInRename', #leak
+    ('SE', 0x05ff2): 'AfterCMRenameCNInRename', #leak
+    ('SE', 0x06048): 'AfterCMGetCNinRename', #leak
+    ('SE', 0x06092): 'RNmVol1', #leak
+    ('SE', 0x060b8): 'RNmVol@70', #leak
+    ('SE', 0x060d8): 'TFMOVE',
+    ('SE', 0x062f8): 'SETFILTYPE',
+    ('SE', 0x06330): 'SETFILLOCK',
+    ('SE', 0x0633a): 'RSTFILLOCK',
+    ('SE', 0x0637c): 'SETFILEINFO',
+    ('SE', 0x063ae): 'SETCATINFO',
+    ('SE', 0x06420): 'CkFilMod', #leak
+    ('SE', 0x06436): 'FNDFILNAME', #leak
+    ('SE', 0x0643c): 'VFNDFILNAME',
+    ('SE', 0x064f4): 'AfterCMGetCNInFndFilName', #leak
+    ('SE', 0x06560): 'EXTOFFLINCK', #leak
+    ('SE', 0x06576): 'GETCATINFO',
+    ('SE', 0x06588): 'GETFILEINFO',
+    ('SE', 0x06812): 'ChgMFlLock', #leak
+    ('SE', 0x06968): 'TFSVCBTST',
+    ('SE', 0x069b2): 'GETFPOS',
+    ('SE', 0x069b6): 'SETFPOS',
+    ('SE', 0x069ba): 'FILEREAD',
+    ('SE', 0x06ad0): 'FILEWRITE',
+    ('SE', 0x06bea): 'FLUSHFILE',
+    ('SE', 0x06bf4): 'FILECLOSE',
+    ('SE', 0x06c0e): 'FClose', #leak
+    ('SE', 0x06c94): 'AfterTruncateFile', #leak
+    ('SE', 0x06df2): 'GETEOF',
+    ('SE', 0x06e04): 'RfnCall', #leak
+    ('SE', 0x06e0a): 'VRFNCALL',
+    ('SE', 0x06e54): 'VTSTMOD',
+    ('SE', 0x06e6a): 'GETFCBINFO',
+    ('SE', 0x06f48): 'FILEALLOC',
+    ('SE', 0x06f78): 'SETEOF',
+    ('SE', 0x06fe8): 'VADJEOF',
+    ('SE', 0x0708c): 'LG2PHYS',
+    ('SE', 0x07092): 'VLG2PHYS',
+    ('SE', 0x07288): 'VBLKALLOC',
+    ('SE', 0x073dc): 'BLKDEALLOC',
+    ('SE', 0x073e2): 'VBLKDEALLOC',
+    ('SE', 0x07422): 'BLKCHK',
+    ('SE', 0x0747c): 'UPDATEFREE',
+    ('SE', 0x07488): 'AfterReadBMInUpdateFree', #leak
+    ('SE', 0x074b0): 'VREADBM',
+    ('SE', 0x07556): 'VDEALLOCFILE',
+    ('SE', 0x07624): 'EXTENDFILE',
+    ('SE', 0x0762a): 'VEXTENDFILE',
+    ('SE', 0x077a0): 'FXMKEYCMP',
+    ('SE', 0x077de): 'MAPFBLOCK',
+    ('SE', 0x077e4): 'VMAPFBLOCK',
+    ('SE', 0x07860): 'TRUNCATEFILE',
+    ('SE', 0x07866): 'VTRUNCATEFILE',
+    ('SE', 0x0799a): 'XFFLUSH', #leak
+    ('SE', 0x079d4): 'VXFSEARCH',
+    ('SE', 0x07b1c): 'AfterCMSetupInCMCreateCN', #leak
+    ('SE', 0x07c58): 'CMDELETECN',
+    ('SE', 0x07c62): 'AfterCMSetupInCMDeleteCN', #leak
+    ('SE', 0x07d04): 'CMGETCN',
+    ('SE', 0x07d0e): 'AfterCMSetupInCMGetCN', #leak
+    ('SE', 0x07d24): 'CMGETOFF',
+    ('SE', 0x07d88): 'CMMOVECN',
+    ('SE', 0x07d92): 'AfterCMSetupInCMMoveCN', #leak
+    ('SE', 0x07f2e): 'CMRENAMECN',
+    ('SE', 0x07f38): 'AfterCMSetupInCMRenameCN', #leak
+    ('SE', 0x08036): 'CMUPDATECN',
+    ('SE', 0x0803e): 'AfterCMSetupInCMUpdateCN', #leak
+    ('SE', 0x08068): 'CMSETUP', #leak
+    ('SE', 0x0806e): 'VCMSETUP',
+    ('SE', 0x08076): 'UpdVCnts', #leak
+    ('SE', 0x08086): 'UpdRtCnts', #leak
+    ('SE', 0x080a0): 'BUILDKEY', #leak
+    ('SE', 0x080ce): 'CMFLUSH',
+    ('SE', 0x08102): 'CMKEYCMP',
+    ('SE', 0x0813e): 'LOCCNODE',
+    ('SE', 0x0815e): 'LOCCREC',
+    ('SE', 0x08164): 'VLOCCREC',
+    ('SE', 0x0818c): 'UPDCNAME',
+    ('SE', 0x081ac): 'VBTCLOSE',
+    ('SE', 0x081e6): 'BTDELETE',
+    ('SE', 0x081ec): 'VBTDELETE',
+    ('SE', 0x08398): 'BTFLUSH',
+    ('SE', 0x0839e): 'VBTFLUSH',
+    ('SE', 0x083fc): 'BTGETRECORD',
+    ('SE', 0x08402): 'VBTGETRECORD',
+    ('SE', 0x084b4): 'BTINSERT',
+    ('SE', 0x084ba): 'VBTINSERT',
+    ('SE', 0x08754): 'BTOPEN',
+    ('SE', 0x0875a): 'VBTOPEN',
+    ('SE', 0x0880c): 'BTSEARCH',
+    ('SE', 0x08812): 'VBTSEARCH',
+    ('SE', 0x08896): 'BTUPDATE',
+    ('SE', 0x0889c): 'VBTUPDATE',
+    ('SE', 0x088c2): 'BTCleanUp', #leak
+    ('SE', 0x088d0): 'BTSetUp', #leak
+    ('SE', 0x088fe): 'VALLOCNODE',
+    ('SE', 0x0898e): 'EXTBTFILE',
+    ('SE', 0x08994): 'VEXTBTFILE',
+    ('SE', 0x08a7c): 'FREENODE',
+    ('SE', 0x08a82): 'VFREENODE',
+    ('SE', 0x08bc8): 'RotateLt', #leak
+    ('SE', 0x08cb8): 'SPLITLT',
+    ('SE', 0x08d42): 'TREESEARCH',
+    ('SE', 0x08d48): 'VTREESEARCH',
+    ('SE', 0x08e00): 'BuildIRec', #leak
+    ('SE', 0x08e22): 'CHKNODE',
+    ('SE', 0x08ea6): 'CLRNODE',
+    ('SE', 0x08ec2): 'DELETEREC',
+    ('SE', 0x08f12): 'GETLTSIB',
+    ('SE', 0x08f1c): 'GETRTSIB',
+    ('SE', 0x08f4c): 'GETMAXKEY',
+    ('SE', 0x08f58): 'GETNODE',
+    ('SE', 0x08f5e): 'VGETNODE',
+    ('SE', 0x08f92): 'GETNODESIZ',
+    ('SE', 0x08faa): 'GETOFFSET',
+    ('SE', 0x08fc2): 'GETRECA',
+    ('SE', 0x08fde): 'INITNODE',
+    ('SE', 0x09010): 'INSERTREC',
+    ('SE', 0x09082): 'LOCBTCB',
+    ('SE', 0x0908c): 'LOCREC',
+    ('SE', 0x090be): 'LOCTPR',
+    ('SE', 0x090ce): 'MOVOFFLT',
+    ('SE', 0x090de): 'MOVOFFRT',
+    ('SE', 0x090f4): 'MOVRECLT',
+    ('SE', 0x0910a): 'MOVRECRT',
+    ('SE', 0x09124): 'RELNODE',
+    ('SE', 0x0912a): 'VRELNODE',
+    ('SE', 0x0913e): 'SEARCHNODE',
+    ('SE', 0x0919a): 'UPDDREC',
+    ('SE', 0x091bc): 'UPDIKEY',
+    ('SE', 0x091ee): 'CACHE',
+    ('SE', 0x0921a): 'FLUSHCACHE',
+    ('SE', 0x09220): 'VFLUSHCACHE',
+    ('SE', 0x09304): 'GETBLOCK',
+    ('SE', 0x0930a): 'VGETBLOCK',
+    ('SE', 0x094ee): 'INITCACHE',
+    ('SE', 0x09548): 'MARKBLOCK',
+    ('SE', 0x0954e): 'VMARKBLOCK',
+    ('SE', 0x09556): 'MARKA5BLOCK',
+    ('SE', 0x0955e): 'RELBLOCK',
+    ('SE', 0x09564): 'VRELBLOCK',
+    ('SE', 0x095b0): 'TRASHVBLKS',
+    ('SE', 0x095b6): 'VTRASHVBLKS',
+    ('SE', 0x095de): 'TRASHFBLOCKS',
+    ('SE', 0x095e8): 'TRASHBLOCKS',
+    ('SE', 0x0963c): 'VTRASHBLOCKS',
+    ('SE', 0x0967e): 'CACHERDIP',
+    ('SE', 0x09684): 'VCACHERDIP',
+    ('SE', 0x096aa): 'CACHEWRIP',
+    ('SE', 0x096b0): 'VCACHEWRIP',
+    ('SE', 0x0970c): 'WRITEOWNBUF',
+    ('SE', 0x09714): 'WRITEBLOCK',
+    ('SE', 0x0976e): 'VBASICIO',
+    ('SE', 0x097e2): 'RDBLOCKS',
+    ('SE', 0x097e8): 'VRDBLOCKS',
+    ('SE', 0x09830): 'WRBLOCKS',
+    ('SE', 0x09836): 'VWRBLOCKS',
+    ('SE', 0x09848): 'VSETUPTAGS',
+    ('SE', 0x09920): 'UNLOADSEG',
+    ('SE', 0x09974): 'FlushApplVBLs', #leak
+    ('SE', 0x0999c): 'CHAIN',
+    ('SE', 0x099a2): 'LAUNCH',
+    ('SE', 0x09ac6): 'VSEGSTACK',
+    ('SE', 0x09b24): 'EXITTOSHELL',
+    ('SE', 0x09b5a): 'GETAPPPARMS',
+    ('SE', 0x09b76): 'INSTALLRDRIVERS',
+    ('SE', 0x09bda): 'READPARAM',
+    ('SE', 0x09bf4): 'WRITEPARAM',
+    ('SE', 0x09c14): 'READDATETIME',
+    ('SE', 0x09c1e): 'SETDATETIME',
+    ('SE', 0x09c26): 'DELAY',
+    ('SE', 0x09c38): 'CMPSTRING',
+    ('SE', 0x09c4e): 'RELSTRING',
+    ('SE', 0x09cc2): 'UPRSTRING',
+    ('SE', 0x0a0d4): 'READPRAM',
+    ('SE', 0x0a10c): 'INITUTIL',
+    ('SE', 0x0a1fc): 'WPON',
+    ('SE', 0x0a204): 'WPOFF',
+    ('SE', 0x0a262): 'READXPRAM',
+    ('SE', 0x0a26c): 'WRITEXPRAM',
+    ('SE', 0x0a2c0): 'CLKNOMEM',
+    ('SE', 0x0a3ca): 'INITAPPLZONE',
+    ('SE', 0x0a41a): 'INITZONE',
+    ('SE', 0x0a4b4): 'GETZONE',
+    ('SE', 0x0a4ba): 'SETZONE',
+    ('SE', 0x0a4c0): 'MAXBLOCK',
+    ('SE', 0x0a4ce): 'COMPACTMEM',
+    ('SE', 0x0a4fe): 'PURGEMEM',
+    ('SE', 0x0a51a): 'PURGESPACE',
+    ('SE', 0x0a524): 'FREEMEM',
+    ('SE', 0x0a52e): 'RESRVMEM',
+    ('SE', 0x0a54c): 'MAXMEM',
+    ('SE', 0x0a580): 'SETGROWZONE',
+    ('SE', 0x0a58a): 'SETAPPLLIMIT',
+    ('SE', 0x0a5ae): 'STACKSPACE',
+    ('SE', 0x0a5c2): 'MAXAPPLZONE',
+    ('SE', 0x0a5ee): 'NEWPTR',
+    ('SE', 0x0a60a): 'DISPOSEPTR',
+    ('SE', 0x0a620): 'GETPTRSIZE',
+    ('SE', 0x0a62a): 'SETPTRSIZE',
+    ('SE', 0x0a634): 'PTRZONE',
+    ('SE', 0x0a652): 'NEWEMPTYHANDLE',
+    ('SE', 0x0a666): 'NWHANDLE',
+    ('SE', 0x0a688): 'DSPOSEHANDLE',
+    ('SE', 0x0a6a8): 'GETHANDLESIZE',
+    ('SE', 0x0a6b4): 'SETHANDLESIZE',
+    ('SE', 0x0a6c6): 'HANDLEZONE',
+    ('SE', 0x0a6ce): 'RECOVERHANDLE',
+    ('SE', 0x0a6f4): 'EMPTYHANDLE',
+    ('SE', 0x0a704): 'REALLOCHANDLE',
+    ('SE', 0x0a748): 'HLOCK',
+    ('SE', 0x0a752): 'HUNLOCK',
+    ('SE', 0x0a75c): 'HPURGE',
+    ('SE', 0x0a766): 'HNOPURGE',
+    ('SE', 0x0a77a): 'HRSRC',
+    ('SE', 0x0a784): 'HNORSRC',
+    ('SE', 0x0a7a0): 'HGETFLAGS',
+    ('SE', 0x0a7ae): 'HSETFLAGS',
+    ('SE', 0x0a7b8): 'MOREMASTERS',
+    ('SE', 0x0a7d0): 'STRIPADDRESS',
+    ('SE', 0x0a7d6): 'MOVEHHI',
+    ('SE', 0x0a88e): 'MoveRest', #leak
+    ('SE', 0x0a8a8): 'AfterBsrDoCompactInGoCont', #leak
+    ('SE', 0x0a904): 'MNSFinish', #leak
+    ('SE', 0x0a936): 'FindRgnTop', #leak
+    ('SE', 0x0a970): 'FillStkBuf', #leak
+    ('SE', 0x0a9ae): 'DoCompact', #leak
+    ('SE', 0x0a9b8): 'HEAPGUTS',
+    ('SE', 0x0aa0c): 'MMPPROLOGUE',
+    ('SE', 0x0aa20): 'MMHPROLOGUE',
+    ('SE', 0x0aa60): 'MMPROLOGUE',
+    ('SE', 0x0aa82): 'MMRHPROLOGUE',
+    ('SE', 0x0aac0): 'MMEPILOGUE',
+    ('SE', 0x0aacc): 'MMNOERREPILOGUE',
+    ('SE', 0x0aad2): 'MAKEBKF',
+    ('SE', 0x0aad8): 'EH',
+    ('SE', 0x0ab26): 'PURGEHEAP',
+    ('SE', 0x0abb8): 'TOTEPURGEABLES',
+    ('SE', 0x0ac18): 'BKCOMPACTS',
+    ('SE', 0x0acb4): 'ALLOCBK',
+    ('SE', 0x0ad68): 'COMPACTHP',
+    ('SE', 0x0adfe): 'TOMAXLIMIT',
+    ('SE', 0x0ae06): 'MAXLIMIT',
+    ('SE', 0x0ae20): 'ZONEADJUSTEND',
+    ('SE', 0x0ae8a): 'ACTUALS',
+    ('SE', 0x0ae9e): 'GETSIZE',
+    ('SE', 0x0aeb6): 'CLEARGZSTUFF',
+    ('SE', 0x0aec0): 'SETSIZE',
+    ('SE', 0x0b03a): 'ADJUSTFREE',
+    ('SE', 0x0b046): 'NEXTMASTER',
+    ('SE', 0x0b062): 'HMAKEMOREMASTERS',
+    ('SE', 0x0b092): 'RELEASEMP',
+    ('SE', 0x0b09c): 'MAKEPTRSPC',
+    ('SE', 0x0b20c): 'FREEBK',
+    ('SE', 0x0b238): 'STDGZ',
+    ('SE', 0x0b518): 'BUTTON',
+    ('SE', 0x0b52a): 'TICKCOUNT',
+    ('SE', 0x0b56c): 'GETMOUSE',
+    ('SE', 0x0b582): 'STILLDOWN',
+    ('SE', 0x0b5aa): 'WAITMOUSEUP',
+    ('SE', 0x0b5c8): 'EVENTAVAIL',
+    ('SE', 0x0b5cc): 'GETNEXTEVENT',
+    ('SE', 0x0b656): 'AfterOSEventAvailInGetNextEvent', #leak
+    ('SE', 0x0b65a): 'AfterGetOSEventInGetNextEvent', #leak
+    ('SE', 0x0b67c): 'FromGNECommon', #leak
+    ('SE', 0x0b6b8): 'AfterGetResourceInTryFKey', #leak
+    ('SE', 0x0b6ea): 'TrySysEvent', #leak
+    ('SE', 0x0b724): 'AfterGetMouseInGetNextEvent', #leak
+    ('SE', 0x0b7e6): 'WMGR',
+    ('SE', 0x0b7f4): 'NEWSTRING',
+    ('SE', 0x0b80c): 'SETSTRING',
+    ('SE', 0x0b830): 'InsertWindow', #leak
+    ('SE', 0x0b868): 'DELETEWINDOW',
+    ('SE', 0x0b880): 'CALCVIS',
+    ('SE', 0x0b8de): 'CALCVISBEHIND',
+    ('SE', 0x0b922): 'CLIPABOVE',
+    ('SE', 0x0b946): 'PAINTONE',
+    ('SE', 0x0b97a): 'AfterFirstSectRgnInGoPaintOne', #leak
+    ('SE', 0x0b982): 'AfterClipAbove', #leak
+    ('SE', 0x0b99a): 'AfterSectRgnInGoPaintOne', #leak
+    ('SE', 0x0b9a0): 'EraseInROM', #leak
+    ('SE', 0x0b9a4): 'SkipEraseInROM', #leak
+    ('SE', 0x0b9ca): 'TestClip', #leak
+    ('SE', 0x0b9ea): 'NoDeskHook', #leak
+    ('SE', 0x0b9f6): 'PAINTBEHIND',
+    ('SE', 0x0ba56): 'GETNEWRGN',
+    ('SE', 0x0ba62): 'SAVEOLD',
+    ('SE', 0x0ba90): 'DRAWNEW',
+    ('SE', 0x0bad8): 'AfterPaintBehindInDrawNew', #leak
+    ('SE', 0x0baf0): 'SHOWHIDE',
+    ('SE', 0x0bb0c): 'AfterSaveOldInShowHide', #leak
+    ('SE', 0x0bb14): 'AfterCalcRgnCallInShowHide', #leak
+    ('SE', 0x0bb22): 'SETWPORT',
+    ('SE', 0x0bb2c): 'RESTOREPORT',
+    ('SE', 0x0bb32): 'GETWMGRPORT',
+    ('SE', 0x0bb46): 'CHECKUPDATE',
+    ('SE', 0x0bbda): 'INITWINDOWS',
+    ('SE', 0x0bca8): 'NEWWINDOW',
+    ('SE', 0x0bd78): 'PaintNewOne', #leak
+    ('SE', 0x0bddc): 'CLOSEWINDOW',
+    ('SE', 0x0bdf2): 'AfterKillControlsInCloseWindow', #leak
+    ('SE', 0x0be10): 'AfterDisposeRgnInCloseWindow', #leak
+    ('SE', 0x0be4c): 'MakeDeactive', #leak
+    ('SE', 0x0be6a): 'DISPOSEWINDOW',
+    ('SE', 0x0be78): 'SHOWWINDOW',
+    ('SE', 0x0be98): 'AfterShowHideInShowWindow', #leak
+    ('SE', 0x0bea0): 'HIDEWINDOW',
+    ('SE', 0x0beca): 'GETWREFCON',
+    ('SE', 0x0bed8): 'SETWREFCON',
+    ('SE', 0x0bee8): 'SETWINDOWPIC',
+    ('SE', 0x0beee): 'GETWINDOWPIC',
+    ('SE', 0x0bef4): 'GETWTITLE',
+    ('SE', 0x0bf0c): 'SETWTITLE',
+    ('SE', 0x0bf60): 'AfterUnionRgnInSetWTitle', #leak
+    ('SE', 0x0bf8a): 'DELTAPOINT',
+    ('SE', 0x0bfe6): 'MOVEWINDOW',
+    ('SE', 0x0c020): 'AfterOffsetRgnInMoveWindow', #leak
+    ('SE', 0x0c02c): 'NoBTF0', #leak
+    ('SE', 0x0c05a): 'AfterPaintBehindInMoveWindow', #leak
+    ('SE', 0x0c070): 'AfterPaintOneInMoveWindow', #leak
+    ('SE', 0x0c092): 'CallMBarProc', #leak
+    ('SE', 0x0c092): 'CallWindow', #leak
+    ('SE', 0x0c0b6): 'AfterLoadResourceInCallWindow', #leak
+    ('SE', 0x0c0cc): 'CallDWindow', #leak
+    ('SE', 0x0c0da): 'CallWCalc', #leak
+    ('SE', 0x0c11e): 'HILITEWINDOW',
+    ('SE', 0x0c158): 'ClipGAbove', #leak
+    ('SE', 0x0c15e): 'SIZEWINDOW',
+    ('SE', 0x0c1b2): 'ZOOMWINDOW',
+    ('SE', 0x0c218): 'TRACKGOAWAY',
+    ('SE', 0x0c220): 'TRACKBOX',
+    ('SE', 0x0c28e): 'SELECTWINDOW',
+    ('SE', 0x0c296): 'FromSelectWindow', #leak
+    ('SE', 0x0c2ae): 'PostDoActivate', #leak
+    ('SE', 0x0c2b2): 'PreSkipUnHilite', #leak
+    ('SE', 0x0c2be): 'BRINGTOFRONT',
+    ('SE', 0x0c2c2): 'BTF1', #leak
+    ('SE', 0x0c342): 'AfterPaintOneInBringToFront', #leak
+    ('SE', 0x0c346): 'FromBTF1', #leak
+    ('SE', 0x0c360): 'SENDBEHIND',
+    ('SE', 0x0c370): 'AfterFrontWindowInSendBehind', #leak
+    ('SE', 0x0c388): 'AfterSelectWindowInSendBehind', #leak
+    ('SE', 0x0c3a6): 'AfterCalcVBehindInSendBehind', #leak
+    ('SE', 0x0c3aa): 'AfterPaintBehindInSendBehind', #leak
+    ('SE', 0x0c3b6): 'BEGINUPDATE',
+    ('SE', 0x0c3f6): 'ENDUPDATE',
+    ('SE', 0x0c41e): 'FRONTWINDOW',
+    ('SE', 0x0c448): 'DRAGWINDOW',
+    ('SE', 0x0c4b6): 'FromDragWindow', #leak
+    ('SE', 0x0c502): 'WMGRGRAY',
+    ('SE', 0x0c50a): 'DRAGGRAYRGN',
+    ('SE', 0x0c516): 'DRAGTHERGN',
+    ('SE', 0x0c53c): 'AfterPenModeInDragTheRgn', #leak
+    ('SE', 0x0c63e): 'INVALRGN',
+    ('SE', 0x0c640): 'IvalCommon', #leak
+    ('SE', 0x0c684): 'INVALRECT',
+    ('SE', 0x0c6a2): 'VALIDRGN',
+    ('SE', 0x0c6a6): 'VALIDRECT',
+    ('SE', 0x0c6aa): 'GROWWINDOW',
+    ('SE', 0x0c7b2): 'FINDWINDOW',
+    ('SE', 0x0c836): 'DRAWGROWICON',
+    ('SE', 0x0c94a): 'EndROMWMgr', #leak
+    ('SE', 0x0c97c): 'INITMENUS',
+    ('SE', 0x0c9d6): 'CALCMBHEIGHT',
+    ('SE', 0x0ca16): 'CLEARMENUBAR',
+    ('SE', 0x0ca26): 'INSERTMENU',
+    ('SE', 0x0caa2): 'DELETEMENU',
+    ('SE', 0x0cae4): 'DRAWMBAR',
+    ('SE', 0x0caee): 'DRAWMENUBAR',
+    ('SE', 0x0cafe): 'HILITEMENU',
+    ('SE', 0x0cb4a): 'ENABLEITEM',
+    ('SE', 0x0cb66): 'DISABLEITEM',
+    ('SE', 0x0cbaa): 'MENUSELECT',
+    ('SE', 0x0cd60): 'FULLCLIP',
+    ('SE', 0x0cd94): 'GETMENUBAR',
+    ('SE', 0x0cda8): 'SETMENUBAR',
+    ('SE', 0x0cdb8): 'DISPOSEMENU',
+    ('SE', 0x0cdce): 'FLASHMENUBAR',
+    ('SE', 0x0ced8): 'GETITEMICON',
+    ('SE', 0x0cedc): 'SETITEMICON',
+    ('SE', 0x0cee0): 'GETITEMSTYLE',
+    ('SE', 0x0cee4): 'SETITEMSTYLE',
+    ('SE', 0x0cee8): 'GETITEMMARK',
+    ('SE', 0x0ceec): 'SETITEMMARK',
+    ('SE', 0x0cef0): 'CHECKITEM',
+    ('SE', 0x0cf10): 'MENUKEY',
+    ('SE', 0x0cf8c): 'GETITEM',
+    ('SE', 0x0cfc0): 'CALCMENUSIZE',
+    ('SE', 0x0cff6): 'NEWMENU',
+    ('SE', 0x0d046): 'APPENDMENU',
+    ('SE', 0x0d04e): 'INSMENUITEM',
+    ('SE', 0x0d1aa): 'GETMHANDLE',
+    ('SE', 0x0d1ca): 'DELMENUITEM',
+    ('SE', 0x0d1fc): 'SETITEM',
+    ('SE', 0x0d242): 'SETMENUFLASH',
+    ('SE', 0x0d24c): 'ADDRESMENU',
+    ('SE', 0x0d254): 'INSRTRESMENU',
+    ('SE', 0x0d32a): 'COUNTMITEMS',
+    ('SE', 0x0d346): 'PLOTICON',
+    ('SE', 0x0d45c): 'AfterLoadResourceInCallControl', #leak
+    ('SE', 0x0d49a): 'DISPOSECONTROL',
+    ('SE', 0x0d4a0): 'EraseControlInDisposeControl', #leak
+    ('SE', 0x0d4a2): 'AfterEraseControlInDisposeControl', #leak
+    ('SE', 0x0d4be): 'KILLCONTROLS',
+    ('SE', 0x0d4d0): 'DRAWONECONTROL',
+    ('SE', 0x0d4da): 'SHOWCONTROL',
+    ('SE', 0x0d4f8): 'HIDECONTROL',
+    ('SE', 0x0d512): 'MOVECONTROL',
+    ('SE', 0x0d550): 'GETCREFCON',
+    ('SE', 0x0d55e): 'SETCREFCON',
+    ('SE', 0x0d56e): 'GETCTLACTION',
+    ('SE', 0x0d572): 'SETCTLACTION',
+    ('SE', 0x0d576): 'SIZECONTROL',
+    ('SE', 0x0d59e): 'HILITECONTROL',
+    ('SE', 0x0d5ca): 'GETCTITLE',
+    ('SE', 0x0d5e2): 'SETCTITLE',
+    ('SE', 0x0d606): 'AfterSetHandleSizeInSetCTitle', #leak
+    ('SE', 0x0d614): 'GoTstVisInSetCTitle', #leak
+    ('SE', 0x0d624): 'GETCTLVALUE',
+    ('SE', 0x0d632): 'GETCTLMIN',
+    ('SE', 0x0d636): 'GETCTLMAX',
+    ('SE', 0x0d63a): 'SETCTLVALUE',
+    ('SE', 0x0d67c): 'SETCTLMIN',
+    ('SE', 0x0d680): 'SETCTLMAX',
+    ('SE', 0x0d684): 'TESTCONTROL',
+    ('SE', 0x0d6b2): 'DRAGCONTROL',
+    ('SE', 0x0d764): 'TRACKCONTROL',
+    ('SE', 0x0d852): 'UPDTCONTROLS',
+    ('SE', 0x0d862): 'DRAWCONTROLS',
+    ('SE', 0x0d8ea): 'FINDCONTROL',
+    ('SE', 0x0d97a): 'INITRESOURCES',
+    ('SE', 0x0dad6): 'VSUPERLOAD',
+    ('SE', 0x0dc18): 'VNEWMAP',
+    ('SE', 0x0dd04): 'RSRCZONEINIT',
+    ('SE', 0x0dd98): 'AfterOpenRFInORFCommon', #leak
+    ('SE', 0x0dda2): 'CREATERESFILE',
+    ('SE', 0x0dda6): 'AfterStdZEntryInCreateResFile', #leak
+    ('SE', 0x0ddb8): 'AfterCreateInCreateResFile', #leak
+    ('SE', 0x0ddec): 'OPENRESFILE',
+    ('SE', 0x0de1c): 'OPENRFPERM',
+    ('SE', 0x0de30): 'USERESFILE',
+    ('SE', 0x0de3a): 'GETRESFILEATTRS',
+    ('SE', 0x0de46): 'SETRESFILEATTRS',
+    ('SE', 0x0defc): 'UPDATERESFILE',
+    ('SE', 0x0dfe6): 'VCMPFRM',
+    ('SE', 0x0e1e0): 'CLOSERESFILE',
+    ('SE', 0x0e280): 'COUNT1RESOURCES',
+    ('SE', 0x0e284): 'COUNTRESOURCES',
+    ('SE', 0x0e2aa): 'GET1INDRESOURCE',
+    ('SE', 0x0e2ae): 'GETINDRESOURCE',
+    ('SE', 0x0e346): 'COUNT1TYPES',
+    ('SE', 0x0e34a): 'COUNTTYPES',
+    ('SE', 0x0e390): 'GET1INDTYPE',
+    ('SE', 0x0e394): 'GETINDTYPE',
+    ('SE', 0x0e3b6): 'UNIQUE1ID',
+    ('SE', 0x0e3ba): 'UNIQUEID',
+    ('SE', 0x0e3f4): 'GET1RESOURCE',
+    ('SE', 0x0e3f8): 'GETRESOURCE',
+    ('SE', 0x0e438): 'GET1NAMEDRESOURCE',
+    ('SE', 0x0e43c): 'GETNAMEDRESOURCE',
+    ('SE', 0x0e4fc): 'GetRsrcCnt', #leak
+    ('SE', 0x0e558): 'StdZEntry', #leak
+    ('SE', 0x0e55c): 'Std1Entry', #leak
+    ('SE', 0x0e590): 'SwapROMMap', #leak
+    ('SE', 0x0e616): 'RStdExit', #leak
+    ('SE', 0x0e746): 'VCHECKLOAD',
+    ('SE', 0x0e810): 'RREntry6', #leak
+    ('SE', 0x0e85e): 'RdData', #leak
+    ('SE', 0x0e868): 'WrData', #leak
+    ('SE', 0x0e87c): 'SaveRegs', #leak
+    ('SE', 0x0e8c8): 'SpaceAt', #leak
+    ('SE', 0x0e970): 'CheckGrowAt1', #leak
+    ('SE', 0x0e980): 'AfterSetEOFInCheckGrow', #leak
+    ('SE', 0x0e9e8): 'LOADRESOURCE',
+    ('SE', 0x0ea26): 'RELEASERESOURCE',
+    ('SE', 0x0ea50): 'DETACHRESOURCE',
+    ('SE', 0x0ea68): 'CHANGEDRESOURCE',
+    ('SE', 0x0eaa4): 'WRITERESOURCE',
+    ('SE', 0x0eade): 'HOMERESFILE',
+    ('SE', 0x0eb08): 'SETRESPURGE',
+    ('SE', 0x0eb28): 'SETRESLOAD',
+    ('SE', 0x0eb32): 'CURRESFILE',
+    ('SE', 0x0eb3a): 'RESERROR',
+    ('SE', 0x0eb42): 'ADDREFERENCE',
+    ('SE', 0x0eb52): 'RMVEREFERENCE',
+    ('SE', 0x0eb5c): 'GETRESATTRS',
+    ('SE', 0x0eb70): 'SETRESATTRS',
+    ('SE', 0x0eb94): 'RefHandle', #leak
+    ('SE', 0x0eba2): 'GETRESINFO',
+    ('SE', 0x0ebe8): 'SETRESINFO',
+    ('SE', 0x0ec32): 'ADDRESOURCE',
+    ('SE', 0x0ec84): 'AddNewRefWithoutUpdate', #leak
+    ('SE', 0x0ed0a): 'RMVERESOURCE',
+    ('SE', 0x0ed9c): 'AddName', #leak
+    ('SE', 0x0ee16): 'AfterSetHandleSizeInResizeMap', #leak
+    ('SE', 0x0ee5c): 'AfterResizeMapInRmveName', #leak
+    ('SE', 0x0ee7a): 'At9InRmveName', #leak
+    ('SE', 0x0ee86): 'SIZERESOURCE',
+    ('SE', 0x0eea8): 'MAXSIZERSRC',
+    ('SE', 0x0eebc): 'RSRCMAPENTRY',
+    ('SE', 0x0eed4): 'INITDIALOGS',
+    ('SE', 0x0eeee): 'InitDialogContinue', #leak
+    ('SE', 0x0ef8a): 'STOPALERT',
+    ('SE', 0x0ef8e): 'NOTEALERT',
+    ('SE', 0x0ef92): 'CAUTIONALERT',
+    ('SE', 0x0ef96): 'ALERT',
+    ('SE', 0x0f0b2): 'GETNEWDIALOG',
+    ('SE', 0x0f0ea): 'NEWDIALOG',
+    ('SE', 0x0f16a): 'ClaimEvent', #leak
+    ('SE', 0x0f182): 'ISDIALOGEVENT',
+    ('SE', 0x0f190): 'IsDiaAfterClaimEvent', #leak
+    ('SE', 0x0f1b8): 'IsDiaNotDlgExit', #leak
+    ('SE', 0x0f1bc): 'DIALOGSELECT',
+    ('SE', 0x0f1d0): 'DSAfterClaimEvent', #leak
+    ('SE', 0x0f1f8): 'DSNotMineExit', #leak
+    ('SE', 0x0f1fc): 'MODALDIALOG',
+    ('SE', 0x0f272): 'DialogStdEntry', #leak
+    ('SE', 0x0f28a): 'DRAWDIALOG',
+    ('SE', 0x0f2a2): 'UPDTDIALOG',
+    ('SE', 0x0f2c0): 'CLOSEDIALOG',
+    ('SE', 0x0f2e2): 'AfterDisposeHandleInCloseDialog', #leak
+    ('SE', 0x0f346): 'DISPOSDIALOG',
+    ('SE', 0x0f37c): 'COULDDIALOG',
+    ('SE', 0x0f38a): 'COULDALERT',
+    ('SE', 0x0f3d2): 'FromGetADHndl', #leak
+    ('SE', 0x0f3de): 'FREEDIALOG',
+    ('SE', 0x0f3ec): 'FREEALERT',
+    ('SE', 0x0f43e): 'PARAMTEXT',
+    ('SE', 0x0f462): 'ERRORSOUND',
+    ('SE', 0x0f46a): 'GETDITEM',
+    ('SE', 0x0f4b0): 'SETDITEM',
+    ('SE', 0x0f4e6): 'GETITEXT',
+    ('SE', 0x0f506): 'SETITEXT',
+    ('SE', 0x0f556): 'AfterValidRectInSetIText', #leak
+    ('SE', 0x0f568): 'SELITEXT',
+    ('SE', 0x0f5c2): 'HIDEDITEM',
+    ('SE', 0x0f620): 'SHOWDITEM',
+    ('SE', 0x0f694): 'FINDDITEM',
+    ('SE', 0x0f898): 'AfterH2HinDoStatic', #leak
+    ('SE', 0x0f8b6): 'skipParam', #leak
+    ('SE', 0x0f9a8): 'TEKeyFromEventAD', #leak
+    ('SE', 0x0fb00): 'AfterTEAutoViewInSetNewEdit', #leak
+    ('SE', 0x0fb36): 'FrameOut', #leak
+    ('SE', 0x0fbe4): 'XMUNGER',
+    ('SE', 0x0fd1a): 'HANDTOHAND',
+    ('SE', 0x0fd42): 'PTRTOXHAND',
+    ('SE', 0x0fd4a): 'PTRTOHAND',
+    ('SE', 0x0fd64): 'HANDANDHAND',
+    ('SE', 0x0fd88): 'PTRANDHAND',
+    ('SE', 0x0fd98): 'METHODDISPATCH',
+    ('SE', 0x0fdf4): 'LONGMUL',
+    ('SE', 0x0fe20): 'FRACMUL',
+    ('SE', 0x0fe28): 'FIXMUL',
+    ('SE', 0x0fec2): 'FixPtStdEntry', #leak
+    ('SE', 0x0fef2): 'FRACDIV',
+    ('SE', 0x0fef8): 'FIXDIV',
+    ('SE', 0x0ff48): 'FRACSQRT',
+    ('SE', 0x0ff82): 'FIXRATIO',
+    ('SE', 0x0ffbc): 'LOWORD',
+    ('SE', 0x0ffc4): 'HIWORD',
+    ('SE', 0x0ffce): 'FIXROUND',
+    ('SE', 0x0ffe8): 'FRACCOS',
+    ('SE', 0x0fff0): 'FRACSIN',
+    ('SE', 0x10096): 'FIXATAN2',
+    ('SE', 0x100b8): 'AtLabel2InFixATan', #leak
+    ('SE', 0x10154): 'FIX2X',
+    ('SE', 0x1015a): 'FRAC2X',
+    ('SE', 0x10186): 'X2FIX',
+    ('SE', 0x1018c): 'X2FRAC',
+    ('SE', 0x101e8): 'FIX2LONG',
+    ('SE', 0x101ec): 'FRAC2FIX',
+    ('SE', 0x10208): 'LONG2FIX',
+    ('SE', 0x1020c): 'FIX2FRAC',
+    ('SE', 0x1025c): 'SysEvtDoneSEvt', #leak
+    ('SE', 0x10268): 'SysEvtAfterFrontWindow', #leak
+    ('SE', 0x1027c): 'SearchWindow', #leak
+    ('SE', 0x102f2): 'SYSTEMCLICK',
+    ('SE', 0x10330): 'AfterLoadResourceInSystemClick', #leak
+    ('SE', 0x1034c): 'AfterFrontWindowInSystemClick', #leak
+    ('SE', 0x103ac): 'AfterTrackGoAwayInSystemClick', #leak
+    ('SE', 0x103c6): 'SYSTEMTASK',
+    ('SE', 0x10442): 'SYSTEMMENU',
+    ('SE', 0x1048a): 'SYSTEMEDIT',
+    ('SE', 0x104b8): 'OPENDESKACC',
+    ('SE', 0x10506): 'CLOSEDESKACC',
+    ('SE', 0x1053a): 'GETCURSOR',
+    ('SE', 0x10542): 'GETSTRING',
+    ('SE', 0x1054a): 'GETICON',
+    ('SE', 0x10552): 'GETPICTURE',
+    ('SE', 0x1055a): 'GETNEWWINDOW',
+    ('SE', 0x10576): 'FromGetNewWind', #leak
+    ('SE', 0x105a8): 'AfterReleaseResourceInGetNewWindow', #leak
+    ('SE', 0x105b4): 'GETNEWCONTROL',
+    ('SE', 0x105fa): 'AfterReleaseResourceInGetNewControl', #leak
+    ('SE', 0x10604): 'GETMENU',
+    ('SE', 0x10682): 'GETNEWMBAR',
+    ('SE', 0x106f0): 'TEGETTEXT',
+    ('SE', 0x106fc): 'TEINIT',
+    ('SE', 0x10722): 'TEDISPOSE',
+    ('SE', 0x1075e): 'TEXTBOX',
+    ('SE', 0x10828): 'TESETTEXT',
+    ('SE', 0x1092a): 'TECALTEXT',
+    ('SE', 0x1098e): 'TESETSELECT',
+    ('SE', 0x109ba): 'TENEW',
+    ('SE', 0x10a2e): 'TESTYLNEW',
+    ('SE', 0x10b00): 'TEUPDATE',
+    ('SE', 0x10b2e): 'TECLICK',
+    ('SE', 0x10c44): 'VPIXEL2CHAR',
+    ('SE', 0x11158): 'XTRIMMEASURE',
+    ('SE', 0x111f0): 'VCHAR2PIXEL',
+    ('SE', 0x1142e): 'TEDISPATCH',
+    ('SE', 0x11446): 'TECOPY',
+    ('SE', 0x11514): 'TECUT',
+    ('SE', 0x11524): 'TEDELETE',
+    ('SE', 0x11644): 'XFINDWORD',
+    ('SE', 0x1172c): 'XFINDLINE',
+    ('SE', 0x11b08): 'TEACTIVATE',
+    ('SE', 0x11b2a): 'TEDEACTIVATE',
+    ('SE', 0x11b40): 'TEIDLE',
+    ('SE', 0x11b68): 'TEPASTE',
+    ('SE', 0x11e58): 'TEINSERT',
+    ('SE', 0x11e86): 'TEKEY',
+    ('SE', 0x11f70): 'TESETJUST',
+    ('SE', 0x11f96): 'TESCROLL',
+    ('SE', 0x11ff0): 'TEPINSCROLL',
+    ('SE', 0x1207a): 'TESELVIEW',
+    ('SE', 0x120e8): 'TEAUTOVIEW',
+    ('SE', 0x1254e): 'TEGETOFFSET',
+    ('SE', 0x12670): 'UNLOADSCRAP',
+    ('SE', 0x126a4): 'LOADSCRAP',
+    ('SE', 0x126d8): 'ZEROSCRAP',
+    ('SE', 0x12724): 'GETSCRAP',
+    ('SE', 0x12794): 'PUTSCRAP',
+    ('SE', 0x127ba): 'PutScrapExit', #leak
+    ('SE', 0x127ca): 'DoPutAppendMem', #leak
+    ('SE', 0x127d8): 'DoPutAppendFile', #leak
+    ('SE', 0x127da): 'PRGLUE',
+    ('SE', 0x129fc): 'INITCURSOR',
+    ('SE', 0x12a0c): 'SETCURSOR',
+    ('SE', 0x12a28): 'HIDECURSOR',
+    ('SE', 0x12a2e): 'SHOWCURSOR',
+    ('SE', 0x12a34): 'SHIELDCURSOR',
+    ('SE', 0x12a64): 'OBSCURECURSOR',
+    ('SE', 0x12a6a): 'BITNOT',
+    ('SE', 0x12a72): 'BITAND',
+    ('SE', 0x12a7a): 'BITXOR',
+    ('SE', 0x12a84): 'BITOR',
+    ('SE', 0x12a8c): 'BITSHIFT',
+    ('SE', 0x12aa2): 'BITTST',
+    ('SE', 0x12ab0): 'BITSET',
+    ('SE', 0x12aba): 'BITCLR',
+    ('SE', 0x12ad2): 'RANDOM',
+    ('SE', 0x12b24): 'FORECOLOR',
+    ('SE', 0x12b28): 'BACKCOLOR',
+    ('SE', 0x12b2a): 'PORTLONG',
+    ('SE', 0x12b36): 'COLORBIT',
+    ('SE', 0x12b38): 'PORTWORD',
+    ('SE', 0x12b44): 'GETMASKTAB',
+    ('SE', 0x12b4a): 'LEFTMASK',
+    ('SE', 0x12b56): 'RIGHTMASK',
+    ('SE', 0x12b62): 'BITMASK',
+    ('SE', 0x12b6e): 'MASKTAB',
+    ('SE', 0x12bce): 'PATEXPAND',
+    ('SE', 0x12c96): 'COLORMAP',
+    ('SE', 0x12d0a): 'GETPIXEL',
+    ('SE', 0x12d3e): 'STUFFHEX',
+    ('SE', 0x12d78): 'XORSLAB',
+    ('SE', 0x12dbc): 'DRAWSLAB',
+    ('SE', 0x12e4c): 'SLABMODE',
+    ('SE', 0x12ea6): 'FASTSLABMODE',
+    ('SE', 0x12eba): 'NEWHANDLE',
+    ('SE', 0x12ece): 'SETHSIZE',
+    ('SE', 0x12edc): 'INITGRAF',
+    ('SE', 0x12fa2): 'OPENPORT',
+    ('SE', 0x12fba): 'INITPORT',
+    ('SE', 0x1303a): 'CLOSEPORT',
+    ('SE', 0x13052): 'SETSTDPROCS',
+    ('SE', 0x1308c): 'LOCALTOGLOBAL',
+    ('SE', 0x13094): 'GLOBALTOLOCAL',
+    ('SE', 0x130c0): 'ADDPT',
+    ('SE', 0x130c8): 'SUBPT',
+    ('SE', 0x130e6): 'SETPORT',
+    ('SE', 0x130ee): 'GETPORT',
+    ('SE', 0x130f8): 'GRAFDEVICE',
+    ('SE', 0x130fe): 'SETPORTBITS',
+    ('SE', 0x13116): 'BACKPAT',
+    ('SE', 0x13124): 'PORTSIZE',
+    ('SE', 0x13144): 'MOVEPORTTO',
+    ('SE', 0x13170): 'SETORIGIN',
+    ('SE', 0x131a4): 'CLIPRECT',
+    ('SE', 0x131b6): 'SETCLIP',
+    ('SE', 0x131c2): 'GETCLIP',
+    ('SE', 0x131d6): 'SETPT',
+    ('SE', 0x131e0): 'EQUALPT',
+    ('SE', 0x131ec): 'STDTEXT',
+    ('SE', 0x13378): 'CALLTEXT',
+    ('SE', 0x13398): 'TEXTFACE',
+    ('SE', 0x133a4): 'DRAWCHAR',
+    ('SE', 0x133b2): 'CHARWIDTH',
+    ('SE', 0x133ca): 'TEXTFONT',
+    ('SE', 0x133ce): 'TEXTMODE',
+    ('SE', 0x133d2): 'TEXTSIZE',
+    ('SE', 0x133d8): 'SPACEEXTRA',
+    ('SE', 0x133e4): 'DRAWSTRING',
+    ('SE', 0x133f6): 'DRAWTEXT',
+    ('SE', 0x1340e): 'STRINGWIDTH',
+    ('SE', 0x1341e): 'TEXTWIDTH',
+    ('SE', 0x13486): 'STDTXMEAS',
+    ('SE', 0x1352c): 'MEASURETEXT',
+    ('SE', 0x135f4): 'GETFONTINFO',
+    ('SE', 0x13696): 'DRTEXT',
+    ('SE', 0x13dd8): 'STDLINE',
+    ('SE', 0x13dec): 'StdLineRtn', #leak
+    ('SE', 0x13e58): 'StdLineNotPic', #leak
+    ('SE', 0x13e6a): 'LINETO',
+    ('SE', 0x13e80): 'LINE',
+    ('SE', 0x13e98): 'MOVETO',
+    ('SE', 0x13eb8): 'DOLINE',
+    ('SE', 0x13f30): 'HIDEPEN',
+    ('SE', 0x13f34): 'SHOWPEN',
+    ('SE', 0x13f40): 'GETPENSTATE',
+    ('SE', 0x13f44): 'SETPENSTATE',
+    ('SE', 0x13f66): 'GETPEN',
+    ('SE', 0x13f76): 'PENSIZE',
+    ('SE', 0x13f84): 'PENMODE',
+    ('SE', 0x13f8a): 'PENPAT',
+    ('SE', 0x13f9e): 'PENNORMAL',
+    ('SE', 0x13fbc): 'DRAWLINE',
+    ('SE', 0x14504): 'PUTLINE',
+    ('SE', 0x145ee): 'STDRECT',
+    ('SE', 0x14606): 'StdRectRtn', #leak
+    ('SE', 0x14614): 'StdRectNotPic', #leak
+    ('SE', 0x14650): 'PUSHVERB',
+    ('SE', 0x14682): 'FILLRECT',
+    ('SE', 0x14698): 'FRAMERECT',
+    ('SE', 0x1469c): 'PAINTRECT',
+    ('SE', 0x146a0): 'ERASERECT',
+    ('SE', 0x146a4): 'INVERTRECT',
+    ('SE', 0x146a8): 'CALLRECT',
+    ('SE', 0x146c8): 'DRAWRECT',
+    ('SE', 0x14704): 'FRRECT',
+    ('SE', 0x147f2): 'SETRECT',
+    ('SE', 0x14800): 'EQUALRECT',
+    ('SE', 0x1481a): 'EMPTYRECT',
+    ('SE', 0x14834): 'OFFSETRECT',
+    ('SE', 0x14846): 'INSETRECT',
+    ('SE', 0x14858): 'SECTRECT',
+    ('SE', 0x14880): 'RSECT',
+    ('SE', 0x148f4): 'UNIONRECT',
+    ('SE', 0x14932): 'PT2RECT',
+    ('SE', 0x14968): 'PTINRECT',
+    ('SE', 0x14998): 'PUTRECT',
+    ('SE', 0x149f4): 'BITBLT',
+    ('SE', 0x14ea2): 'RGNBLT',
+    ('SE', 0x153e0): 'STDRRECT',
+    ('SE', 0x15418): 'StdRRectRtn', #leak
+    ('SE', 0x15426): 'StdRRectNotPic', #leak
+    ('SE', 0x15472): 'FRAMEROUNDRECT',
+    ('SE', 0x15476): 'PAINTROUNDRECT',
+    ('SE', 0x1547a): 'ERASEROUNDRECT',
+    ('SE', 0x1547e): 'INVERTROUNDRECT',
+    ('SE', 0x15482): 'FILLROUNDRECT',
+    ('SE', 0x15498): 'CALLRRECT',
+    ('SE', 0x154bc): 'STDOVAL',
+    ('SE', 0x154d4): 'StdOvalRtn', #leak
+    ('SE', 0x154e2): 'StdOvalNotPic', #leak
+    ('SE', 0x15544): 'FRAMEOVAL',
+    ('SE', 0x15548): 'PAINTOVAL',
+    ('SE', 0x1554c): 'ERASEOVAL',
+    ('SE', 0x15550): 'INVERTOVAL',
+    ('SE', 0x15554): 'FILLOVAL',
+    ('SE', 0x1556a): 'CALLOVAL',
+    ('SE', 0x1558a): 'PUTOVAL',
+    ('SE', 0x156c8): 'STDARC',
+    ('SE', 0x156e0): 'StdArcRtn', #leak
+    ('SE', 0x156fe): 'StdArcNotPic', #leak
+    ('SE', 0x15746): 'FRAMEARC',
+    ('SE', 0x1574a): 'PAINTARC',
+    ('SE', 0x1574e): 'ERASEARC',
+    ('SE', 0x15752): 'INVERTARC',
+    ('SE', 0x15756): 'FILLARC',
+    ('SE', 0x1576c): 'CALLARC',
+    ('SE', 0x15790): 'DRAWARC',
+    ('SE', 0x158ee): 'FromDrawArc', #leak
+    ('SE', 0x15dc4): 'SeekMask', #leak
+    ('SE', 0x15e1c): 'INITOVAL',
+    ('SE', 0x15ebe): 'BUMPOVAL',
+    ('SE', 0x15f00): 'ANGLEFROMSLOPE',
+    ('SE', 0x15f3e): 'SLOPEFROMANGLE',
+    ('SE', 0x16062): 'PTTOANGLE',
+    ('SE', 0x160f2): 'STDPOLY',
+    ('SE', 0x16168): 'FRAMEPOLY',
+    ('SE', 0x1616c): 'PAINTPOLY',
+    ('SE', 0x16170): 'ERASEPOLY',
+    ('SE', 0x16174): 'INVERTPOLY',
+    ('SE', 0x16178): 'FILLPOLY',
+    ('SE', 0x1618e): 'CALLPOLY',
+    ('SE', 0x161ae): 'OPENPOLY',
+    ('SE', 0x161e2): 'CLOSEPOLY',
+    ('SE', 0x16250): 'KILLPOLY',
+    ('SE', 0x16258): 'OFFSETPOLY',
+    ('SE', 0x16274): 'MAPPOLY',
+    ('SE', 0x162d0): 'FRPOLY',
+    ('SE', 0x16310): 'DRAWPOLY',
+    ('SE', 0x16366): 'STDRGN',
+    ('SE', 0x1637e): 'StdRgnRtn', #leak
+    ('SE', 0x16390): 'StdRgnNotPic', #leak
+    ('SE', 0x163cc): 'FRAMERGN',
+    ('SE', 0x163d0): 'PAINTRGN',
+    ('SE', 0x163d4): 'ERASERGN',
+    ('SE', 0x163d8): 'INVERTRGN',
+    ('SE', 0x163dc): 'FILLRGN',
+    ('SE', 0x163f2): 'CALLRGN',
+    ('SE', 0x16412): 'DRAWRGN',
+    ('SE', 0x1644e): 'FRRGN',
+    ('SE', 0x164be): 'NEWRGN',
+    ('SE', 0x164e2): 'DISPOSERGN',
+    ('SE', 0x164ea): 'OPENRGN',
+    ('SE', 0x16518): 'CLOSERGN',
+    ('SE', 0x1656e): 'COPYRGN',
+    ('SE', 0x165bc): 'SETEMPTYRGN',
+    ('SE', 0x165c8): 'SETRECTRGN',
+    ('SE', 0x16624): 'RECTRGN',
+    ('SE', 0x16632): 'OFFSETRGN',
+    ('SE', 0x16664): 'INSETRGN',
+    ('SE', 0x16700): 'EMPTYRGN',
+    ('SE', 0x16710): 'EQUALRGN',
+    ('SE', 0x1674e): 'SECTRGN',
+    ('SE', 0x16752): 'UNIONRGN',
+    ('SE', 0x16756): 'DIFFRGN',
+    ('SE', 0x1675a): 'XORRGN',
+    ('SE', 0x1675e): 'DORGNOP',
+    ('SE', 0x16844): 'PTINRGN',
+    ('SE', 0x168a4): 'RECTINRGN',
+    ('SE', 0x1692a): 'TRIMRECT',
+    ('SE', 0x16988): 'MAPRGN',
+    ('SE', 0x16a36): 'INITRGN',
+    ('SE', 0x16a6e): 'SEEKRGN',
+    ('SE', 0x16b46): 'RGNOP',
+    ('SE', 0x16b94): 'AfterStackSpaceInRgnOp', #leak
+    ('SE', 0x16bee): 'AfterBufferSizeCalcInRgnOp', #leak
+    ('SE', 0x16d6c): 'SECTSCAN',
+    ('SE', 0x16d72): 'DIFFSCAN',
+    ('SE', 0x16d76): 'UNIONSCAN',
+    ('SE', 0x16db8): 'INSETSCAN',
+    ('SE', 0x16e02): 'XORSCAN',
+    ('SE', 0x16e18): 'SORTPOINTS',
+    ('SE', 0x16eac): 'CULLPOINTS',
+    ('SE', 0x16efe): 'PUTRGN',
+    ('SE', 0x16f80): 'PACKRGN',
+    ('SE', 0x17048): 'STDBITS',
+    ('SE', 0x17182): 'StdBitsStart2', #leak
+    ('SE', 0x17186): 'StdBitsOK', #leak
+    ('SE', 0x17188): 'StdBitsNotPic', #leak
+    ('SE', 0x171c6): 'COPYBITS',
+    ('SE', 0x1726c): 'COPYMASK',
+    ('SE', 0x174ac): 'SEEDFILL',
+    ('SE', 0x174b4): 'CALCMASK',
+    ('SE', 0x17538): 'SeedFill', #leak
+    ('SE', 0x175f8): 'GoHome', #leak
+    ('SE', 0x1760a): 'SCROLLRECT',
+    ('SE', 0x17708): 'PACKBITS',
+    ('SE', 0x17798): 'UNPACKBITS',
+    ('SE', 0x177de): 'STRETCHBITS',
+    ('SE', 0x17816): 'XRGNBLT', #leak
+    ('SE', 0x1784e): 'BackToROM', #leak
+    ('SE', 0x17caa): 'SETUPSTRETCH',
+    ('SE', 0x1804c): 'STDCOMMENT',
+    ('SE', 0x180ac): 'STDGETPIC',
+    ('SE', 0x180d2): 'STDPUTPIC',
+    ('SE', 0x18152): 'PICCOMMENT',
+    ('SE', 0x18168): 'OPENPICTURE',
+    ('SE', 0x1819c): 'OpenPictptchEntry', #leak
+    ('SE', 0x1821a): 'OpenPictDone', #leak
+    ('SE', 0x18224): 'CLOSEPICTURE',
+    ('SE', 0x18232): 'ClosePictptchEntry', #leak
+    ('SE', 0x18238): 'ClosePictptchEntryNew', #leak
+    ('SE', 0x1825a): 'ClosePictGoHome', #leak
+    ('SE', 0x18260): 'KILLPICTURE',
+    ('SE', 0x18268): 'DRAWPICTURE',
+    ('SE', 0x18364): 'DPQuit', #leak
+    ('SE', 0x18388): 'DPGoHome', #leak
+    ('SE', 0x18394): 'PICITEM',
+    ('SE', 0x18454): 'XClip', #leak
+    ('SE', 0x18460): 'XClip2', #leak
+    ('SE', 0x184da): 'XPnSize', #leak
+    ('SE', 0x1852e): 'GetVers', #leak
+    ('SE', 0x18552): 'OvalEnd', #leak
+    ('SE', 0x18572): 'XOrigin', #leak
+    ('SE', 0x185f4): 'LNOK', #leak
+    ('SE', 0x1866a): 'TextOP', #leak
+    ('SE', 0x186ae): 'RectOP', #leak
+    ('SE', 0x186c8): 'RRectOP', #leak
+    ('SE', 0x186ea): 'OvalOP', #leak
+    ('SE', 0x1870e): 'ArcOP', #leak
+    ('SE', 0x18728): 'PolyOP', #leak
+    ('SE', 0x1875a): 'RgnOP', #leak
+    ('SE', 0x18854): 'Bits', #leak
+    ('SE', 0x18868): 'CommentOP', #leak
+    ('SE', 0x1888c): 'LongCom', #leak
+    ('SE', 0x18986): 'GetRect', #leak
+    ('SE', 0x189ea): 'Kill1', #leak
+    ('SE', 0x189f2): 'Abort', #leak
+    ('SE', 0x189fa): 'Done', #leak
+    ('SE', 0x18a04): 'GETPICDATA',
+    ('SE', 0x18a1a): 'PUTPICDATA',
+    ('SE', 0x18a30): 'DPUTPICBYTE',
+    ('SE', 0x18a36): 'PUTPICBYTE',
+    ('SE', 0x18a48): 'PUTPICWORD',
+    ('SE', 0x18a5a): 'PUTPICLONG',
+    ('SE', 0x18a6a): 'PUTPICPAT',
+    ('SE', 0x18a76): 'PUTPICRECT',
+    ('SE', 0x18ab8): 'PUTPICRGN',
+    ('SE', 0x18ad6): 'PUTPICVERB',
+    ('SE', 0x18bd4): 'CHECKPIC',
+    ('SE', 0x18c9e): 'SCALEPT',
+    ('SE', 0x18cf6): 'MAPPT',
+    ('SE', 0x18d58): 'MAPRECT',
+    ('SE', 0x18d70): 'MAPRATIO',
+    ('SE', 0x18e18): 'ShowCrsr', #leak
+    ('SE', 0x18f8c): 'SCRNADDRESS',
+    ('SE', 0x18f94): 'SCRNSIZE',
+    ('SE', 0x18fa4): 'SCRNBITMAP',
+    ('SE', 0x18fb8): 'CRSRVBLTASK',
+    ('SE', 0x1913e): 'PINRECT',
+    ('SE', 0x1924e): 'FMSWAPFONT',
+    ('SE', 0x19c94): 'FPOINTONE',
+    ('SE', 0x19d02): 'GETFONTNAME',
+    ('SE', 0x19d5e): 'REALFONT',
+    ('SE', 0x19dc8): 'GETFNUM',
+    ('SE', 0x19e0c): 'SETFONTLOCK',
+    ('SE', 0x19e34): 'SETFSCALEDISABLE',
+    ('SE', 0x19e42): 'SETFRACTENABLE',
+    ('SE', 0x19e4a): 'FONTMETRICS',
+    ('SE', 0x1a020): 'INITALLPACKS',
+    ('SE', 0x1a0a2): 'PACK0',
+    ('SE', 0x1a0a4): 'PACK1',
+    ('SE', 0x1a0a6): 'PACK2',
+    ('SE', 0x1a0a8): 'PACK3',
+    ('SE', 0x1a0aa): 'PACK4',
+    ('SE', 0x1a0ac): 'PACK5',
+    ('SE', 0x1a0ae): 'PACK6',
+    ('SE', 0x1a0b0): 'PACK7',
+    ('SE', 0x1a0b2): 'PACK8',
+    ('SE', 0x1a0b4): 'PACK9',
+    ('SE', 0x1a0b6): 'PACK10',
+    ('SE', 0x1a0b8): 'PACK11',
+    ('SE', 0x1a0ba): 'PACK12',
+    ('SE', 0x1a0bc): 'PACK13',
+    ('SE', 0x1a0be): 'PACK14',
+    ('SE', 0x1a0c0): 'PACK15',
+    ('SE', 0x1a13a): 'DATE2SECS',
+    ('SE', 0x1a206): 'SCSIMGR',
+    ('SE', 0x1a96a): 'RMVTIME',
+    ('SE', 0x1a984): 'PRIMETIME',
+    ('SE', 0x1b122): '_PACK_5_',
+    ('SE', 0x1c188): '_PACK_4_',
+    ('SE', 0x1d348): '_PACK_7_',
+    ('SE', 0x1d896): '_tcsl_0_',
+    ('SE', 0x1d924): '_bbmc_0_',
+    ('SE', 0x31bae): '_SERD_0_',
+    ('SE', 0x324aa): '_DRVR_10_.ATP',
+    ('SE', 0x3312a): '_DRVR_9_.MPP',
+    ('SE', 0x34680): '_DRVR_4_.Sony',
+    ('SE', 0x34986): 'SeekCk', #leak
+    ('SE', 0x349e2): 'CkDrvNum', #leak
+    ('SE', 0x350de): 'Seek', #leak
+    ('SE', 0x352ec): 'RWPowerUp', #leak
+    ('SE', 0x36114): 'FmtTrkRet', #leak
+    ('SE', 0x3638e): 'EmptyPD', #leak
+    ('SE', 0x363aa): 'SyncCallRtn', #leak
+    ('SE', 0x36c90): '_DRVR_3_.Sound',
+    ('SE', 0x37028): '_DRVR_40_.XPP',
+    ('SE', 0x37a30): '_CDEF_0_',
+    ('SE', 0x37d5a): '_CDEF_1_',
+    ('SE', 0x38254): '_KCHR_0_',
+    ('SE', 0x387c6): '_KMAP_0_',
+    ('SE', 0x38854): '_MBDF_0_',
+    ('SE', 0x38e02): '_MDEF_0_',
+    ('SE', 0x39212): '_WDEF_1_',
+    ('SE', 0x395ac): '_WDEF_0_',
+    ('SE', 0x39c48): '_CURS_4_',
+    ('SE', 0x39c94): '_CURS_1_',
+    ('SE', 0x39ce0): '_CURS_3_',
+    ('SE', 0x39d2c): '_CURS_2_',
+    ('SE', 0x39d78): '_FONT_12_',
+    ('SE', 0x3ab62): '_FONT_0_Chicago',
+    ('SE', 0x3ab6a): '_FONT_393_',
+    ('SE', 0x3b594): '_FONT_396_',
+    ('SE', 0x3c204): '_FONT_521_',
+    ('SE', 0x3d5c4): 'FmtTrkRet2', #leak
+    ('SE', 0x3d856): 'EmptyPD2', #leak
+    ('SE', 0x3d86c): 'SyncCallRtn2', #leak
+    ('II', 0x00022): 'DISPOFF',
+    ('II', 0x00026): 'CRITICAL',
+    ('II', 0x00050): 'NUMAP',
+    ('II', 0x0009a): 'STARTINIT1',
+    ('II', 0x00142): 'BOOTRETRY',
+    ('II', 0x00210): 'JMPTBLINIT',
+    ('II', 0x00212): 'JMPTBL2',
+    ('II', 0x00220): 'FILLWITHONES',
+    ('II', 0x00230): 'COMPBOOTSTACK',
+    ('II', 0x0023e): 'SETUPSYSAPPZONE',
+    ('II', 0x0027c): 'DRAWBEEPSCREEN',
+    ('II', 0x002ca): 'INITADBVARS',
+    ('II', 0x002de): 'INITHIMEMGLOBALS',
+    ('II', 0x00300): 'INITGLOBALVARS',
+    ('II', 0x003f4): 'SWITCHGOODIES',
+    ('II', 0x00460): 'WDCBSWOS',
+    ('II', 0x00462): 'PMSPSWOS',
+    ('II', 0x00464): 'INITSWITCHERTABLE',
+    ('II', 0x00478): 'GETPRAM',
+    ('II', 0x004b6): 'INITXVECTTABLES',
+    ('II', 0x00532): 'WHICHCPU',
+    ('II', 0x00560): 'SETUPTIMEK',
+    ('II', 0x00634): 'INITSCSIGLOBALS',
+    ('II', 0x0066c): 'INITSCSI',
+    ('II', 0x00692): 'INITIWMGLOBALS',
+    ('II', 0x006aa): 'INITIWM',
+    ('II', 0x006e8): 'INITVIAGLOBALS',
+    ('II', 0x006f2): 'INITVIA',
+    ('II', 0x0073e): 'REV8CHK',
+    ('II', 0x0074c): 'VIATIMERENABLES',
+    ('II', 0x00780): 'INITSCCGLOBALS',
+    ('II', 0x007b4): 'INITSCC',
+    ('II', 0x007d6): 'WRITESCC',
+    ('II', 0x007e6): 'INITVIDGLOBALS',
+    ('II', 0x007e8): 'RDVIDPARAM',
+    ('II', 0x008d0): 'OPENSDRVR',
+    ('II', 0x00928): 'OPNVIDDEFLT',
+    ('II', 0x00974): 'INITVIDDEFLT',
+    ('II', 0x009b0): 'ADDVIDDEVICE',
+    ('II', 0x009f6): 'GETDEFVIDMODE',
+    ('II', 0x00a4e): 'INITDEFGAMMA',
+    ('II', 0x00aa0): 'INITDUMMYSCREEN',
+    ('II', 0x00b58): 'FROVIDEO',
+    ('II', 0x00ba8): 'INITCRSRVARS',
+    ('II', 0x00bb8): 'INITCRSRMGR',
+    ('II', 0x00c3e): 'GNEFILTER',
+    ('II', 0x00d0a): 'INITDISPATCHER',
+    ('II', 0x00d98): 'BADTRAP',
+    ('II', 0x00d9e): 'INITIOMGR',
+    ('II', 0x00e04): 'INITMEMMGR',
+    ('II', 0x00e22): 'INITRSRCMGR',
+    ('II', 0x00e32): 'INITSLOTS',
+    ('II', 0x00e80): 'INITTIMERMGR',
+    ('II', 0x00e92): 'GOOFYDOEJECT',
+    ('II', 0x01298): 'CENTERRECT',
+    ('II', 0x012ca): 'MOUSEINIT',
+    ('II', 0x01310): 'OPENBDRVRS',
+    ('II', 0x01370): 'OPENSLOTS',
+    ('II', 0x01408): 'INITFS',
+    ('II', 0x014f2): 'INITEVENTS',
+    ('II', 0x0151c): 'FINDSTARTUPDEVICE',
+    ('II', 0x0155a): 'GETDEFAULTSTARTUP',
+    ('II', 0x01564): 'SETDEFAULTSTARTUP',
+    ('II', 0x0156e): 'GETOSDEFAULT',
+    ('II', 0x01578): 'SETOSDEFAULT',
+    ('II', 0x01582): 'GETVIDEODEFAULT',
+    ('II', 0x0158c): 'SETVIDEODEFAULT',
+    ('II', 0x01596): 'INTERNALWAIT',
+    ('II', 0x015be): 'EMBARKONSEARCH',
+    ('II', 0x015ea): 'WAITFORINTERNAL',
+    ('II', 0x0166c): 'LOADSLOTDRVRS',
+    ('II', 0x016d6): 'LOADDRIVERS',
+    ('II', 0x016f4): 'PLANSTRATEGY',
+    ('II', 0x01700): 'FINDNEXTCANDIDATE',
+    ('II', 0x01714): 'NEXTDQENTRY',
+    ('II', 0x01724): 'SELECTDEVICE',
+    ('II', 0x01742): 'CHECKMOUSEEJECT',
+    ('II', 0x0174e): 'GETSTARTUPINFO',
+    ('II', 0x0176e): 'REACTTOFAILURE',
+    ('II', 0x0178a): 'VISUALUPDATE',
+    ('II', 0x017c6): 'ENABLEXFLASH',
+    ('II', 0x017cc): 'SHOWSUCCESS',
+    ('II', 0x017e0): 'EJECTME',
+    ('II', 0x017ee): 'ISREJECT',
+    ('II', 0x01800): 'ISITFLOPORDEF',
+    ('II', 0x01816): 'ISITFLOPPY',
+    ('II', 0x0181e): 'ISITHD20',
+    ('II', 0x01826): 'ISITSCSI',
+    ('II', 0x0183a): 'ISITANYTHING',
+    ('II', 0x0183e): 'NEVERAGAIN',
+    ('II', 0x01854): 'INBOOTMASK',
+    ('II', 0x01872): 'SHOWDEVICEFAIL',
+    ('II', 0x0187e): 'HAPPYMAC',
+    ('II', 0x0188c): 'SHOWPLAINDISK',
+    ('II', 0x01894): 'SHOWDISKQ',
+    ('II', 0x0189c): 'SHOWDISKX',
+    ('II', 0x018a4): 'ERASEMYICON',
+    ('II', 0x018be): 'PLOTMYICON',
+    ('II', 0x018d4): 'PLOTICNN',
+    ('II', 0x01924): 'PSHICNRECT',
+    ('II', 0x01948): 'HAPPYICON',
+    ('II', 0x01a48): 'DISKICON',
+    ('II', 0x01b48): 'QDISKICON',
+    ('II', 0x01c48): 'XDISKICON',
+    ('II', 0x01d48): 'GETTIMEOUT',
+    ('II', 0x01d52): 'SETTIMEOUT',
+    ('II', 0x01d6e): 'GETWAITFLAGS',
+    ('II', 0x01d78): 'SETWAITFLAGS',
+    ('II', 0x01d8e): 'DISABLEDYNWAIT',
+    ('II', 0x01da0): 'ENABLEDYNWAIT',
+    ('II', 0x01db2): 'DISABLEPERMWAIT',
+    ('II', 0x01dc4): 'ENABLEPERMWAIT',
+    ('II', 0x01dd6): 'GETRAWTIMEOUT',
+    ('II', 0x01de8): 'SETRAWTIMEOUT',
+    ('II', 0x01df8): 'CRITERR',
+    ('II', 0x01f42): 'PUTSYMBOL',
+    ('II', 0x01f52): 'PUTICON',
+    ('II', 0x0201c): 'SYSERRINIT',
+    ('II', 0x02066): 'DEBUGGER',
+    ('II', 0x020a6): 'DEBUGPROLOG',
+    ('II', 0x020b8): 'TODEEPSHIT',
+    ('II', 0x020fa): 'GENEXCPS',
+    ('II', 0x02112): 'IRQEXCEPTION',
+    ('II', 0x02114): 'NMIEXCP',
+    ('II', 0x02120): 'SYSTEMERROR',
+    ('II', 0x02136): 'SYSERR2',
+    ('II', 0x02186): 'ALLOCFAKERGNS',
+    ('II', 0x021d4): 'DSERRORHANDLER',
+    ('II', 0x02806): 'MEMTEST',
+    ('II', 0x02a14): 'STARTTEST1',
+    ('II', 0x02bbc): 'RAMTEST',
+    ('II', 0x02cfe): 'TESTMANAGER',
+    ('II', 0x0370c): 'CKSUMBR',
+    ('II', 0x03a8a): 'SWAPMMUMODE',
+    ('II', 0x03aa2): 'MMU_INIT',
+    ('II', 0x03ade): 'COMPMMUTYPE',
+    ('II', 0x03baa): 'SREADBYTE',
+    ('II', 0x03bc6): 'SREADWORD',
+    ('II', 0x03be2): 'SREADLONG',
+    ('II', 0x03c00): 'SGETCSTRING',
+    ('II', 0x03ca4): 'SGETBLOCK',
+    ('II', 0x03ce8): 'SFINDSTRUCT',
+    ('II', 0x03cfa): 'SREADSTRUCT',
+    ('II', 0x03d92): 'SREADINFO',
+    ('II', 0x03db6): 'SREADPRAMREC',
+    ('II', 0x03df8): 'SPUTPRAMREC',
+    ('II', 0x03e3e): 'SREADFHEADER',
+    ('II', 0x03e9a): 'SNEXTSRSRC',
+    ('II', 0x03f10): 'SNEXTTYPESRSRC',
+    ('II', 0x03f82): 'SRSRCINFO',
+    ('II', 0x03fe4): 'SDISPOSEPTR',
+    ('II', 0x03ffc): 'SCKCARDSTAT',
+    ('II', 0x04020): 'SREADDRVRNAME',
+    ('II', 0x0408e): 'SMACBOOT',
+    ('II', 0x040fc): 'SFINDDEVBASE',
+    ('II', 0x04152): 'STARTSDECLMGR',
+    ('II', 0x041dc): 'INITSDECLMGR',
+    ('II', 0x044b4): 'SPRIMARYINIT',
+    ('II', 0x04564): 'SCARDCHANGED',
+    ('II', 0x04580): 'SEXEC',
+    ('II', 0x045e6): 'SOFFSETDATA',
+    ('II', 0x04708): 'SREADPBSIZE',
+    ('II', 0x047aa): 'SNEWPTR',
+    ('II', 0x04808): 'SCALCSTEP',
+    ('II', 0x048d6): 'INITSRSRCTABLE',
+    ('II', 0x04a78): 'INITPRAMRECS',
+    ('II', 0x04b86): 'SSEARCHSRT',
+    ('II', 0x04c00): 'SUPDATESRT',
+    ('II', 0x04cf4): 'SCALCSPOINTER',
+    ('II', 0x04d84): 'SGETDRIVER',
+    ('II', 0x04e4c): 'SPTRTOSLOT',
+    ('II', 0x04e9c): 'SFINDSINFORECPTR',
+    ('II', 0x04ec4): 'SFINDSRSRCPTR',
+    ('II', 0x04eda): 'SDELETESRTREC',
+    ('II', 0x04f28): 'SBUSERRPROC',
+    ('II', 0x04f44): 'SLOTMANAGER',
+    ('II', 0x04f5c): 'SDMJUMPTABLE',
+    ('II', 0x04fd6): 'TimerCode',
+    ('II', 0x05048): 'InitTimer',
+    ('II', 0x0505e): 'WriteMinTimer',
+    ('II', 0x0507a): 'WriteTimer',
+    ('II', 0x050a6): 'ReadTimer',
+    ('II', 0x050c0): 'NewPtr',
+    ('II', 0x050ca): 'NewSysPtr',
+    ('II', 0x050d4): 'DisposPtr',
+    ('II', 0x050dc): 'HLock',
+    ('II', 0x050e4): 'HGetState',
+    ('II', 0x050ec): 'HSetState',
+    ('II', 0x050f8): 'MemError',
+    ('II', 0x05100): 'StripAddress',
+    ('II', 0x05108): 'RecoverHandle',
+    ('II', 0x05112): 'WaitBit',
+    ('II', 0x05122): 'inAppHeap',
+    ('II', 0x0514c): 'SndAllOff',
+    ('II', 0x05156): 'initGlobals',
+    ('II', 0x05182): 'insertInQueue',
+    ('II', 0x051da): 'nextFromQueue',
+    ('II', 0x05232): 'ChannelModifier',
+    ('II', 0x0538c): 'processCommandFrom',
+    ('II', 0x053f4): 'processCommand',
+    ('II', 0x0541a): 'processNextCommand',
+    ('II', 0x05452): 'sendEmptyCommand',
+    ('II', 0x05484): 'tickleModifier',
+    ('II', 0x054aa): 'findModifier',
+    ('II', 0x054f6): 'disposChannel',
+    ('II', 0x055ac): 'checkChannel',
+    ('II', 0x055c8): 'pumpResource',
+    ('II', 0x0565c): 'OnTimeInterrupt',
+    ('II', 0x05746): 'SNDAPPDEAD',
+    ('II', 0x05782): 'SNDDOCOMMAND',
+    ('II', 0x05808): 'SNDDOIMMEDIATE',
+    ('II', 0x05850): 'SNDADDMODIFIER',
+    ('II', 0x05984): 'SNDNEWCHANNEL',
+    ('II', 0x05a5e): 'SNDDISPOSECHANNEL',
+    ('II', 0x05aee): 'SNDPLAY',
+    ('II', 0x05c00): 'SNDCONTROL',
+    ('II', 0x05cca): 'INITSPTBL',
+    ('II', 0x05ce0): 'SINTINSTALL',
+    ('II', 0x05d90): 'SINTREMOVE',
+    ('II', 0x05dca): 'SYSTEMBEEP',
+    ('II', 0x05e4a): 'BOOTBEEP',
+    ('II', 0x05e5a): 'ERRORBEEP1',
+    ('II', 0x05e60): 'ERRORBEEP2',
+    ('II', 0x05e66): 'ERRORBEEP3',
+    ('II', 0x05e6c): 'ERRORBEEP4',
+    ('II', 0x0602a): 'DEQUEUE',
+    ('II', 0x06072): 'INITQUEUE',
+    ('II', 0x060d0): 'LVL2INT',
+    ('II', 0x0612c): 'SPURIOUS',
+    ('II', 0x0612e): 'EXTBINT',
+    ('II', 0x0613a): 'EXTAINT',
+    ('II', 0x06158): 'ONESECINT',
+    ('II', 0x06182): 'VBLINT',
+    ('II', 0x061e4): 'SLOTVBLINT',
+    ('II', 0x0622e): 'VIA2INT',
+    ('II', 0x06284): 'SLOTINT',
+    ('II', 0x062e6): 'POWEROFF',
+    ('II', 0x06306): 'VDISPTCH',
+    ('II', 0x06394): 'VREMOVE',
+    ('II', 0x063a8): 'CORESTUB',
+    ('II', 0x063aa): 'INITVBLQS',
+    ('II', 0x063de): 'SLOTVINSTALL',
+    ('II', 0x06446): 'SLOTVREMOVE',
+    ('II', 0x06468): 'ATTACHVBL',
+    ('II', 0x06486): 'DOVBLTASK',
+    ('II', 0x0649e): 'CHKSLOT',
+    ('II', 0x064f2): 'ATRAP68010',
+    ('II', 0x064fa): 'EMT1010',
+    ('II', 0x06568): 'SETTRAPADDRESS',
+    ('II', 0x065c2): 'GETTRAPADDRESS',
+    ('II', 0x065f2): 'VCACHEFLUSH',
+    ('II', 0x06606): 'FETCH',
+    ('II', 0x0664a): 'STASH',
+    ('II', 0x06652): 'IODONE',
+    ('II', 0x0673a): 'VGODRIVER',
+    ('II', 0x0684c): 'OPEN',
+    ('II', 0x06b52): 'CLOSE',
+    ('II', 0x06b74): 'VWAITUNTIL',
+    ('II', 0x06bc4): 'READ',
+    ('II', 0x06c36): 'VSYNCWAIT',
+    ('II', 0x06c44): 'WRITE',
+    ('II', 0x06c58): 'CONTROL',
+    ('II', 0x06c68): 'STATUS',
+    ('II', 0x06c8e): 'KILLIO',
+    ('II', 0x06ce2): 'DRVRINSTALL',
+    ('II', 0x06d40): 'DRVRREMOVE',
+    ('II', 0x06d70): 'ADDDRIVE',
+    ('II', 0x06fee): 'GEmptyAddr', #leak
+    ('II', 0x07002): 'FDBSHIFTINT',
+    ('II', 0x072fa): 'ADBOP',
+    ('II', 0x0753a): 'KbdDrvr', #leak
+    ('II', 0x07704): 'ADBREINIT',
+    ('II', 0x07724): 'INITADBDRVR',
+    ('II', 0x07778): 'COUNTADBS',
+    ('II', 0x07792): 'GETINDADB',
+    ('II', 0x077be): 'GETADBINFO',
+    ('II', 0x077c4): 'SETADBINFO',
+    ('II', 0x077d2): 'FindFDBInfo', #leak
+    ('II', 0x0789e): 'KEYTRANS',
+    ('II', 0x079e4): 'OSEVENTAVAIL',
+    ('II', 0x07a6e): 'GETOSEVENT',
+    ('II', 0x07a8c): 'FLUSHEVENTS',
+    ('II', 0x07d90): 'FSQUEUESYNC', #leak
+    ('II', 0x07d94): 'FSQUEUE', #leak
+    ('II', 0x07dfc): 'FSAsync', #leak
+    ('II', 0x07e48): 'CMDDONE', #leak
+    ('II', 0x07edc): 'AfterExtFSHook', #leak
+    ('II', 0x07f56): 'FINITQUEUE',
+    ('II', 0x07f70): 'DSHOOK',
+    ('II', 0x07f98): 'AfterMountVolInDSHook', #leak
+    ('II', 0x0801a): 'AfterSysErrorInDSHook', #leak
+    ('II', 0x08050): 'FromWaitForDsk', #leak
+    ('II', 0x080d8): 'DSExit', #leak
+    ('II', 0x08140): 'DIVUP',
+    ('II', 0x08154): 'ROUNDALLOC',
+    ('II', 0x08196): 'GETVCBRFN',
+    ('II', 0x0820e): 'MARKVCB',
+    ('II', 0x08210): 'MARKVCBTIME',
+    ('II', 0x08218): 'MarkVCBDirty', #leak
+    ('II', 0x0821e): 'FLUSHMDB',
+    ('II', 0x08224): 'VFLUSHMDB',
+    ('II', 0x082e6): 'MAKESTKPB',
+    ('II', 0x082f8): 'MOUNTVOL',
+    ('II', 0x0834c): 'OldMtVolAfterFSQueue', #leak
+    ('II', 0x0850e): 'VCHECKREMOUNT',
+    ('II', 0x0863a): 'MtVolOK', #leak
+    ('II', 0x08698): 'VMTCHECK',
+    ('II', 0x08874): 'VBMCHK',
+    ('II', 0x088b0): 'DsposVCB', #leak
+    ('II', 0x088e4): 'DsposVBlks', #leak
+    ('II', 0x08956): 'FINDDRIVE',
+    ('II', 0x0895c): 'VFINDDRIVE',
+    ('II', 0x08982): 'OFFLINE',
+    ('II', 0x089e8): 'FlushBuffersAtflVCaches', #leak
+    ('II', 0x08a1e): 'FlushBuffersAtflBufExit', #leak
+    ('II', 0x08a28): 'EJECT',
+    ('II', 0x08aa6): 'OfflineEjectCallsFlushBuffers', #leak
+    ('II', 0x08aac): 'OfflineEjectCallsMFSFlush', #leak
+    ('II', 0x08ae0): 'EjectIt', #leak
+    ('II', 0x08afc): 'UNMOUNTVOL',
+    ('II', 0x08b06): 'FlushVFiles', #leak
+    ('II', 0x08b44): 'FLUSHVOL',
+    ('II', 0x08b5e): 'FlUnMntAfterMFSCheck', #leak
+    ('II', 0x08b6a): 'FlUnMntCallsFlushBuffers', #leak
+    ('II', 0x08b80): 'CkExtFS', #leak
+    ('II', 0x08b86): 'VCKEXTFS',
+    ('II', 0x08b90): 'DTRMV3', #leak
+    ('II', 0x08b96): 'VDTRMV3',
+    ('II', 0x08ba4): 'DtrmV1', #leak
+    ('II', 0x08baa): 'VDTRMV1',
+    ('II', 0x08cdc): 'DtrmV2', #leak
+    ('II', 0x08ce2): 'VDTRMV2',
+    ('II', 0x08d7a): 'GETVOLINFO',
+    ('II', 0x08f22): 'SETVOLINFO',
+    ('II', 0x08fca): 'CVFLGS', #leak
+    ('II', 0x08fde): 'GETVOL',
+    ('II', 0x09026): 'SETVOL',
+    ('II', 0x09066): 'SETDIR',
+    ('II', 0x0909a): 'GETDIR',
+    ('II', 0x090be): 'OPENWD',
+    ('II', 0x09100): 'FillWDCB', #leak
+    ('II', 0x0916a): 'CLOSEWD',
+    ('II', 0x091a4): 'GETWDINFO',
+    ('II', 0x0945a): 'MFSFlush', #leak
+    ('II', 0x0954c): 'GT1STFCB', #leak
+    ('II', 0x09554): 'GTNXTFCB', #leak
+    ('II', 0x0955c): 'Gt1stMatch', #leak
+    ('II', 0x0956a): 'GtNxtMatch', #leak
+    ('II', 0x09574): 'OPENRF',
+    ('II', 0x0957e): 'FILEOPEN',
+    ('II', 0x09584): 'VFILEOPEN',
+    ('II', 0x0958c): 'FOpen1', #leak
+    ('II', 0x096c8): 'PermssnChk', #leak
+    ('II', 0x096ce): 'VPERMSSNCHK',
+    ('II', 0x09732): 'CREATEDIR',
+    ('II', 0x0973e): 'FILECREATE',
+    ('II', 0x097ba): 'PUSHCNAME', #leak
+    ('II', 0x097ea): 'POPCNAME', #leak
+    ('II', 0x097f6): 'MFSOpen', #leak
+    ('II', 0x098fc): 'Gt1stWDCB', #leak
+    ('II', 0x09904): 'GtNxtWDCB', #leak
+    ('II', 0x09968): 'FILEDELETE',
+    ('II', 0x099e8): 'RENAME',
+    ('II', 0x099fe): 'AfterVolCheckInRename', #leak
+    ('II', 0x09abe): 'AfterCMRenameCNInRename', #leak
+    ('II', 0x09b14): 'AfterCMGetCNinRename', #leak
+    ('II', 0x09b5e): 'RNmVol1', #leak
+    ('II', 0x09ba4): 'TFMOVE',
+    ('II', 0x09dc4): 'SETFILTYPE',
+    ('II', 0x09dfc): 'SETFILLOCK',
+    ('II', 0x09e06): 'RSTFILLOCK',
+    ('II', 0x09e48): 'SETFILEINFO',
+    ('II', 0x09e7a): 'SETCATINFO',
+    ('II', 0x09eec): 'CkFilMod', #leak
+    ('II', 0x09f02): 'FNDFILNAME', #leak
+    ('II', 0x09f08): 'VFNDFILNAME',
+    ('II', 0x09fc0): 'AfterCMGetCNInFndFilName', #leak
+    ('II', 0x0a02c): 'EXTOFFLINCK', #leak
+    ('II', 0x0a042): 'GETCATINFO',
+    ('II', 0x0a054): 'GETFILEINFO',
+    ('II', 0x0a2e8): 'ChgMFlLock', #leak
+    ('II', 0x0a43e): 'TFSVCBTST',
+    ('II', 0x0a488): 'GETFPOS',
+    ('II', 0x0a48c): 'SETFPOS',
+    ('II', 0x0a490): 'FILEREAD',
+    ('II', 0x0a5a6): 'FILEWRITE',
+    ('II', 0x0a6c0): 'FLUSHFILE',
+    ('II', 0x0a6ca): 'FILECLOSE',
+    ('II', 0x0a6e4): 'FClose', #leak
+    ('II', 0x0a6ea): 'VFCLOSE',
+    ('II', 0x0a74e): 'AfterTruncateFile', #leak
+    ('II', 0x0a8b6): 'GETEOF',
+    ('II', 0x0a8c8): 'RfnCall', #leak
+    ('II', 0x0a8ce): 'VRFNCALL',
+    ('II', 0x0a918): 'VTSTMOD',
+    ('II', 0x0a92e): 'GETFCBINFO',
+    ('II', 0x0aa0c): 'FILEALLOC',
+    ('II', 0x0aa3c): 'SETEOF',
+    ('II', 0x0aaac): 'VADJEOF',
+    ('II', 0x0ab50): 'LG2PHYS',
+    ('II', 0x0ab56): 'VLG2PHYS',
+    ('II', 0x0ad4c): 'VBLKALLOC',
+    ('II', 0x0aea0): 'BLKDEALLOC',
+    ('II', 0x0aea6): 'VBLKDEALLOC',
+    ('II', 0x0aee6): 'BLKCHK',
+    ('II', 0x0af40): 'UPDATEFREE',
+    ('II', 0x0af74): 'VREADBM',
+    ('II', 0x0b01a): 'VDEALLOCFILE',
+    ('II', 0x0b0e8): 'EXTENDFILE',
+    ('II', 0x0b0ee): 'VEXTENDFILE',
+    ('II', 0x0b264): 'FXMKEYCMP',
+    ('II', 0x0b2a2): 'MAPFBLOCK',
+    ('II', 0x0b2a8): 'VMAPFBLOCK',
+    ('II', 0x0b324): 'TRUNCATEFILE',
+    ('II', 0x0b32a): 'VTRUNCATEFILE',
+    ('II', 0x0b45e): 'XFFLUSH', #leak
+    ('II', 0x0b498): 'VXFSEARCH',
+    ('II', 0x0b5e0): 'AfterCMSetupInCMCreateCN', #leak
+    ('II', 0x0b71c): 'CMDELETECN',
+    ('II', 0x0b726): 'AfterCMSetupInCMDeleteCN', #leak
+    ('II', 0x0b7c8): 'CMGETCN',
+    ('II', 0x0b7d2): 'AfterCMSetupInCMGetCN', #leak
+    ('II', 0x0b7e8): 'CMGETOFF',
+    ('II', 0x0b84c): 'CMMOVECN',
+    ('II', 0x0b856): 'AfterCMSetupInCMMoveCN', #leak
+    ('II', 0x0b9f2): 'CMRENAMECN',
+    ('II', 0x0b9fc): 'AfterCMSetupInCMRenameCN', #leak
+    ('II', 0x0bafa): 'CMUPDATECN',
+    ('II', 0x0bb02): 'AfterCMSetupInCMUpdateCN', #leak
+    ('II', 0x0bb2c): 'CMSETUP', #leak
+    ('II', 0x0bb32): 'VCMSETUP',
+    ('II', 0x0bb3a): 'UpdVCnts', #leak
+    ('II', 0x0bb4a): 'UpdRtCnts', #leak
+    ('II', 0x0bb64): 'BUILDKEY', #leak
+    ('II', 0x0bb92): 'CMFLUSH',
+    ('II', 0x0bbc6): 'CMKEYCMP',
+    ('II', 0x0bc02): 'LOCCNODE',
+    ('II', 0x0bc22): 'LOCCREC',
+    ('II', 0x0bc28): 'VLOCCREC',
+    ('II', 0x0bc50): 'UPDCNAME',
+    ('II', 0x0bc70): 'VBTCLOSE',
+    ('II', 0x0bcaa): 'BTDELETE',
+    ('II', 0x0bcb0): 'VBTDELETE',
+    ('II', 0x0be5c): 'BTFLUSH',
+    ('II', 0x0be62): 'VBTFLUSH',
+    ('II', 0x0bec0): 'BTGETRECORD',
+    ('II', 0x0bec6): 'VBTGETRECORD',
+    ('II', 0x0bf78): 'BTINSERT',
+    ('II', 0x0bf7e): 'VBTINSERT',
+    ('II', 0x0c218): 'BTOPEN',
+    ('II', 0x0c21e): 'VBTOPEN',
+    ('II', 0x0c2d0): 'BTSEARCH',
+    ('II', 0x0c2d6): 'VBTSEARCH',
+    ('II', 0x0c35a): 'BTUPDATE',
+    ('II', 0x0c360): 'VBTUPDATE',
+    ('II', 0x0c386): 'BTCleanUp', #leak
+    ('II', 0x0c394): 'BTSetUp', #leak
+    ('II', 0x0c3c2): 'VALLOCNODE',
+    ('II', 0x0c452): 'EXTBTFILE',
+    ('II', 0x0c458): 'VEXTBTFILE',
+    ('II', 0x0c540): 'FREENODE',
+    ('II', 0x0c546): 'VFREENODE',
+    ('II', 0x0c68c): 'RotateLt', #leak
+    ('II', 0x0c77c): 'SPLITLT',
+    ('II', 0x0c806): 'TREESEARCH',
+    ('II', 0x0c80c): 'VTREESEARCH',
+    ('II', 0x0c8c4): 'BuildIRec', #leak
+    ('II', 0x0c8e6): 'CHKNODE',
+    ('II', 0x0c96a): 'CLRNODE',
+    ('II', 0x0c986): 'DELETEREC',
+    ('II', 0x0c9d6): 'GETLTSIB',
+    ('II', 0x0c9e0): 'GETRTSIB',
+    ('II', 0x0ca10): 'GETMAXKEY',
+    ('II', 0x0ca1c): 'GETNODE',
+    ('II', 0x0ca22): 'VGETNODE',
+    ('II', 0x0ca56): 'GETNODESIZ',
+    ('II', 0x0ca6e): 'GETOFFSET',
+    ('II', 0x0ca86): 'GETRECA',
+    ('II', 0x0caa2): 'INITNODE',
+    ('II', 0x0cad4): 'INSERTREC',
+    ('II', 0x0cb46): 'LOCBTCB',
+    ('II', 0x0cb50): 'LOCREC',
+    ('II', 0x0cb82): 'LOCTPR',
+    ('II', 0x0cb92): 'MOVOFFLT',
+    ('II', 0x0cba2): 'MOVOFFRT',
+    ('II', 0x0cbb8): 'MOVRECLT',
+    ('II', 0x0cbce): 'MOVRECRT',
+    ('II', 0x0cbe8): 'RELNODE',
+    ('II', 0x0cbee): 'VRELNODE',
+    ('II', 0x0cc02): 'SEARCHNODE',
+    ('II', 0x0cc5e): 'UPDDREC',
+    ('II', 0x0cc80): 'UPDIKEY',
+    ('II', 0x0ccb2): 'CACHE',
+    ('II', 0x0ccdc): 'FLUSHCACHE',
+    ('II', 0x0cce2): 'VFLUSHCACHE',
+    ('II', 0x0cdc6): 'GETBLOCK',
+    ('II', 0x0cdcc): 'VGETBLOCK',
+    ('II', 0x0cfae): 'INITCACHE',
+    ('II', 0x0d008): 'MARKBLOCK',
+    ('II', 0x0d00e): 'VMARKBLOCK',
+    ('II', 0x0d016): 'MARKA5BLOCK',
+    ('II', 0x0d01e): 'RELBLOCK',
+    ('II', 0x0d024): 'VRELBLOCK',
+    ('II', 0x0d070): 'TRASHVBLKS',
+    ('II', 0x0d076): 'VTRASHVBLKS',
+    ('II', 0x0d09e): 'TRASHFBLOCKS',
+    ('II', 0x0d0a8): 'TRASHBLOCKS',
+    ('II', 0x0d0fc): 'VTRASHBLOCKS',
+    ('II', 0x0d13e): 'CACHERDIP',
+    ('II', 0x0d144): 'VCACHERDIP',
+    ('II', 0x0d16a): 'CACHEWRIP',
+    ('II', 0x0d170): 'VCACHEWRIP',
+    ('II', 0x0d1cc): 'WRITEOWNBUF',
+    ('II', 0x0d1d4): 'WRITEBLOCK',
+    ('II', 0x0d22e): 'VBASICIO',
+    ('II', 0x0d2a2): 'RDBLOCKS',
+    ('II', 0x0d2a8): 'VRDBLOCKS',
+    ('II', 0x0d2f0): 'WRBLOCKS',
+    ('II', 0x0d2f6): 'VWRBLOCKS',
+    ('II', 0x0d308): 'VSETUPTAGS',
+    ('II', 0x0d3ea): 'UNLOADSEG',
+    ('II', 0x0d434): 'APPZONEADDR',
+    ('II', 0x0d456): 'FLUSHAPPLVBLS',
+    ('II', 0x0d47e): 'CHAIN',
+    ('II', 0x0d484): 'LAUNCH',
+    ('II', 0x0d580): 'VSEGSTACK',
+    ('II', 0x0d5ce): 'EXITTOSHELL',
+    ('II', 0x0d604): 'VLAUNCHINIT',
+    ('II', 0x0d636): 'GETAPPPARMS',
+    ('II', 0x0d652): 'INSTALLRDRIVERS',
+    ('II', 0x0d6b6): 'READPARAM',
+    ('II', 0x0d6d0): 'WRITEPARAM',
+    ('II', 0x0d6f0): 'READDATETIME',
+    ('II', 0x0d6fa): 'SETDATETIME',
+    ('II', 0x0d702): 'DELAY',
+    ('II', 0x0d714): 'CMPSTRING',
+    ('II', 0x0d72a): 'RELSTRING',
+    ('II', 0x0d79e): 'UPRSTRING',
+    ('II', 0x0dbb0): 'READPRAM',
+    ('II', 0x0dbe8): 'INITUTIL',
+    ('II', 0x0dd12): 'WPON',
+    ('II', 0x0dd1a): 'WPOFF',
+    ('II', 0x0dd78): 'READXPRAM',
+    ('II', 0x0dd82): 'WRITEXPRAM',
+    ('II', 0x0ddd6): 'CLKNOMEM',
+    ('II', 0x0de8e): 'INITAPPLZONE',
+    ('II', 0x0def8): 'VIAZINIT',
+    ('II', 0x0dfae): 'VIAZPOSTINIT',
+    ('II', 0x0dfb8): 'INITZONE',
+    ('II', 0x0e052): 'GETZONE',
+    ('II', 0x0e058): 'SETZONE',
+    ('II', 0x0e05e): 'MAXBLOCK',
+    ('II', 0x0e06c): 'COMPACTMEM',
+    ('II', 0x0e09c): 'PURGEMEM',
+    ('II', 0x0e0b8): 'PURGESPACE',
+    ('II', 0x0e0c2): 'FREEMEM',
+    ('II', 0x0e0cc): 'RESRVMEM',
+    ('II', 0x0e0ea): 'MAXMEM',
+    ('II', 0x0e11e): 'SETGROWZONE',
+    ('II', 0x0e128): 'SETAPPLLIMIT',
+    ('II', 0x0e15c): 'STACKSPACE',
+    ('II', 0x0e16e): 'MAXAPPLZONE',
+    ('II', 0x0e1a4): 'NEWPTR',
+    ('II', 0x0e1c0): 'DISPOSEPTR',
+    ('II', 0x0e1d6): 'GETPTRSIZE',
+    ('II', 0x0e1e0): 'SETPTRSIZE',
+    ('II', 0x0e1ea): 'PTRZONE',
+    ('II', 0x0e208): 'NEWEMPTYHANDLE',
+    ('II', 0x0e21c): 'NWHANDLE',
+    ('II', 0x0e23e): 'DSPOSEHANDLE',
+    ('II', 0x0e25e): 'GETHANDLESIZE',
+    ('II', 0x0e26a): 'SETHANDLESIZE',
+    ('II', 0x0e27c): 'HANDLEZONE',
+    ('II', 0x0e284): 'RECOVERHANDLE',
+    ('II', 0x0e2c8): 'EMPTYHANDLE',
+    ('II', 0x0e2d8): 'REALLOCHANDLE',
+    ('II', 0x0e320): 'HLOCK',
+    ('II', 0x0e32a): 'HUNLOCK',
+    ('II', 0x0e334): 'HPURGE',
+    ('II', 0x0e33e): 'HNOPURGE',
+    ('II', 0x0e352): 'HRSRC',
+    ('II', 0x0e35c): 'HNORSRC',
+    ('II', 0x0e378): 'HGETFLAGS',
+    ('II', 0x0e386): 'HSETFLAGS',
+    ('II', 0x0e390): 'MOREMASTERS',
+    ('II', 0x0e3a8): 'STRIPADDRESS',
+    ('II', 0x0e3ae): 'MOVEHHI',
+    ('II', 0x0e466): 'MoveRest', #leak
+    ('II', 0x0e480): 'AfterBsrDoCompactInGoCont', #leak
+    ('II', 0x0e4dc): 'MNSFinish', #leak
+    ('II', 0x0e50e): 'FindRgnTop', #leak
+    ('II', 0x0e548): 'FillStkBuf', #leak
+    ('II', 0x0e586): 'DoCompact', #leak
+    ('II', 0x0e590): 'HEAPGUTS',
+    ('II', 0x0e61a): 'MMPPROLOGUE',
+    ('II', 0x0e62e): 'MMHPROLOGUE',
+    ('II', 0x0e676): 'MMPROLOGUE',
+    ('II', 0x0e698): 'MMRHPROLOGUE',
+    ('II', 0x0e6d6): 'MMEPILOGUE',
+    ('II', 0x0e6e2): 'MMNOERREPILOGUE',
+    ('II', 0x0e6e8): 'MAKEBKF',
+    ('II', 0x0e6ee): 'EH',
+    ('II', 0x0e73c): 'PURGEHEAP',
+    ('II', 0x0e7ce): 'TOTEPURGEABLES',
+    ('II', 0x0e82e): 'BKCOMPACTS',
+    ('II', 0x0e8ca): 'ALLOCBK',
+    ('II', 0x0e97e): 'COMPACTHP',
+    ('II', 0x0ea14): 'TOMAXLIMIT',
+    ('II', 0x0ea1c): 'MAXLIMIT',
+    ('II', 0x0ea36): 'ZONEADJUSTEND',
+    ('II', 0x0eaa0): 'ACTUALS',
+    ('II', 0x0eab4): 'GETSIZE',
+    ('II', 0x0eacc): 'CLEARGZSTUFF',
+    ('II', 0x0ead6): 'SETSIZE',
+    ('II', 0x0ec50): 'ADJUSTFREE',
+    ('II', 0x0ec5c): 'NEXTMASTER',
+    ('II', 0x0ec78): 'HMAKEMOREMASTERS',
+    ('II', 0x0eca8): 'RELEASEMP',
+    ('II', 0x0ecb2): 'MAKEPTRSPC',
+    ('II', 0x0ee22): 'FREEBK',
+    ('II', 0x0ee4e): 'STDGZ',
+    ('II', 0x0f0da): 'BUTTON',
+    ('II', 0x0f0ec): 'TICKCOUNT',
+    ('II', 0x0f12e): 'GETMOUSE',
+    ('II', 0x0f144): 'STILLDOWN',
+    ('II', 0x0f16c): 'WAITMOUSEUP',
+    ('II', 0x0f18a): 'EVENTAVAIL',
+    ('II', 0x0f18e): 'GETNEXTEVENT',
+    ('II', 0x0f218): 'AfterOSEventAvailInGetNextEvent', #leak
+    ('II', 0x0f21c): 'AfterGetOSEventInGetNextEvent', #leak
+    ('II', 0x0f23e): 'FromGNECommon', #leak
+    ('II', 0x0f27a): 'AfterGetResourceInTryFKey', #leak
+    ('II', 0x0f2ac): 'TrySysEvent', #leak
+    ('II', 0x0f2e6): 'AfterGetMouseInGetNextEvent', #leak
+    ('II', 0x0f3b0): 'WMGR',
+    ('II', 0x0f3be): 'SetUpColor', #leak
+    ('II', 0x0f400): 'NEWSTRING',
+    ('II', 0x0f418): 'SETSTRING',
+    ('II', 0x0f43c): 'InsertWindow', #leak
+    ('II', 0x0f474): 'DELETEWINDOW',
+    ('II', 0x0f48c): 'CALCVIS',
+    ('II', 0x0f4ea): 'CALCVISBEHIND',
+    ('II', 0x0f52e): 'CLIPABOVE',
+    ('II', 0x0f552): 'PAINTONE',
+    ('II', 0x0f586): 'AfterFirstSectRgnInGoPaintOne', #leak
+    ('II', 0x0f58e): 'AfterClipAbove', #leak
+    ('II', 0x0f5a6): 'AfterSectRgnInGoPaintOne', #leak
+    ('II', 0x0f5ac): 'EraseInROM', #leak
+    ('II', 0x0f5da): 'SkipEraseInROM', #leak
+    ('II', 0x0f602): 'TestClip', #leak
+    ('II', 0x0f624): 'NoDeskHook', #leak
+    ('II', 0x0f650): 'PAINTBEHIND',
+    ('II', 0x0f6a8): 'GETNEWRGN',
+    ('II', 0x0f6b4): 'SAVEOLD',
+    ('II', 0x0f6e2): 'DRAWNEW',
+    ('II', 0x0f72a): 'AfterPaintBehindInDrawNew', #leak
+    ('II', 0x0f742): 'SHOWHIDE',
+    ('II', 0x0f75e): 'AfterSaveOldInShowHide', #leak
+    ('II', 0x0f766): 'AfterCalcRgnCallInShowHide', #leak
+    ('II', 0x0f774): 'SETWPORT',
+    ('II', 0x0f77e): 'RESTOREPORT',
+    ('II', 0x0f784): 'GETWMGRPORT',
+    ('II', 0x0f78e): 'GETCWMGRPORT',
+    ('II', 0x0f798): 'CHECKUPDATE',
+    ('II', 0x0f836): 'INITWINDOWS',
+    ('II', 0x0f9f6): 'NEWCWINDOW',
+    ('II', 0x0fa08): 'NEWWINDOW',
+    ('II', 0x0fb0a): 'PaintNewOne', #leak
+    ('II', 0x0fb6e): 'CLOSEWINDOW',
+    ('II', 0x0fb84): 'AfterKillControlsInCloseWindow', #leak
+    ('II', 0x0fbbc): 'AfterDisposeRgnInCloseWindow', #leak
+    ('II', 0x0fc02): 'MakeDeactive', #leak
+    ('II', 0x0fc20): 'DISPOSEWINDOW',
+    ('II', 0x0fc2e): 'SHOWWINDOW',
+    ('II', 0x0fc4e): 'AfterShowHideInShowWindow', #leak
+    ('II', 0x0fc56): 'HIDEWINDOW',
+    ('II', 0x0fc80): 'GETWREFCON',
+    ('II', 0x0fc8e): 'SETWREFCON',
+    ('II', 0x0fc9e): 'SETWINDOWPIC',
+    ('II', 0x0fca4): 'GETWINDOWPIC',
+    ('II', 0x0fcaa): 'GETWTITLE',
+    ('II', 0x0fcc2): 'SETWTITLE',
+    ('II', 0x0fd16): 'AfterUnionRgnInSetWTitle', #leak
+    ('II', 0x0fd40): 'DELTAPOINT',
+    ('II', 0x0fd9c): 'MOVEWINDOW',
+    ('II', 0x0fdda): 'AfterOffsetRgnInMoveWindow', #leak
+    ('II', 0x0fde6): 'NoBTF0', #leak
+    ('II', 0x0fe14): 'AfterPaintBehindInMoveWindow', #leak
+    ('II', 0x0fe2a): 'AfterPaintOneInMoveWindow', #leak
+    ('II', 0x0ff12): 'GETWVARIANT',
+    ('II', 0x0ff48): 'CallWindow', #leak
+    ('II', 0x0ff6c): 'AfterLoadResourceInCallWindow', #leak
+    ('II', 0x0ff7c): 'CallDWindow', #leak
+    ('II', 0x0ff8a): 'CallWCalc', #leak
+    ('II', 0x0ffce): 'HILITEWINDOW',
+    ('II', 0x10008): 'ClipGAbove', #leak
+    ('II', 0x1000e): 'SIZEWINDOW',
+    ('II', 0x10062): 'ZOOMWINDOW',
+    ('II', 0x100c8): 'TRACKGOAWAY',
+    ('II', 0x100d0): 'TRACKBOX',
+    ('II', 0x1013e): 'SELECTWINDOW',
+    ('II', 0x10146): 'FromSelectWindow', #leak
+    ('II', 0x1015e): 'PostDoActivate', #leak
+    ('II', 0x10162): 'PreSkipUnHilite', #leak
+    ('II', 0x1016a): 'AfterHiliteWindowInDoActivate', #leak
+    ('II', 0x1016e): 'BRINGTOFRONT',
+    ('II', 0x10172): 'BTF1', #leak
+    ('II', 0x101f2): 'AfterPaintOneInBringToFront', #leak
+    ('II', 0x101f6): 'FromBTF1', #leak
+    ('II', 0x10210): 'SENDBEHIND',
+    ('II', 0x10220): 'AfterFrontWindowInSendBehind', #leak
+    ('II', 0x10238): 'AfterSelectWindowInSendBehind', #leak
+    ('II', 0x10256): 'AfterCalcVBehindInSendBehind', #leak
+    ('II', 0x1025a): 'AfterPaintBehindInSendBehind', #leak
+    ('II', 0x10266): 'BEGINUPDATE',
+    ('II', 0x102a6): 'ENDUPDATE',
+    ('II', 0x102ce): 'FRONTWINDOW',
+    ('II', 0x102f8): 'DRAGWINDOW',
+    ('II', 0x10366): 'FromDragWindow', #leak
+    ('II', 0x103b2): 'WMGRGRAY',
+    ('II', 0x103ba): 'DRAGGRAYRGN',
+    ('II', 0x103c6): 'DRAGTHERGN',
+    ('II', 0x103ec): 'AfterPenModeInDragTheRgn', #leak
+    ('II', 0x105b4): 'AfterFrameRectInFastPaint', #leak
+    ('II', 0x105d4): 'INVALRGN',
+    ('II', 0x105d6): 'IvalCommon', #leak
+    ('II', 0x1061a): 'INVALRECT',
+    ('II', 0x10638): 'VALIDRGN',
+    ('II', 0x1063c): 'VALIDRECT',
+    ('II', 0x10640): 'GROWWINDOW',
+    ('II', 0x10724): 'AfterGetKeysInGetPinMouse', #leak
+    ('II', 0x10728): 'AfterMoveGWKeyMapInGetPinMouse', #leak
+    ('II', 0x1076a): 'FINDWINDOW',
+    ('II', 0x107ee): 'DRAWGROWICON',
+    ('II', 0x1080c): 'SETDESKCPAT',
+    ('II', 0x10824): 'AfterPaintOneInSetDeskCPat', #leak
+    ('II', 0x10846): 'SETWINCOLOR',
+    ('II', 0x1089c): 'AfterPaintOneInSetWinColor', #leak
+    ('II', 0x1089e): 'SETCTLCOLOR',
+    ('II', 0x108ac): 'SetCtlColorAfterSetGuts', #leak
+    ('II', 0x108bc): 'SetEndInROM', #leak
+    ('II', 0x108c6): 'SetGutsInROM', #leak
+    ('II', 0x10984): 'GETAUXWIN',
+    ('II', 0x1098a): 'GETAUXCTL',
+    ('II', 0x109be): 'EndROMWMgr', #leak
+    ('II', 0x109ee): 'INITMENUS',
+    ('II', 0x10a0e): 'AfterSysErrInInitMenus', #leak
+    ('II', 0x10a4e): 'CALCMBHEIGHT',
+    ('II', 0x10b0a): 'CLEARMENUBAR',
+    ('II', 0x10b30): 'INSERTMENU',
+    ('II', 0x10bc8): 'DoneInsert', #leak
+    ('II', 0x10bd2): 'GetHIndex', #leak
+    ('II', 0x10bd2): 'IIGetHIndex', #leak
+    ('II', 0x10c0a): 'GetIndex', #leak
+    ('II', 0x10c2c): 'DELETEMENU',
+    ('II', 0x10c44): 'FoundHMenu', #leak
+    ('II', 0x10c4c): 'FoundRMenu', #leak
+    ('II', 0x10c88): 'TwoBytExit', #leak
+    ('II', 0x10c8e): 'DELMCENTRIES',
+    ('II', 0x10cde): 'FindCEntry', #leak
+    ('II', 0x10d0c): 'DRAWMBAR',
+    ('II', 0x10d16): 'DRAWMENUBAR',
+    ('II', 0x10d26): 'HILITEMENU',
+    ('II', 0x10d64): 'HLNone', #leak
+    ('II', 0x10d6e): 'ENABLEITEM',
+    ('II', 0x10d90): 'DISABLEITEM',
+    ('II', 0x10da4): 'GetMenuPtr', #leak
+    ('II', 0x10db2): 'GetA0List', #leak
+    ('II', 0x10dbe): 'GetA1List', #leak
+    ('II', 0x10dce): 'GetHA0List', #leak
+    ('II', 0x10dce): 'IIGetHA0List', #leak
+    ('II', 0x10dde): 'MENUSELECT',
+    ('II', 0x10eb4): 'NoFlash', #leak
+    ('II', 0x10f0a): 'SetTickCounters', #leak
+    ('II', 0x10f2a): 'ResetRectScrollData', #leak
+    ('II', 0x10f4a): 'MenuChanged', #leak
+    ('II', 0x10fbc): 'ChooseItem', #leak
+    ('II', 0x110dc): 'DoneCheckDrag', #leak
+    ('II', 0x111a4): 'RestoreSomeBits', #leak
+    ('II', 0x111d6): 'RestoreAllBits', #leak
+    ('II', 0x111e2): 'DrawTheMenu', #leak
+    ('II', 0x11232): 'RTSInDrawTheMenu', #leak
+    ('II', 0x11234): 'CallDrawMDEF', #leak
+    ('II', 0x11244): 'AfterSectRectInCallDrawMDEF', #leak
+    ('II', 0x1127a): 'AfterLoadResourceInGetTheMProc', #leak
+    ('II', 0x11280): 'NullMDEFProc', #leak
+    ('II', 0x11298): 'FlashFeedBack', #leak
+    ('II', 0x112c0): 'FULLCLIP',
+    ('II', 0x112ee): 'MENUCHOICE',
+    ('II', 0x112f6): 'GETMENUBAR',
+    ('II', 0x11302): 'GETMCINFO',
+    ('II', 0x11312): 'SETMENUBAR',
+    ('II', 0x11326): 'SETMCINFO',
+    ('II', 0x11342): 'DISPOSEMENU',
+    ('II', 0x1135a): 'DISPMCINFO',
+    ('II', 0x11364): 'FLASHMENUBAR',
+    ('II', 0x1139a): 'TurnIndexOff', #leak
+    ('II', 0x113a6): 'CALLMBARPROC',
+    ('II', 0x113a6): 'CallMBarProc', #leak
+    ('II', 0x113f8): 'GetItemRecord', #leak
+    ('II', 0x113f8): 'IIGetItemRecord', #leak
+    ('II', 0x1142a): 'SetItemProperty', #leak
+    ('II', 0x11450): 'GetItemProperty', #leak
+    ('II', 0x1146c): 'TenBytExit', #leak
+    ('II', 0x11474): 'GETITEMICON',
+    ('II', 0x11478): 'SETITEMICON',
+    ('II', 0x1147c): 'GETITEMSTYLE',
+    ('II', 0x11480): 'SETITEMSTYLE',
+    ('II', 0x11484): 'GETITEMMARK',
+    ('II', 0x11488): 'SETITEMMARK',
+    ('II', 0x1148c): 'CHECKITEM',
+    ('II', 0x114a0): 'UpChar', #leak
+    ('II', 0x114a8): 'AfterUprStringInUpChar', #leak
+    ('II', 0x114ac): 'SETMCENTRIES',
+    ('II', 0x1150c): 'MenuCTblSanityChk', #leak
+    ('II', 0x11626): 'GETMCENTRY',
+    ('II', 0x11654): 'MENUKEY',
+    ('II', 0x116ce): 'KeyNotFound', #leak
+    ('II', 0x116d2): 'MKeyDone', #leak
+    ('II', 0x116dc): 'GOTMKEY', #leak
+    ('II', 0x11700): 'HMInMenuKey', #leak
+    ('II', 0x11782): 'FindParentEnd', #leak
+    ('II', 0x11784): 'GETITEM',
+    ('II', 0x117a8): 'DirtyMenuSize', #leak
+    ('II', 0x117b8): 'CALCMENUSIZE',
+    ('II', 0x117ee): 'NEWMENU',
+    ('II', 0x11840): 'APPENDMENU',
+    ('II', 0x11848): 'INSMENUITEM',
+    ('II', 0x11914): 'SpecialChar', #leak
+    ('II', 0x11932): 'CloseItem', #leak
+    ('II', 0x11956): 'InsertTheItem', #leak
+    ('II', 0x11966): 'JumpIntoInsertTheItem', #leak
+    ('II', 0x119c0): 'GETMHANDLE',
+    ('II', 0x119d6): 'GotRMenu', #leak
+    ('II', 0x119e8): 'DELMENUITEM',
+    ('II', 0x11a06): 'DoDelEnableBit', #leak
+    ('II', 0x11a1a): 'SkipDelEnableBit', #leak
+    ('II', 0x11a28): 'SETITEM',
+    ('II', 0x11a6e): 'SETMENUFLASH',
+    ('II', 0x11a78): 'ADDRESMENU',
+    ('II', 0x11a80): 'INSRTRESMENU',
+    ('II', 0x11bde): 'COUNTMITEMS',
+    ('II', 0x11bfa): 'PLOTICON',
+    ('II', 0x11c6a): 'AfterSetCtlColorInNewControl', #leak
+    ('II', 0x11d2e): 'GetCVariantInCallControl', #leak
+    ('II', 0x11d46): 'AfterLoadResourceInCallControl', #leak
+    ('II', 0x11d5a): 'GETCVARIANT',
+    ('II', 0x11dbe): 'DISPOSECONTROL',
+    ('II', 0x11dc4): 'EraseControlInDisposeControl', #leak
+    ('II', 0x11dc6): 'AfterEraseControlInDisposeControl', #leak
+    ('II', 0x11dfc): 'KILLCONTROLS',
+    ('II', 0x11e0e): 'DRAWONECONTROL',
+    ('II', 0x11e1e): 'SHOWCONTROL',
+    ('II', 0x11e3c): 'HIDECONTROL',
+    ('II', 0x11e50): 'MOVECONTROL',
+    ('II', 0x11e8e): 'GETCREFCON',
+    ('II', 0x11e9c): 'SETCREFCON',
+    ('II', 0x11eac): 'GETCTLACTION',
+    ('II', 0x11eb0): 'SETCTLACTION',
+    ('II', 0x11eb4): 'SIZECONTROL',
+    ('II', 0x11edc): 'HILITECONTROL',
+    ('II', 0x11f08): 'GETCTITLE',
+    ('II', 0x11f20): 'SETCTITLE',
+    ('II', 0x11f44): 'AfterSetHandleSizeInSetCTitle', #leak
+    ('II', 0x11f52): 'GoTstVisInSetCTitle', #leak
+    ('II', 0x11f62): 'GETCTLVALUE',
+    ('II', 0x11f70): 'GETCTLMIN',
+    ('II', 0x11f74): 'GETCTLMAX',
+    ('II', 0x11f78): 'SETCTLVALUE',
+    ('II', 0x11fba): 'SETCTLMIN',
+    ('II', 0x11fbe): 'SETCTLMAX',
+    ('II', 0x11fc2): 'TESTCONTROL',
+    ('II', 0x11ff0): 'DRAGCONTROL',
+    ('II', 0x12044): 'AfterDragTheRgnInDragControl', #leak
+    ('II', 0x12084): 'OwnerPortInROM', #leak
+    ('II', 0x120a2): 'TRACKCONTROL',
+    ('II', 0x12190): 'UPDTCONTROLS',
+    ('II', 0x121a0): 'DRAWCONTROLS',
+    ('II', 0x12228): 'FINDCONTROL',
+    ('II', 0x122b8): 'INITRESOURCES',
+    ('II', 0x12414): 'VSUPERLOAD',
+    ('II', 0x1254c): 'VNEWMAP',
+    ('II', 0x12638): 'RSRCZONEINIT',
+    ('II', 0x126d4): 'AfterOpenRFInORFCommon', #leak
+    ('II', 0x126de): 'CREATERESFILE',
+    ('II', 0x126e2): 'AfterStdZEntryInCreateResFile', #leak
+    ('II', 0x126f4): 'AfterCreateInCreateResFile', #leak
+    ('II', 0x12728): 'OPENRESFILE',
+    ('II', 0x12758): 'OPENRFPERM',
+    ('II', 0x1276c): 'USERESFILE',
+    ('II', 0x12776): 'GETRESFILEATTRS',
+    ('II', 0x12782): 'SETRESFILEATTRS',
+    ('II', 0x12838): 'UPDATERESFILE',
+    ('II', 0x12920): 'VCMPFRM',
+    ('II', 0x12b18): 'CLOSERESFILE',
+    ('II', 0x12bb8): 'COUNT1RESOURCES',
+    ('II', 0x12bbc): 'COUNTRESOURCES',
+    ('II', 0x12be2): 'GET1INDRESOURCE',
+    ('II', 0x12be6): 'GETINDRESOURCE',
+    ('II', 0x12c7e): 'COUNT1TYPES',
+    ('II', 0x12c82): 'COUNTTYPES',
+    ('II', 0x12cc8): 'GET1INDTYPE',
+    ('II', 0x12ccc): 'GETINDTYPE',
+    ('II', 0x12cee): 'UNIQUE1ID',
+    ('II', 0x12cf2): 'UNIQUEID',
+    ('II', 0x12d2c): 'GET1RESOURCE',
+    ('II', 0x12d30): 'GETRESOURCE',
+    ('II', 0x12d70): 'GET1NAMEDRESOURCE',
+    ('II', 0x12d74): 'GETNAMEDRESOURCE',
+    ('II', 0x12e34): 'GetRsrcCnt', #leak
+    ('II', 0x12e90): 'StdZEntry', #leak
+    ('II', 0x12e94): 'Std1Entry', #leak
+    ('II', 0x12ec8): 'SwapROMMap', #leak
+    ('II', 0x12f4e): 'RStdExit', #leak
+    ('II', 0x1307e): 'VCHECKLOAD',
+    ('II', 0x1314a): 'RREntry6', #leak
+    ('II', 0x13198): 'RdData', #leak
+    ('II', 0x131a2): 'WrData', #leak
+    ('II', 0x131b6): 'SaveRegs', #leak
+    ('II', 0x13202): 'SpaceAt', #leak
+    ('II', 0x132aa): 'CheckGrowAt1', #leak
+    ('II', 0x132ba): 'AfterSetEOFInCheckGrow', #leak
+    ('II', 0x13322): 'LOADRESOURCE',
+    ('II', 0x13360): 'RELEASERESOURCE',
+    ('II', 0x1338a): 'DETACHRESOURCE',
+    ('II', 0x133a2): 'CHANGEDRESOURCE',
+    ('II', 0x133de): 'WRITERESOURCE',
+    ('II', 0x13418): 'HOMERESFILE',
+    ('II', 0x13442): 'SETRESPURGE',
+    ('II', 0x13462): 'SETRESLOAD',
+    ('II', 0x1346c): 'CURRESFILE',
+    ('II', 0x13474): 'RESERROR',
+    ('II', 0x1347c): 'ADDREFERENCE',
+    ('II', 0x1348c): 'RMVEREFERENCE',
+    ('II', 0x13496): 'GETRESATTRS',
+    ('II', 0x134aa): 'SETRESATTRS',
+    ('II', 0x134ce): 'RefHandle', #leak
+    ('II', 0x134dc): 'GETRESINFO',
+    ('II', 0x13522): 'SETRESINFO',
+    ('II', 0x1356c): 'ADDRESOURCE',
+    ('II', 0x135be): 'AddNewRefWithoutUpdate', #leak
+    ('II', 0x13644): 'RMVERESOURCE',
+    ('II', 0x136d6): 'AddName', #leak
+    ('II', 0x13750): 'AfterSetHandleSizeInResizeMap', #leak
+    ('II', 0x13796): 'AfterResizeMapInRmveName', #leak
+    ('II', 0x137b4): 'At9InRmveName', #leak
+    ('II', 0x137c0): 'SIZERESOURCE',
+    ('II', 0x137e2): 'MAXSIZERSRC',
+    ('II', 0x137f6): 'RSRCMAPENTRY',
+    ('II', 0x13802): 'RGETRESOURCE',
+    ('II', 0x13838): 'INITDIALOGS',
+    ('II', 0x13852): 'InitDialogContinue', #leak
+    ('II', 0x138ee): 'STOPALERT',
+    ('II', 0x138f2): 'NOTEALERT',
+    ('II', 0x138f6): 'CAUTIONALERT',
+    ('II', 0x138fa): 'ALERT',
+    ('II', 0x139b2): 'AfterPlotCIconInDoAlert', #leak
+    ('II', 0x13a58): 'GETNEWDIALOG',
+    ('II', 0x13ada): 'NEWCDIALOG',
+    ('II', 0x13ade): 'NEWDIALOG',
+    ('II', 0x13b26): 'AfterSetWinColorInGotStorage', #leak
+    ('II', 0x13b98): 'ClaimEvent', #leak
+    ('II', 0x13bb0): 'ISDIALOGEVENT',
+    ('II', 0x13bbe): 'IsDiaAfterClaimEvent', #leak
+    ('II', 0x13be6): 'IsDiaNotDlgExit', #leak
+    ('II', 0x13bec): 'DIALOGSELECT',
+    ('II', 0x13c00): 'DSAfterClaimEvent', #leak
+    ('II', 0x13c28): 'DSNotMineExit', #leak
+    ('II', 0x13c2e): 'MODALDIALOG',
+    ('II', 0x13cc0): 'DialogStdEntry', #leak
+    ('II', 0x13ccc): 'DialogStdExit', #leak
+    ('II', 0x13cd8): 'DRAWDIALOG',
+    ('II', 0x13cf2): 'UPDTDIALOG',
+    ('II', 0x13d10): 'CLOSEDIALOG',
+    ('II', 0x13d30): 'AfterGetAuxWinInCloseDialog', #leak
+    ('II', 0x13d40): 'AtNoDITLInCloseDialog', #leak
+    ('II', 0x13d46): 'AfterDisposeHandleInCloseDialog', #leak
+    ('II', 0x13d62): 'BeginInWind', #leak
+    ('II', 0x13da0): 'EndInWind', #leak
+    ('II', 0x13dac): 'DISPOSDIALOG',
+    ('II', 0x13e0c): 'COULDDIALOG',
+    ('II', 0x13e1a): 'COULDALERT',
+    ('II', 0x13e60): 'AfterGetResourceInDoColor', #leak
+    ('II', 0x13e6e): 'AfterDetachResourceInDoColor', #leak
+    ('II', 0x13ea0): 'FromGetADHndl', #leak
+    ('II', 0x13eb0): 'FREEDIALOG',
+    ('II', 0x13ebe): 'FREEALERT',
+    ('II', 0x13f12): 'PARAMTEXT',
+    ('II', 0x13f36): 'ERRORSOUND',
+    ('II', 0x13f3e): 'GETDITEM',
+    ('II', 0x13f84): 'SETDITEM',
+    ('II', 0x13fbc): 'GETITEXT',
+    ('II', 0x13fdc): 'SETITEXT',
+    ('II', 0x14034): 'AfterValidRectInSetIText', #leak
+    ('II', 0x14046): 'SELITEXT',
+    ('II', 0x140a2): 'HIDEDITEM',
+    ('II', 0x14100): 'SHOWDITEM',
+    ('II', 0x14174): 'FINDDITEM',
+    ('II', 0x1438a): 'AfterRestoreSetPortInDrawItem', #leak
+    ('II', 0x14400): 'AfterH2HinDoStatic', #leak
+    ('II', 0x14422): 'skipParam', #leak
+    ('II', 0x1454a): 'TEKeyFromEventAD', #leak
+    ('II', 0x146f8): 'SetUpText', #leak
+    ('II', 0x14810): 'RestoreTE', #leak
+    ('II', 0x14882): 'FrameOut', #leak
+    ('II', 0x14930): 'XMUNGER',
+    ('II', 0x14a66): 'HANDTOHAND',
+    ('II', 0x14a8e): 'PTRTOXHAND',
+    ('II', 0x14a96): 'PTRTOHAND',
+    ('II', 0x14ab0): 'HANDANDHAND',
+    ('II', 0x14ad4): 'PTRANDHAND',
+    ('II', 0x14ae4): 'METHODDISPATCH',
+    ('II', 0x14b40): 'LONGMUL',
+    ('II', 0x14b5e): 'FRACMUL',
+    ('II', 0x14b64): 'FIXMUL',
+    ('II', 0x14c22): 'FixPtStdEntry', #leak
+    ('II', 0x14c52): 'FRACDIV',
+    ('II', 0x14c58): 'FIXDIV',
+    ('II', 0x14ca8): 'FRACSQRT',
+    ('II', 0x14ce2): 'FIXRATIO',
+    ('II', 0x14d34): 'LOWORD',
+    ('II', 0x14d3c): 'HIWORD',
+    ('II', 0x14d46): 'FIXROUND',
+    ('II', 0x14d60): 'FRACCOS',
+    ('II', 0x14d68): 'FRACSIN',
+    ('II', 0x14e0e): 'FIXATAN2',
+    ('II', 0x14e30): 'AtLabel2InFixATan', #leak
+    ('II', 0x14ecc): 'FIX2X',
+    ('II', 0x14ed2): 'FRAC2X',
+    ('II', 0x14efe): 'X2FIX',
+    ('II', 0x14f04): 'X2FRAC',
+    ('II', 0x14f60): 'FIX2LONG',
+    ('II', 0x14f64): 'FRAC2FIX',
+    ('II', 0x14f80): 'LONG2FIX',
+    ('II', 0x14f84): 'FIX2FRAC',
+    ('II', 0x14fd4): 'SysEvtDoneSEvt', #leak
+    ('II', 0x14fe0): 'SysEvtAfterFrontWindow', #leak
+    ('II', 0x14ff4): 'SearchWindow', #leak
+    ('II', 0x1506a): 'SYSTEMCLICK',
+    ('II', 0x150a8): 'AfterLoadResourceInSystemClick', #leak
+    ('II', 0x150c4): 'AfterFrontWindowInSystemClick', #leak
+    ('II', 0x15124): 'AfterTrackGoAwayInSystemClick', #leak
+    ('II', 0x1513e): 'SYSTEMTASK',
+    ('II', 0x151ba): 'SYSTEMMENU',
+    ('II', 0x15202): 'SYSTEMEDIT',
+    ('II', 0x15230): 'OPENDESKACC',
+    ('II', 0x1527e): 'CLOSEDESKACC',
+    ('II', 0x152b2): 'GETCURSOR',
+    ('II', 0x152ba): 'GETSTRING',
+    ('II', 0x152c2): 'GETICON',
+    ('II', 0x152ca): 'GETPICTURE',
+    ('II', 0x152d2): 'GETNEWCWINDOW',
+    ('II', 0x152de): 'GETNEWWINDOW',
+    ('II', 0x152fa): 'FromGetNewWind', #leak
+    ('II', 0x15386): 'GETNEWCONTROL',
+    ('II', 0x15408): 'GETMENU',
+    ('II', 0x154ba): 'GETNEWMBAR',
+    ('II', 0x1552c): 'TEGETTEXT',
+    ('II', 0x15538): 'TEINIT',
+    ('II', 0x1555e): 'TEDISPOSE',
+    ('II', 0x1559a): 'TEXTBOX',
+    ('II', 0x15664): 'TESETTEXT',
+    ('II', 0x15774): 'TECALTEXT',
+    ('II', 0x157d8): 'TESETSELECT',
+    ('II', 0x15804): 'TENEW',
+    ('II', 0x15878): 'TESTYLNEW',
+    ('II', 0x1594a): 'TEUPDATE',
+    ('II', 0x15978): 'TECLICK',
+    ('II', 0x15a8e): 'VPIXEL2CHAR',
+    ('II', 0x15fc8): 'XTRIMMEASURE',
+    ('II', 0x1607c): 'VCHAR2PIXEL',
+    ('II', 0x162e4): 'TEDISPATCH',
+    ('II', 0x162fc): 'TECOPY',
+    ('II', 0x163d2): 'TECUT',
+    ('II', 0x163e2): 'TEDELETE',
+    ('II', 0x16508): 'XFINDWORD',
+    ('II', 0x16600): 'XFINDLINE',
+    ('II', 0x169e8): 'TEACTIVATE',
+    ('II', 0x16a0a): 'TEDEACTIVATE',
+    ('II', 0x16a20): 'TEIDLE',
+    ('II', 0x16a48): 'TEPASTE',
+    ('II', 0x16d3c): 'TEINSERT',
+    ('II', 0x16d6a): 'TEKEY',
+    ('II', 0x16e54): 'TESETJUST',
+    ('II', 0x16e7a): 'TESCROLL',
+    ('II', 0x16ed4): 'TEPINSCROLL',
+    ('II', 0x16f5e): 'TESELVIEW',
+    ('II', 0x16fcc): 'TEAUTOVIEW',
+    ('II', 0x1744c): 'TEGETOFFSET',
+    ('II', 0x17622): 'UNLOADSCRAP',
+    ('II', 0x17658): 'LOADSCRAP',
+    ('II', 0x1768c): 'ZEROSCRAP',
+    ('II', 0x176d8): 'GETSCRAP',
+    ('II', 0x17748): 'PUTSCRAP',
+    ('II', 0x1776e): 'PutScrapExit', #leak
+    ('II', 0x1777e): 'DoPutAppendMem', #leak
+    ('II', 0x1778c): 'DoPutAppendFile', #leak
+    ('II', 0x1778e): 'PRGLUE',
+    ('II', 0x17b58): 'FMSWAPFONT',
+    ('II', 0x189fa): 'FPOINTONE',
+    ('II', 0x18a68): 'GETFONTNAME',
+    ('II', 0x18ad6): 'REALFONT',
+    ('II', 0x18b40): 'GETFNUM',
+    ('II', 0x18b84): 'SETFONTLOCK',
+    ('II', 0x18bac): 'SETFSCALEDISABLE',
+    ('II', 0x18bba): 'SETFRACTENABLE',
+    ('II', 0x18bc2): 'FONTMETRICS',
+    ('II', 0x18e3c): 'DISPOSGDEVICE',
+    ('II', 0x18e48): 'DISPOSGDHANDLES',
+    ('II', 0x18e84): 'INITGDEVICE',
+    ('II', 0x18fc0): 'GETDEVPIXMAP',
+    ('II', 0x19142): 'CHECKDEVICES',
+    ('II', 0x1943e): 'GETGDEVICE',
+    ('II', 0x19446): 'SETGDEVICE',
+    ('II', 0x1944e): 'GETDEVICELIST',
+    ('II', 0x19456): 'GETMAINDEVICE',
+    ('II', 0x1945e): 'GETNEXTDEVICE',
+    ('II', 0x1946a): 'TESTDEVICEATTRIBUTE',
+    ('II', 0x19480): 'SETDEVICEATTRIBUTE',
+    ('II', 0x1949e): 'GETMAXDEVICE',
+    ('II', 0x194fa): 'GETDEVPIX',
+    ('II', 0x19508): 'STDTEXT',
+    ('II', 0x19794): 'CALLTEXT',
+    ('II', 0x197b4): 'TEXTFACE',
+    ('II', 0x197c0): 'DRAWCHAR',
+    ('II', 0x197ce): 'CHARWIDTH',
+    ('II', 0x197e8): 'TEXTFONT',
+    ('II', 0x197ec): 'TEXTMODE',
+    ('II', 0x197f0): 'TEXTSIZE',
+    ('II', 0x19804): 'SPACEEXTRA',
+    ('II', 0x19810): 'DRAWSTRING',
+    ('II', 0x19822): 'DRAWTEXT',
+    ('II', 0x1983a): 'STRINGWIDTH',
+    ('II', 0x1984a): 'TEXTWIDTH',
+    ('II', 0x198b0): 'STDTXMEAS',
+    ('II', 0x19978): 'MEASURETEXT',
+    ('II', 0x19a74): 'GETFONTINFO',
+    ('II', 0x19b16): 'CALCCHAREXTRA',
+    ('II', 0x19b6c): 'CHAREXTRA',
+    ('II', 0x19b88): 'AfterFixDivInCharExtra', #leak
+    ('II', 0x19b98): 'STDLINE',
+    ('II', 0x19c6e): 'LINETO',
+    ('II', 0x19c84): 'LINE',
+    ('II', 0x19c9c): 'MOVETO',
+    ('II', 0x19ca6): 'COMMONMOVEEND',
+    ('II', 0x19cc8): 'DOLINE',
+    ('II', 0x19d50): 'HIDEPEN',
+    ('II', 0x19d54): 'SHOWPEN',
+    ('II', 0x19d60): 'GETPENSTATE',
+    ('II', 0x19d9c): 'SETPENSTATE',
+    ('II', 0x19dd4): 'GETPEN',
+    ('II', 0x19de4): 'PENSIZE',
+    ('II', 0x19df2): 'PENMODE',
+    ('II', 0x19df8): 'PENPAT',
+    ('II', 0x19e20): 'PENNORMAL',
+    ('II', 0x19e3a): 'PUTLINE',
+    ('II', 0x19f28): 'DRTEXT',
+    ('II', 0x1afc0): 'GETMAINCRSR',
+    ('II', 0x1b040): 'SCRNADDRESS',
+    ('II', 0x1b048): 'SCRNSIZE',
+    ('II', 0x1b06c): 'SCRNBITMAP',
+    ('II', 0x1b08e): 'CRSRVBLTASK',
+    ('II', 0x1b2e4): 'PINRECT',
+    ('II', 0x1b2f6): 'SETCRSRDATA',
+    ('II', 0x1b352): 'ALLOCCRSR',
+    ('II', 0x1b4ba): 'BITBLT',
+    ('II', 0x1b8a8): 'BLEFT0',
+    ('II', 0x1b8d4): 'BSETUP0',
+    ('II', 0x1b8f6): 'BEND0',
+    ('II', 0x1b8f8): 'BMAIN0',
+    ('II', 0x1b94c): 'BEND1',
+    ('II', 0x1b94e): 'BMAIN1',
+    ('II', 0x1b968): 'BEND2',
+    ('II', 0x1b96a): 'BMAIN2',
+    ('II', 0x1b984): 'BEND3',
+    ('II', 0x1b986): 'BMAIN3',
+    ('II', 0x1b9a2): 'BCEND0',
+    ('II', 0x1b9a4): 'BCMAIN0',
+    ('II', 0x1b9ce): 'BCEND1',
+    ('II', 0x1b9d0): 'BCMAIN1',
+    ('II', 0x1b9f2): 'BCEND3',
+    ('II', 0x1b9f4): 'BCMAIN3',
+    ('II', 0x1ba16): 'BLONG8',
+    ('II', 0x1ba42): 'BSETUP8',
+    ('II', 0x1bab0): 'BEND9',
+    ('II', 0x1bab2): 'BMAIN9',
+    ('II', 0x1bacc): 'BSETUP10',
+    ('II', 0x1bae8): 'BEND10',
+    ('II', 0x1bb26): 'BEND11',
+    ('II', 0x1bb28): 'BMAIN11',
+    ('II', 0x1bb42): 'BXLONG8',
+    ('II', 0x1bb7a): 'BXMAIN8',
+    ('II', 0x1bb98): 'BXEND9',
+    ('II', 0x1bb9a): 'BXMAIN9',
+    ('II', 0x1bbba): 'BXEND10',
+    ('II', 0x1bbbc): 'BXMAIN10',
+    ('II', 0x1bbd2): 'BXEND11',
+    ('II', 0x1bbd4): 'BXMAIN11',
+    ('II', 0x1bbf4): 'BADDOVER',
+    ('II', 0x1bc6a): 'BADDPIN',
+    ('II', 0x1bd06): 'BSUBOVER',
+    ('II', 0x1bd7c): 'BSUBPIN',
+    ('II', 0x1be18): 'BMAX',
+    ('II', 0x1be9e): 'BMIN',
+    ('II', 0x1bf24): 'BAVG',
+    ('II', 0x1bfbe): 'BHILITE',
+    ('II', 0x1c04e): 'BSLOHILITE',
+    ('II', 0x1c0b0): 'BTRANSPARENT',
+    ('II', 0x1c13e): 'DRAWLINE',
+    ('II', 0x1c76c): 'RGNBLT',
+    ('II', 0x1cbf8): 'RMASK0',
+    ('II', 0x1cc18): 'RMASK1',
+    ('II', 0x1cc30): 'RMASK2',
+    ('II', 0x1cc48): 'RMASK3',
+    ('II', 0x1cc62): 'RCMASK0',
+    ('II', 0x1cc8c): 'RCMASK1',
+    ('II', 0x1ccac): 'RCMASK3',
+    ('II', 0x1cccc): 'RMASK8',
+    ('II', 0x1cce2): 'RMASK9',
+    ('II', 0x1ccfa): 'RMASK10',
+    ('II', 0x1cd08): 'RMASK11',
+    ('II', 0x1cd20): 'RXMASK8',
+    ('II', 0x1cd40): 'RXMASK9',
+    ('II', 0x1cd62): 'RXMASK10',
+    ('II', 0x1cd7a): 'RXMASK11',
+    ('II', 0x1cd9c): 'RADDOVER',
+    ('II', 0x1cde8): 'RADDPIN',
+    ('II', 0x1ce3c): 'RSUBOVER',
+    ('II', 0x1ce88): 'RSUBPIN',
+    ('II', 0x1cedc): 'RMAX',
+    ('II', 0x1cf38): 'RMIN',
+    ('II', 0x1cf94): 'RAVG',
+    ('II', 0x1d000): 'RHILITE',
+    ('II', 0x1d056): 'RSLOWHILITE',
+    ('II', 0x1d094): 'RTRANSPARENT',
+    ('II', 0x1d0da): 'STDRECT',
+    ('II', 0x1d15c): 'STDDEVLOOP',
+    ('II', 0x1d312): 'PINIT',
+    ('II', 0x1d328): 'PUSHVERB',
+    ('II', 0x1d37c): 'FILLRECT',
+    ('II', 0x1d380): 'FILLCRECT',
+    ('II', 0x1d394): 'FRAMERECT',
+    ('II', 0x1d398): 'PAINTRECT',
+    ('II', 0x1d39c): 'ERASERECT',
+    ('II', 0x1d3a0): 'INVERTRECT',
+    ('II', 0x1d3a2): 'CALLRECT',
+    ('II', 0x1d3c2): 'DRAWRECT',
+    ('II', 0x1d406): 'FRMRECT',
+    ('II', 0x1d500): 'SETRECT',
+    ('II', 0x1d50e): 'EQUALRECT',
+    ('II', 0x1d528): 'EMPTYRECT',
+    ('II', 0x1d542): 'OFFSETRECT',
+    ('II', 0x1d554): 'INSETRECT',
+    ('II', 0x1d566): 'SECTRECT',
+    ('II', 0x1d58a): 'RSECT',
+    ('II', 0x1d5fe): 'UNIONRECT',
+    ('II', 0x1d63c): 'PT2RECT',
+    ('II', 0x1d672): 'PTINRECT',
+    ('II', 0x1d6a0): 'PUTRECT',
+    ('II', 0x1d6f8): 'ALLOCCURSOR',
+    ('II', 0x1d706): 'INITCURSOR',
+    ('II', 0x1d718): 'SETCURSOR',
+    ('II', 0x1d734): 'SETCCURSOR',
+    ('II', 0x1d742): 'HIDECURSOR',
+    ('II', 0x1d748): 'SHOWCURSOR',
+    ('II', 0x1d74e): 'SHIELDCURSOR',
+    ('II', 0x1d77e): 'OBSCURECURSOR',
+    ('II', 0x1d784): 'BITNOT',
+    ('II', 0x1d78c): 'BITAND',
+    ('II', 0x1d794): 'BITXOR',
+    ('II', 0x1d79e): 'BITOR',
+    ('II', 0x1d7a6): 'BITSHIFT',
+    ('II', 0x1d7bc): 'BITTST',
+    ('II', 0x1d7ca): 'BITSET',
+    ('II', 0x1d7d4): 'BITCLR',
+    ('II', 0x1d7ec): 'RANDOM',
+    ('II', 0x1d83e): 'FORECOLOR',
+    ('II', 0x1d88a): 'BACKCOLOR',
+    ('II', 0x1d88e): 'PORTLONG',
+    ('II', 0x1d89a): 'COLORBIT',
+    ('II', 0x1d89c): 'PORTWORD',
+    ('II', 0x1d8a8): 'GETMASKTAB',
+    ('II', 0x1d8ae): 'LEFTMASK',
+    ('II', 0x1d8ba): 'RIGHTMASK',
+    ('II', 0x1d8c6): 'BITMASK',
+    ('II', 0x1d8d2): 'MASKTAB',
+    ('II', 0x1d932): 'ARITHMODE',
+    ('II', 0x1d93a): 'COLORMAP',
+    ('II', 0x1dbd2): 'GETCPIXEL',
+    ('II', 0x1dbde): 'GETPIXEL',
+    ('II', 0x1dca6): 'STUFFHEX',
+    ('II', 0x1dce0): 'XORSLAB',
+    ('II', 0x1dd26): 'DRAWSLAB',
+    ('II', 0x1dd7e): 'SLMASK8',
+    ('II', 0x1dd9a): 'SLMASK9',
+    ('II', 0x1ddac): 'SLMASK10',
+    ('II', 0x1ddc8): 'SLMASK11',
+    ('II', 0x1ddce): 'SLXMASK8',
+    ('II', 0x1de0a): 'SLXMASK9',
+    ('II', 0x1de48): 'SLXMASK10',
+    ('II', 0x1de7c): 'SLXMASK11',
+    ('II', 0x1deba): 'SLADDOVER',
+    ('II', 0x1df50): 'SLADDPIN',
+    ('II', 0x1dfda): 'SLSUBOVER',
+    ('II', 0x1e042): 'SLSUBPIN',
+    ('II', 0x1e0ce): 'SLMAX',
+    ('II', 0x1e146): 'SLMIN',
+    ('II', 0x1e1be): 'SLAVG',
+    ('II', 0x1e26a): 'SLHILITE',
+    ('II', 0x1e2ce): 'SLTRANSPARENT',
+    ('II', 0x1e318): 'SLABMODE',
+    ('II', 0x1e3dc): 'FASTSLABMODE',
+    ('II', 0x1e3f0): 'COPYHANDLE',
+    ('II', 0x1e41a): 'NEWHANDLE',
+    ('II', 0x1e436): 'RNEWHANDLE',
+    ('II', 0x1e43c): 'SETHSIZE',
+    ('II', 0x1e44a): 'RSETHSIZE',
+    ('II', 0x1e450): 'INITGRAF',
+    ('II', 0x1e5bc): 'NEWPORT',
+    ('II', 0x1e5dc): 'OPENPORT',
+    ('II', 0x1e5ea): 'INITPORT',
+    ('II', 0x1e634): 'INITSHARED',
+    ('II', 0x1e692): 'SETSTDPROCS',
+    ('II', 0x1e6cc): 'SETSTDCPROCS',
+    ('II', 0x1e6ec): 'LOCALTOGLOBAL',
+    ('II', 0x1e6f4): 'GLOBALTOLOCAL',
+    ('II', 0x1e726): 'ADDPT',
+    ('II', 0x1e72e): 'SUBPT',
+    ('II', 0x1e74c): 'SETPORT',
+    ('II', 0x1e754): 'GETPORT',
+    ('II', 0x1e75e): 'GRAFDEVICE',
+    ('II', 0x1e764): 'SETPORTBITS',
+    ('II', 0x1e782): 'BACKPAT',
+    ('II', 0x1e7a6): 'PORTSIZE',
+    ('II', 0x1e7c6): 'MOVEPORTTO',
+    ('II', 0x1e7f6): 'SETORIGIN',
+    ('II', 0x1e836): 'CLIPRECT',
+    ('II', 0x1e84a): 'SETCLIP',
+    ('II', 0x1e856): 'GETCLIP',
+    ('II', 0x1e86a): 'SETPT',
+    ('II', 0x1e874): 'EQUALPT',
+    ('II', 0x1e880): 'INSPORTLIST',
+    ('II', 0x1e8aa): 'DELPORTLIST',
+    ('II', 0x1e8da): 'ONEBITCTABLE',
+    ('II', 0x1e8e6): 'FILLONEBIT',
+    ('II', 0x1e8fc): 'PORTTOMAP',
+    ('II', 0x1e8fe): 'BITSTOMAP',
+    ('II', 0x1e912): 'OPENCPORT',
+    ('II', 0x1e948): 'INITCPORT',
+    ('II', 0x1e982): 'INITCOLORSTUFF',
+    ('II', 0x1ea64): 'SETCPORTPIX',
+    ('II', 0x1ea78): 'GETCTABLE',
+    ('II', 0x1eac0): 'NEWCTAB',
+    ('II', 0x1ead0): 'DISPOSCTABLE',
+    ('II', 0x1ead8): 'GETCTSEED',
+    ('II', 0x1eafe): 'OPENPIXMAP',
+    ('II', 0x1eb1e): 'NEWPIXMAP',
+    ('II', 0x1eb2e): 'DISPOSPIXMAP',
+    ('II', 0x1eb48): 'INITPIXMAP',
+    ('II', 0x1eb78): 'COPYPIXMAP',
+    ('II', 0x1eba2): 'BITSTOPIX',
+    ('II', 0x1ec44): 'COPYPMAP',
+    ('II', 0x1ec60): 'ONEBITDATA',
+    ('II', 0x1ec92): 'SHFTTBL',
+    ('II', 0x1ecb4): 'SETCPIXEL',
+    ('II', 0x1ed08): 'HILITECOLOR',
+    ('II', 0x1ed0c): 'OPCOLOR',
+    ('II', 0x1ed0e): 'SETGRAFVARSCOMMON',
+    ('II', 0x1ed2c): 'GETCCURSOR',
+    ('II', 0x1ed3a): 'GETPIXPAT',
+    ('II', 0x1ed46): 'PATSHARE',
+    ('II', 0x1ee44): 'NEWPIXPAT',
+    ('II', 0x1ef16): 'SETFILLPAT',
+    ('II', 0x1ef4a): 'PENPIXPAT',
+    ('II', 0x1ef50): 'PHILPIXPAT',
+    ('II', 0x1ef56): 'BACKPIXPAT',
+    ('II', 0x1efc0): 'COPYPIXPAT',
+    ('II', 0x1f004): 'OLDPATTONEW',
+    ('II', 0x1f08a): 'PATEXPAND',
+    ('II', 0x1f36a): 'PATCONVERT',
+    ('II', 0x1f49e): 'MAKESCALETBL',
+    ('II', 0x1f5ba): 'PATDITHER',
+    ('II', 0x1f710): 'MAKERGBPAT',
+    ('II', 0x1f7c4): 'GETCICON',
+    ('II', 0x1f886): 'PLOTCICON',
+    ('II', 0x1f914): 'DISPOSCICON',
+    ('II', 0x1f92e): 'STDCOMMENT',
+    ('II', 0x1f98c): 'STDGETPIC',
+    ('II', 0x1f9ac): 'STDPUTPIC',
+    ('II', 0x1fa2a): 'STDOPCODEPROC',
+    ('II', 0x1fa74): 'PICCOMMENT',
+    ('II', 0x1fa8a): 'OPENCPICTURE',
+    ('II', 0x1fa98): 'OPENPICTURE',
+    ('II', 0x1faa2): 'OPSHARE',
+    ('II', 0x1fbf8): 'CLOSEPICTURE',
+    ('II', 0x1fc60): 'KILLPICTURE',
+    ('II', 0x1fc68): 'DRAWPICTURE',
+    ('II', 0x1fdfe): 'PICITEM1',
+    ('II', 0x20790): 'GETUBYTE',
+    ('II', 0x207a2): 'GETWORD',
+    ('II', 0x207b2): 'GETLONG',
+    ('II', 0x207c2): 'GETPICDATA',
+    ('II', 0x207f0): 'PUTPICDATA',
+    ('II', 0x20806): 'DPUTPICBYTE',
+    ('II', 0x2080c): 'PUTPICBYTE',
+    ('II', 0x2081e): 'PUTPICWORD',
+    ('II', 0x20830): 'PUTPICLONG',
+    ('II', 0x20840): 'PUTPICRECT',
+    ('II', 0x20884): 'DPUTPICOP',
+    ('II', 0x2088a): 'PUTPICOP',
+    ('II', 0x2088e): 'PUTPICOP2',
+    ('II', 0x208b8): 'PUTPICRGN',
+    ('II', 0x208d2): 'PUTPICPAD',
+    ('II', 0x208f8): 'PUTPICPAT',
+    ('II', 0x20904): 'PUTPICVERB',
+    ('II', 0x209f4): 'UPDATEPAT',
+    ('II', 0x20a9c): 'EQUALPAT',
+    ('II', 0x20b38): 'GETPICTABLE',
+    ('II', 0x20b74): 'PUTPICTABLE',
+    ('II', 0x20b9a): 'GETPICPIXMAP',
+    ('II', 0x20bce): 'PUTPICPIXMAP',
+    ('II', 0x20bfe): 'GETPICPIXPAT',
+    ('II', 0x20c38): 'PUTGRAY',
+    ('II', 0x20d2a): 'PUTPICPIXPAT',
+    ('II', 0x20db0): 'GETPMDATA',
+    ('II', 0x20e48): 'PUTPMDATA',
+    ('II', 0x20ef2): 'CHECKPIC',
+    ('II', 0x2110c): 'SCALEPT',
+    ('II', 0x21160): 'MAPPT',
+    ('II', 0x211be): 'MAPFIXPT',
+    ('II', 0x21214): 'MAPRECT',
+    ('II', 0x2122c): 'MAPRATIO',
+    ('II', 0x21274): 'STDRRECT',
+    ('II', 0x21328): 'FRAMEROUNDRECT',
+    ('II', 0x2132c): 'PAINTROUNDRECT',
+    ('II', 0x21330): 'ERASEROUNDRECT',
+    ('II', 0x21334): 'INVERTROUNDRECT',
+    ('II', 0x21338): 'FILLROUNDRECT',
+    ('II', 0x2133c): 'FILLCROUNDRECT',
+    ('II', 0x2134e): 'CALLRRECT',
+    ('II', 0x21372): 'STDPOLY',
+    ('II', 0x21428): 'FRAMEPOLY',
+    ('II', 0x2142c): 'PAINTPOLY',
+    ('II', 0x21430): 'ERASEPOLY',
+    ('II', 0x21434): 'INVERTPOLY',
+    ('II', 0x21438): 'FILLPOLY',
+    ('II', 0x2143c): 'FILLCPOLY',
+    ('II', 0x2144e): 'CALLPOLY',
+    ('II', 0x2146e): 'OPENPOLY',
+    ('II', 0x214a4): 'CLOSEPOLY',
+    ('II', 0x21514): 'KILLPOLY',
+    ('II', 0x2151c): 'OFFSETPOLY',
+    ('II', 0x21538): 'MAPPOLY',
+    ('II', 0x21594): 'FRPOLY',
+    ('II', 0x215d6): 'DRAWPOLY',
+    ('II', 0x2162e): 'DRAWARC',
+    ('II', 0x21d7c): 'INITOVAL',
+    ('II', 0x21e26): 'BUMPOVAL',
+    ('II', 0x21e68): 'STRETCHBITS',
+    ('II', 0x227ec): 'STMASK0',
+    ('II', 0x22812): 'STMASK1',
+    ('II', 0x22832): 'STMASK2',
+    ('II', 0x22846): 'STMASK3',
+    ('II', 0x22866): 'STADDOVER',
+    ('II', 0x228a8): 'STADDPIN',
+    ('II', 0x2290e): 'STSUBOVER',
+    ('II', 0x22950): 'STSUBPIN',
+    ('II', 0x229b6): 'STMAX',
+    ('II', 0x22a08): 'STMIN',
+    ('II', 0x22a5a): 'STAVG',
+    ('II', 0x22aba): 'STTRANSPARENT',
+    ('II', 0x22af2): 'STHILITE',
+    ('II', 0x22b2a): 'SETUPSTRETCH',
+    ('II', 0x22c16): 'EXTBL',
+    ('II', 0x22c22): 'EXTBL1',
+    ('II', 0x22d62): 'TABLE2',
+    ('II', 0x22e28): 'TABLE4',
+    ('II', 0x23304): 'TABLE8',
+    ('II', 0x23516): 'SCALERTN',
+    ('II', 0x23548): 'INITRGN',
+    ('II', 0x23582): 'SEEKRGN',
+    ('II', 0x235bc): 'SEEKDOWN',
+    ('II', 0x235f6): 'SEEKUP',
+    ('II', 0x236ac): 'STDRGN',
+    ('II', 0x2373a): 'FRAMERGN',
+    ('II', 0x2373e): 'PAINTRGN',
+    ('II', 0x23742): 'ERASERGN',
+    ('II', 0x23746): 'INVERTRGN',
+    ('II', 0x2374a): 'FILLRGN',
+    ('II', 0x2374e): 'FILLCRGN',
+    ('II', 0x23760): 'CALLRGN',
+    ('II', 0x23780): 'DRAWRGN',
+    ('II', 0x237da): 'FRRGN',
+    ('II', 0x2384e): 'NEWRGN',
+    ('II', 0x23872): 'DISPOSERGN',
+    ('II', 0x2387a): 'OPENRGN',
+    ('II', 0x238aa): 'CLOSERGN',
+    ('II', 0x23908): 'COPYRGN',
+    ('II', 0x23954): 'SETEMPTYRGN',
+    ('II', 0x23960): 'SETRECTRGN',
+    ('II', 0x239b8): 'RECTRGN',
+    ('II', 0x239c6): 'OFFSETRGN',
+    ('II', 0x239f8): 'INSETRGN',
+    ('II', 0x23a9a): 'EMPTYRGN',
+    ('II', 0x23aaa): 'EQUALRGN',
+    ('II', 0x23ae8): 'SECTRGN',
+    ('II', 0x23aec): 'UNIONRGN',
+    ('II', 0x23af0): 'DIFFRGN',
+    ('II', 0x23af4): 'XORRGN',
+    ('II', 0x23af6): 'DORGNOP',
+    ('II', 0x23be6): 'PTINRGN',
+    ('II', 0x23c44): 'RECTINRGN',
+    ('II', 0x23cce): 'TRIMRECT',
+    ('II', 0x23d2e): 'MAPRGN',
+    ('II', 0x23de4): 'GETSEEK',
+    ('II', 0x24320): 'STDBITS',
+    ('II', 0x245ba): 'DEVLOOP',
+    ('II', 0x24a1e): 'COPYBITS',
+    ('II', 0x24b08): 'GODEVLOOP',
+    ('II', 0x24b36): 'COPYMASK',
+    ('II', 0x24ba8): 'CMDEVLOOP',
+    ('II', 0x24bca): 'SEEDFILL',
+    ('II', 0x24bd2): 'CALCMASK',
+    ('II', 0x24d22): 'SCROLLRECT',
+    ('II', 0x24e5c): 'PACKBITS',
+    ('II', 0x24f10): 'UNPACKBITS',
+    ('II', 0x24f56): 'STDOVAL',
+    ('II', 0x25002): 'FRAMEOVAL',
+    ('II', 0x25006): 'PAINTOVAL',
+    ('II', 0x2500a): 'ERASEOVAL',
+    ('II', 0x2500e): 'INVERTOVAL',
+    ('II', 0x25012): 'FILLOVAL',
+    ('II', 0x25016): 'FILLCOVAL',
+    ('II', 0x25028): 'CALLOVAL',
+    ('II', 0x25048): 'STDARC',
+    ('II', 0x250e6): 'FRAMEARC',
+    ('II', 0x250ea): 'PAINTARC',
+    ('II', 0x250ee): 'ERASEARC',
+    ('II', 0x250f2): 'INVERTARC',
+    ('II', 0x250f6): 'FILLARC',
+    ('II', 0x250fa): 'FILLCARC',
+    ('II', 0x2510c): 'CALLARC',
+    ('II', 0x25130): 'SORTPOINTS',
+    ('II', 0x251c0): 'CULLPOINTS',
+    ('II', 0x2520e): 'PUTRGN',
+    ('II', 0x2528c): 'UPDATEPIXMAP',
+    ('II', 0x2528e): 'MAKEITABLE',
+    ('II', 0x255be): 'ITABMATCH',
+    ('II', 0x256c6): 'COLOR2INDEX',
+    ('II', 0x2573e): 'INDEX2COLOR',
+    ('II', 0x2577a): 'INVERTCOLOR',
+    ('II', 0x257bc): 'RGBFORECOLOR',
+    ('II', 0x25800): 'RGB2OLD',
+    ('II', 0x2582c): 'RGBBACKCOLOR',
+    ('II', 0x25832): 'GETFORECOLOR',
+    ('II', 0x25874): 'GETBACKCOLOR',
+    ('II', 0x2587a): 'REALCOLOR',
+    ('II', 0x258ee): 'SETENTRIES',
+    ('II', 0x25a14): 'RESTOREENTRIES',
+    ('II', 0x25b04): 'SAVEENTRIES',
+    ('II', 0x25b92): 'PROTECTENTRY',
+    ('II', 0x25be4): 'RESERVEENTRY',
+    ('II', 0x25c0a): 'SETCLIENTID',
+    ('II', 0x25c1a): 'ADDSEARCH',
+    ('II', 0x25c4c): 'ADDCOMP',
+    ('II', 0x25c76): 'DELSEARCH',
+    ('II', 0x25ca2): 'DELCOMP',
+    ('II', 0x25cce): 'GETSUBTABLE',
+    ('II', 0x25d82): 'QDERROR',
+    ('II', 0x25d8e): 'ANGLEFROMSLOPE',
+    ('II', 0x25dcc): 'SLOPEFROMANGLE',
+    ('II', 0x25ef0): 'PTTOANGLE',
+    ('II', 0x25f8a): 'PUTOVAL',
+    ('II', 0x260b4): 'PACKRGN',
+    ('II', 0x26178): 'RGNOP',
+    ('II', 0x261cc): 'AfterStackSpaceInRgnOp', #leak
+    ('II', 0x26220): 'AfterBufferSizeCalcInRgnOp', #leak
+    ('II', 0x263aa): 'SECTSCAN',
+    ('II', 0x263b0): 'DIFFSCAN',
+    ('II', 0x263b4): 'UNIONSCAN',
+    ('II', 0x263f6): 'INSETSCAN',
+    ('II', 0x26440): 'XORSCAN',
+    ('II', 0x26478): 'INITALLPACKS',
+    ('II', 0x2649c): 'PACK4',
+    ('II', 0x264be): 'PACK5',
+    ('II', 0x2653c): 'PACK0',
+    ('II', 0x2653e): 'PACK1',
+    ('II', 0x26540): 'PACK2',
+    ('II', 0x26542): 'PACK3',
+    ('II', 0x26548): 'PACK6',
+    ('II', 0x2654a): 'PACK7',
+    ('II', 0x2654c): 'PACK8',
+    ('II', 0x2654e): 'PACK9',
+    ('II', 0x26550): 'PACK10',
+    ('II', 0x26552): 'PACK11',
+    ('II', 0x26554): 'PACK12',
+    ('II', 0x26556): 'PACK13',
+    ('II', 0x26558): 'PACK14',
+    ('II', 0x2655a): 'PACK15',
+    ('II', 0x265d4): 'DATE2SECS',
+    ('II', 0x266a4): 'SCSIMGR',
+    ('II', 0x26da6): 'RMVTIME',
+    ('II', 0x26dc0): 'PRIMETIME',
+    ('II', 0x27970): '_clut_1_1BitStd',
+    ('II', 0x27990): '_clut_2_2BitStd',
+    ('II', 0x279c0): '_clut_4_4BitStd',
+    ('II', 0x27a50): '_clut_8_8BitStd',
+    ('II', 0x28260): '_clut_127_DefQDColors',
+    ('II', 0x282b0): '_gama_0_StdGamma',
+    ('II', 0x283c4): '_mitq_0_',
+    ('II', 0x283d8): '_wctb_0_',
+    ('II', 0x28410): '_cctb_0_',
+    ('II', 0x28440): '_PACK_5_',
+    ('II', 0x29510): '_PACK_4_',
+    ('II', 0x2a608): '_PACK_7_',
+    ('II', 0x2ab58): '_SERD_0_',
+    ('II', 0x2b480): '_DRVR_10_.ATP',
+    ('II', 0x2c19c): '_DRVR_9_.MPP',
+    ('II', 0x2d72c): '_DRVR_4_.Sony',
+    ('II', 0x2d9c2): 'SeekCk', #leak
+    ('II', 0x2da00): 'CkDrvNum', #leak
+    ('II', 0x2dfac): 'Seek', #leak
+    ('II', 0x2e1b0): 'RWPowerUp', #leak
+    ('II', 0x2ed66): 'FmtTrkRet', #leak
+    ('II', 0x2efe0): 'EmptyPD', #leak
+    ('II', 0x2effc): 'SyncCallRtn', #leak
+    ('II', 0x2f010): '_DRVR_3_.Sound',
+    ('II', 0x2f478): '_DRVR_40_.XPP',
+    ('II', 0x2fe94): '_CDEF_0_',
+    ('II', 0x3035c): '_CDEF_1_',
+    ('II', 0x30908): '_KCHR_0_',
+    ('II', 0x30e7c): '_KMAP_0_',
+    ('II', 0x30f0c): '_MBDF_0_',
+    ('II', 0x31b20): '_MDEF_0_',
+    ('II', 0x3206c): 'FmtTrkRet2', #leak
+    ('II', 0x322fe): 'EmptyPD2', #leak
+    ('II', 0x3231a): 'SyncCallRtn2', #leak
+    ('II', 0x3255c): '_WDEF_1_',
+    ('II', 0x32a5c): '_WDEF_0_',
+    ('II', 0x332c4): '_CURS_4_',
+    ('II', 0x33310): '_CURS_1_',
+    ('II', 0x3335c): '_CURS_3_',
+    ('II', 0x333a8): '_CURS_2_',
+    ('II', 0x333f4): '_FONT_0_Chicago',
+    ('II', 0x333fc): '_FONT_393_',
+    ('II', 0x33e28): '_FONT_396_',
+    ('II', 0x34a98): '_FONT_521_',
+    ('II', 0x35444): '_FONT_384_Geneva',
+    ('II', 0x3544c): '_FONT_512_Monaco',
+    ('II', 0x35454): '_FONT_12_',
+    ('II', 0x3627c): '_NFNT_34_',
+    ('II', 0x37b48): '_NFNT_3_',
+    ('II', 0x3c3ac): '_NFNT_2_',
+    ('II', 0x3eac8): '_snd_1_Brass_Horn',
+    ('Portable', 0x00022): 'DISPOFF',
+    ('Portable', 0x00026): 'CRITICAL',
+    ('Portable', 0x00058): 'STARTBOOT',
+    ('Portable', 0x00096): 'STARTINIT1',
+    ('Portable', 0x0011c): 'BOOTRETRY',
+    ('Portable', 0x00224): 'JMPTBLINIT',
+    ('Portable', 0x00226): 'JMPTBL2',
+    ('Portable', 0x00234): 'FILLWITHONES',
+    ('Portable', 0x00244): 'COMPBOOTSTACK',
+    ('Portable', 0x00252): 'SETUPSYSAPPZONE',
+    ('Portable', 0x00290): 'DRAWBEEPSCREEN',
+    ('Portable', 0x0031c): 'INITSHUTDOWNMGR',
+    ('Portable', 0x00322): 'INITPMGRVARS',
+    ('Portable', 0x00416): 'INITADBVARS',
+    ('Portable', 0x00440): 'INITHIMEMGLOBALS',
+    ('Portable', 0x00460): 'INITGLOBALVARS',
+    ('Portable', 0x00524): 'SWITCHGOODIES',
+    ('Portable', 0x0055c): 'WDCBSWOS',
+    ('Portable', 0x0055e): 'PMSPSWOS',
+    ('Portable', 0x00560): 'INITSWITCHERTABLE',
+    ('Portable', 0x00574): 'GETPRAM',
+    ('Portable', 0x005b2): 'WHICHCPU',
+    ('Portable', 0x005f0): 'WHICHBOARD',
+    ('Portable', 0x0060c): 'SETUPTIMEK',
+    ('Portable', 0x00718): 'INITSCSIGLOBALS',
+    ('Portable', 0x00732): 'INITSCSI',
+    ('Portable', 0x0074a): 'INITIWMGLOBALS',
+    ('Portable', 0x00754): 'INITIWM',
+    ('Portable', 0x00794): 'INITVIAGLOBALS',
+    ('Portable', 0x0079e): 'INITVIA',
+    ('Portable', 0x007c0): 'VIATIMERENABLES',
+    ('Portable', 0x007d4): 'INITSCCGLOBALS',
+    ('Portable', 0x007ea): 'GARY',
+    ('Portable', 0x00808): 'INITSCC',
+    ('Portable', 0x00826): 'WRITESCC',
+    ('Portable', 0x00836): 'INITVIDGLOBALS',
+    ('Portable', 0x0087a): 'INITCRSRVARS',
+    ('Portable', 0x0088a): 'INITCRSRMGR',
+    ('Portable', 0x00902): 'INITIOMGR',
+    ('Portable', 0x00970): 'INITMEMMGR',
+    ('Portable', 0x0098e): 'INITRSRCMGR',
+    ('Portable', 0x0099e): 'INITDTQUEUE',
+    ('Portable', 0x009b0): 'GOOFYDOEJECT',
+    ('Portable', 0x009ba): 'STARTTEST',
+    ('Portable', 0x00bbc): 'STARTTEST1',
+    ('Portable', 0x00c5c): 'ROMCHK',
+    ('Portable', 0x00e5e): 'TJUMP',
+    ('Portable', 0x00e6e): 'MAXTEST',
+    ('Portable', 0x00e70): 'NJUMP',
+    ('Portable', 0x00e86): 'MAXNTST',
+    ('Portable', 0x00e96): 'RAMTEST',
+    ('Portable', 0x00f22): 'ERROR3HANDLER',
+    ('Portable', 0x00f3c): 'ERROR4HANDLER',
+    ('Portable', 0x00f56): 'NCERRORHANDLER',
+    ('Portable', 0x012d4): 'TMENTRY1',
+    ('Portable', 0x01a62): 'STARTTIMER',
+    ('Portable', 0x01ab8): 'WRXBYTE',
+    ('Portable', 0x01ad8): 'RDXBYTE',
+    ('Portable', 0x01b28): 'QUASIPWRMGR',
+    ('Portable', 0x01cc4): 'STPWRMGR',
+    ('Portable', 0x01d04): 'STARTUPROMTEST',
+    ('Portable', 0x01d2a): 'MOD3TEST',
+    ('Portable', 0x01e2e): 'REVMOD3TEST',
+    ('Portable', 0x01f22): 'ROMTEST',
+    ('Portable', 0x01f90): 'EXTRAMTEST',
+    ('Portable', 0x01fee): 'ADDRLINETEST',
+    ('Portable', 0x02064): 'NOTEST',
+    ('Portable', 0x020e2): 'VRAMDATATEST',
+    ('Portable', 0x0210e): 'MAPRAMDATATEST',
+    ('Portable', 0x0215a): 'MAPRAMUNIQTEST',
+    ('Portable', 0x0229a): 'SCCLOOPTEST',
+    ('Portable', 0x02322): 'SCCREGTEST',
+    ('Portable', 0x0235a): 'SCCTIMERTEST',
+    ('Portable', 0x02444): 'VIATEST',
+    ('Portable', 0x025c2): 'TESTSCSI',
+    ('Portable', 0x026a6): 'TESTASC',
+    ('Portable', 0x027de): 'PRAMTEST',
+    ('Portable', 0x02876): 'GETDEFAULTSTARTUP',
+    ('Portable', 0x02880): 'SETDEFAULTSTARTUP',
+    ('Portable', 0x0288a): 'INTERNALWAIT',
+    ('Portable', 0x028b2): 'EMBARKONSEARCH',
+    ('Portable', 0x028d2): 'WAITFORINTERNAL',
+    ('Portable', 0x0295e): 'LOADDRIVERS',
+    ('Portable', 0x02986): 'PLANSTRATEGY',
+    ('Portable', 0x02992): 'FINDNEXTCANDIDATE',
+    ('Portable', 0x029a6): 'NEXTDQENTRY',
+    ('Portable', 0x029b6): 'SELECTDEVICE',
+    ('Portable', 0x029d4): 'CHECKMOUSEEJECT',
+    ('Portable', 0x029e0): 'GETSTARTUPINFO',
+    ('Portable', 0x02a00): 'REACTTOFAILURE',
+    ('Portable', 0x02a1c): 'VISUALUPDATE',
+    ('Portable', 0x02a58): 'ENABLEXFLASH',
+    ('Portable', 0x02a5e): 'SHOWSUCCESS',
+    ('Portable', 0x02a72): 'EJECTME',
+    ('Portable', 0x02a80): 'ISREJECT',
+    ('Portable', 0x02a92): 'ISITFLOPORDEF',
+    ('Portable', 0x02aa6): 'ISITFLOPPY',
+    ('Portable', 0x02aae): 'ISITANYTHING',
+    ('Portable', 0x02ab2): 'NEVERAGAIN',
+    ('Portable', 0x02ac8): 'INBOOTMASK',
+    ('Portable', 0x02ada): 'SHOWDEVICEFAIL',
+    ('Portable', 0x02ae6): 'HAPPYMAC',
+    ('Portable', 0x02af4): 'SHOWPLAINDISK',
+    ('Portable', 0x02afc): 'SHOWDISKQ',
+    ('Portable', 0x02b04): 'SHOWDISKX',
+    ('Portable', 0x02b0c): 'ERASEMYICON',
+    ('Portable', 0x02b26): 'PLOTMYICON',
+    ('Portable', 0x02b3c): 'PLOTICNN',
+    ('Portable', 0x02b8c): 'PSHICNRECT',
+    ('Portable', 0x02bb0): 'HAPPYICON',
+    ('Portable', 0x02cb0): 'DISKICON',
+    ('Portable', 0x02db0): 'QDISKICON',
+    ('Portable', 0x02eb0): 'XDISKICON',
+    ('Portable', 0x02fb0): 'IGETTIMEOUT',
+    ('Portable', 0x02fba): 'ISETTIMEOUT',
+    ('Portable', 0x02fd6): 'IGETWAITFLAGS',
+    ('Portable', 0x02fe0): 'ISETWAITFLAGS',
+    ('Portable', 0x02ff6): 'IDISABLEDYNWAIT',
+    ('Portable', 0x03008): 'IENABLEDYNWAIT',
+    ('Portable', 0x0301a): 'IDISABLEPERMWAIT',
+    ('Portable', 0x0302c): 'IENABLEPERMWAIT',
+    ('Portable', 0x0303e): 'GETRAWTIMEOUT',
+    ('Portable', 0x03050): 'SETRAWTIMEOUT',
+    ('Portable', 0x03494): 'CENTERRECT',
+    ('Portable', 0x034c6): 'MOUSEINIT',
+    ('Portable', 0x03510): 'INITEVENTS',
+    ('Portable', 0x0353a): 'CRITERR',
+    ('Portable', 0x03644): 'PUTSYMBOL',
+    ('Portable', 0x03654): 'PUTICON',
+    ('Portable', 0x0371e): 'SYSERRINIT',
+    ('Portable', 0x0375e): 'DEBUGGER',
+    ('Portable', 0x0379e): 'DEBUGPROLOG',
+    ('Portable', 0x037b0): 'TODEEPSHIT',
+    ('Portable', 0x037f2): 'GENEXCPS',
+    ('Portable', 0x0380a): 'IRQEXCEPTION',
+    ('Portable', 0x0380c): 'SYSTEMERROR',
+    ('Portable', 0x03812): 'SYSERR1',
+    ('Portable', 0x03822): 'SYSERR2',
+    ('Portable', 0x0386c): 'ALLOCFAKERGNS',
+    ('Portable', 0x038ba): 'DSERRORHANDLER',
+    ('Portable', 0x03ea6): 'SIZEMEMORY',
+    ('Portable', 0x04014): 'POWERMNGR',
+    ('Portable', 0x04016): 'PMGRsend', #leak
+    ('Portable', 0x0402a): 'PMGRINT',
+    ('Portable', 0x04074): 'ENVINT',
+    ('Portable', 0x04080): 'BATINT',
+    ('Portable', 0x040a0): 'BATWATCH',
+    ('Portable', 0x04124): 'RemoveMsg', #leak
+    ('Portable', 0x0413a): 'InstallMsg', #leak
+    ('Portable', 0x04176): 'GetLevel', #leak
+    ('Portable', 0x0422e): 'SNDWATCH',
+    ('Portable', 0x04274): 'PMGROP',
+    ('Portable', 0x045d6): 'GOTOSLEEP',
+    ('Portable', 0x046c0): 'WAKEUP',
+    ('Portable', 0x04776): 'DoQueue', #leak
+    ('Portable', 0x04946): 'AllClose', #leak
+    ('Portable', 0x0496c): 'KbdReset', #leak
+    ('Portable', 0x049d0): 'POWEROFF',
+    ('Portable', 0x04a18): 'SYSTEMBEEP',
+    ('Portable', 0x04a98): 'BOOTBEEP',
+    ('Portable', 0x04aa8): 'ERRORBEEP1',
+    ('Portable', 0x04aae): 'ERRORBEEP2',
+    ('Portable', 0x04ab4): 'ERRORBEEP3',
+    ('Portable', 0x04aba): 'ERRORBEEP4',
+    ('Portable', 0x04c48): 'CACHEPROC',
+    ('Portable', 0x04c58): 'CACHETRAP',
+    ('Portable', 0x04d64): 'DEQUEUE',
+    ('Portable', 0x04dac): 'INITQUEUE',
+    ('Portable', 0x04f0e): 'GETTRAPADDRESS',
+    ('Portable', 0x04f16): 'SETTRAPADDRESS',
+    ('Portable', 0x04f1e): 'CACHEFLUSH',
+    ('Portable', 0x04f30): 'VCACHEFLUSH',
+    ('Portable', 0x04f40): 'INITDISPATCHER',
+    ('Portable', 0x04fba): 'BADTRAP',
+    ('Portable', 0x04fc6): 'INTHND',
+    ('Portable', 0x051ce): 'INITINTHANDLER',
+    ('Portable', 0x05236): 'DEBUGUTIL',
+    ('Portable', 0x052a2): 'DISPTCHTSK',
+    ('Portable', 0x052a8): 'VDISPTCH',
+    ('Portable', 0x05334): 'VREMOVE',
+    ('Portable', 0x0534a): 'VBLINT',
+    ('Portable', 0x05678): 'FDBSHIFTINT',
+    ('Portable', 0x057e0): 'ADBOP',
+    ('Portable', 0x05bb8): 'ADBREINIT',
+    ('Portable', 0x05bee): 'INITADBDRVR',
+    ('Portable', 0x05c42): 'ADBPROC',
+    ('Portable', 0x05c7c): 'COUNTADBS',
+    ('Portable', 0x05c96): 'GETINDADB',
+    ('Portable', 0x05cc2): 'GETADBINFO',
+    ('Portable', 0x05cc8): 'SETADBINFO',
+    ('Portable', 0x05da2): 'KEYTRANS',
+    ('Portable', 0x05eb0): 'RSETKMAP',
+    ('Portable', 0x05ec8): 'AfterFreezeTimeInRmvTime', #leak
+    ('Portable', 0x05f1e): 'INSTIME',
+    ('Portable', 0x05f34): 'MultAndMerge', #leak
+    ('Portable', 0x05f76): 'PRIMETIME',
+    ('Portable', 0x05f9a): 'AfterFreezeTimeInPrimeTime', #leak
+    ('Portable', 0x06090): 'AfterFreezeTimeInTimer2Int', #leak
+    ('Portable', 0x0613a): 'INITTIMEMGR',
+    ('Portable', 0x061d8): 'CLKRW',
+    ('Portable', 0x0631a): 'READXPRAM',
+    ('Portable', 0x06350): 'WRITEXPRAM',
+    ('Portable', 0x063a0): 'CLKNOMEM',
+    ('Portable', 0x06420): 'OSEVENTAVAIL',
+    ('Portable', 0x064ac): 'GETOSEVENT',
+    ('Portable', 0x064d6): 'FLUSHEVENTS',
+    ('Portable', 0x06524): 'FETCH',
+    ('Portable', 0x06568): 'STASH',
+    ('Portable', 0x06570): 'IODONE',
+    ('Portable', 0x0664e): 'VGODRIVER',
+    ('Portable', 0x066f2): 'OPEN',
+    ('Portable', 0x0689a): 'CLOSE',
+    ('Portable', 0x068bc): 'VWAITUNTIL',
+    ('Portable', 0x068d8): 'READ',
+    ('Portable', 0x0694a): 'VSYNCWAIT',
+    ('Portable', 0x06958): 'WRITE',
+    ('Portable', 0x0696e): 'CONTROL',
+    ('Portable', 0x0697e): 'STATUS',
+    ('Portable', 0x069a4): 'KILLIO',
+    ('Portable', 0x069f8): 'DRVRINSTALL',
+    ('Portable', 0x06a56): 'DRVRREMOVE',
+    ('Portable', 0x06a86): 'ADDDRIVE',
+    ('Portable', 0x06b54): 'SCSIMGR',
+    ('Portable', 0x07648): 'UNLOADSEG',
+    ('Portable', 0x07690): 'APPZONEADDR',
+    ('Portable', 0x076b2): 'FLUSHAPPLVBLS',
+    ('Portable', 0x076da): 'CHAIN',
+    ('Portable', 0x076e0): 'LAUNCH',
+    ('Portable', 0x077dc): 'VSEGSTACK',
+    ('Portable', 0x0782a): 'EXITTOSHELL',
+    ('Portable', 0x07860): 'VLAUNCHINIT',
+    ('Portable', 0x07886): 'GETAPPPARMS',
+    ('Portable', 0x078a2): 'INSTALLRDRIVERS',
+    ('Portable', 0x07906): 'READPARAM',
+    ('Portable', 0x07920): 'WRITEPARAM',
+    ('Portable', 0x07944): 'READDATETIME',
+    ('Portable', 0x0794e): 'SETDATETIME',
+    ('Portable', 0x07956): 'DELAY',
+    ('Portable', 0x07968): 'LWRSTRING',
+    ('Portable', 0x079d0): 'UPRSTRING',
+    ('Portable', 0x079e6): 'CMPSTRING',
+    ('Portable', 0x079fc): 'RELSTRING',
+    ('Portable', 0x07e70): 'READPRAM',
+    ('Portable', 0x07ea6): 'INITUTIL',
+    ('Portable', 0x07fc8): 'SYSENVIRONS',
+    ('Portable', 0x080c2): 'BLOCKMOVES',
+    ('Portable', 0x080d0): 'BLOCKMOVE',
+    ('Portable', 0x0824c): 'BLOCKMOVE68020',
+    ('Portable', 0x083ee): 'INITAPPLZONE',
+    ('Portable', 0x08468): 'VIAZINIT',
+    ('Portable', 0x084de): 'VIAZPOSTINIT',
+    ('Portable', 0x084e8): 'INITZONE',
+    ('Portable', 0x08582): 'GETZONE',
+    ('Portable', 0x08588): 'SETZONE',
+    ('Portable', 0x0858e): 'MAXBLOCK',
+    ('Portable', 0x0859c): 'COMPACTMEM',
+    ('Portable', 0x085cc): 'PURGEMEM',
+    ('Portable', 0x085e8): 'PURGESPACE',
+    ('Portable', 0x085f2): 'FREEMEM',
+    ('Portable', 0x085fc): 'RESRVMEM',
+    ('Portable', 0x0861a): 'MAXMEM',
+    ('Portable', 0x0864e): 'SETGROWZONE',
+    ('Portable', 0x08658): 'SETAPPLLIMIT',
+    ('Portable', 0x0868c): 'STACKSPACE',
+    ('Portable', 0x0869e): 'MAXAPPLZONE',
+    ('Portable', 0x086d4): 'NEWPTR',
+    ('Portable', 0x086f0): 'DISPOSEPTR',
+    ('Portable', 0x08706): 'GETPTRSIZE',
+    ('Portable', 0x08710): 'SETPTRSIZE',
+    ('Portable', 0x0871a): 'PTRZONE',
+    ('Portable', 0x08738): 'NEWEMPTYHANDLE',
+    ('Portable', 0x0874c): 'NWHANDLE',
+    ('Portable', 0x0876e): 'DSPOSEHANDLE',
+    ('Portable', 0x0878e): 'GETHANDLESIZE',
+    ('Portable', 0x0879a): 'SETHANDLESIZE',
+    ('Portable', 0x087ac): 'HANDLEZONE',
+    ('Portable', 0x087b4): 'RECOVERHANDLE',
+    ('Portable', 0x087da): 'EMPTYHANDLE',
+    ('Portable', 0x087ea): 'REALLOCHANDLE',
+    ('Portable', 0x0882e): 'HLOCK',
+    ('Portable', 0x08838): 'HUNLOCK',
+    ('Portable', 0x08842): 'HPURGE',
+    ('Portable', 0x0884c): 'HNOPURGE',
+    ('Portable', 0x08860): 'HRSRC',
+    ('Portable', 0x0886a): 'HNORSRC',
+    ('Portable', 0x08886): 'HGETFLAGS',
+    ('Portable', 0x08894): 'HSETFLAGS',
+    ('Portable', 0x0889e): 'MOREMASTERS',
+    ('Portable', 0x088b6): 'STRIPADDRESS',
+    ('Portable', 0x088bc): 'MOVEHHI',
+    ('Portable', 0x08a9e): 'HEAPGUTS',
+    ('Portable', 0x08aee): 'MMPPROLOGUE',
+    ('Portable', 0x08b02): 'MMHPROLOGUE',
+    ('Portable', 0x08b48): 'MMPROLOGUE',
+    ('Portable', 0x08b6a): 'MMRHPROLOGUE',
+    ('Portable', 0x08ba8): 'MMEPILOGUE',
+    ('Portable', 0x08bb4): 'MMNOERREPILOGUE',
+    ('Portable', 0x08bba): 'MAKEBKF',
+    ('Portable', 0x08bc0): 'EH',
+    ('Portable', 0x08c0e): 'PURGEHEAP',
+    ('Portable', 0x08ca0): 'TOTEPURGEABLES',
+    ('Portable', 0x08d00): 'BKCOMPACTS',
+    ('Portable', 0x08d9c): 'ALLOCBK',
+    ('Portable', 0x08e50): 'COMPACTHP',
+    ('Portable', 0x08ee6): 'TOMAXLIMIT',
+    ('Portable', 0x08eee): 'MAXLIMIT',
+    ('Portable', 0x08f08): 'ZONEADJUSTEND',
+    ('Portable', 0x08f72): 'ACTUALS',
+    ('Portable', 0x08f86): 'GETSIZE',
+    ('Portable', 0x08f9e): 'CLEARGZSTUFF',
+    ('Portable', 0x08fa8): 'SETSIZE',
+    ('Portable', 0x09122): 'ADJUSTFREE',
+    ('Portable', 0x0912e): 'NEXTMASTER',
+    ('Portable', 0x0914a): 'HMAKEMOREMASTERS',
+    ('Portable', 0x0917a): 'RELEASEMP',
+    ('Portable', 0x09184): 'MAKEPTRSPC',
+    ('Portable', 0x092f4): 'FREEBK',
+    ('Portable', 0x09320): 'STDGZ',
+    ('Portable', 0x09382): 'SHUTDOWNDISP',
+    ('Portable', 0x09594): 'FSQUEUESYNC',
+    ('Portable', 0x09598): 'FSQUEUE', #leak
+    ('Portable', 0x09600): 'FSAsync', #leak
+    ('Portable', 0x0964c): 'CMDDONE',
+    ('Portable', 0x096e0): 'AfterExtFSHook', #leak
+    ('Portable', 0x09766): 'FINITQUEUE',
+    ('Portable', 0x09780): 'DSHOOK',
+    ('Portable', 0x097a8): 'AfterMountVolInDSHook', #leak
+    ('Portable', 0x09830): 'AfterSysErrorInDSHook', #leak
+    ('Portable', 0x098ec): 'DSExit', #leak
+    ('Portable', 0x09954): 'INITFS',
+    ('Portable', 0x09a42): 'DIVUP',
+    ('Portable', 0x09a56): 'ROUNDALLOC',
+    ('Portable', 0x09a98): 'GETVCBRFN',
+    ('Portable', 0x09b10): 'MARKVCB',
+    ('Portable', 0x09b12): 'MARKVCBTIME',
+    ('Portable', 0x09b1a): 'MarkVCBDirty', #leak
+    ('Portable', 0x09b20): 'FLUSHMDB',
+    ('Portable', 0x09b26): 'VFLUSHMDB',
+    ('Portable', 0x09be8): 'MAKESTKPB',
+    ('Portable', 0x09bfa): 'MOUNTVOL',
+    ('Portable', 0x09c4e): 'OldMtVolAfterFSQueue', #leak
+    ('Portable', 0x09e10): 'VCHECKREMOUNT',
+    ('Portable', 0x09f3c): 'MtVolOK', #leak
+    ('Portable', 0x09f9a): 'VMTCHECK',
+    ('Portable', 0x0a176): 'VBMCHK',
+    ('Portable', 0x0a1b2): 'DsposVBlks', #leak
+    ('Portable', 0x0a1e6): 'DsposVCB', #leak
+    ('Portable', 0x0a258): 'FINDDRIVE',
+    ('Portable', 0x0a25e): 'VFINDDRIVE',
+    ('Portable', 0x0a284): 'OFFLINE',
+    ('Portable', 0x0a2ea): 'FlushBuffersAtflVCaches', #leak
+    ('Portable', 0x0a320): 'FlushBuffersAtflBufExit', #leak
+    ('Portable', 0x0a32a): 'EJECT',
+    ('Portable', 0x0a3aa): 'OfflineEjectCallsFlushBuffers', #leak
+    ('Portable', 0x0a3b0): 'OfflineEjectCallsMFSFlush', #leak
+    ('Portable', 0x0a3e4): 'EjectIt', #leak
+    ('Portable', 0x0a400): 'UNMOUNTVOL',
+    ('Portable', 0x0a468): 'FlushVFiles', #leak
+    ('Portable', 0x0a4a6): 'FLUSHVOL',
+    ('Portable', 0x0a4c0): 'FlUnMntAfterMFSCheck', #leak
+    ('Portable', 0x0a4cc): 'FlUnMntCallsFlushBuffers', #leak
+    ('Portable', 0x0a4e2): 'CkExtFS', #leak
+    ('Portable', 0x0a4e8): 'VCKEXTFS',
+    ('Portable', 0x0a4f8): 'VDTRMV3',
+    ('Portable', 0x0a50c): 'VDTRMV1',
+    ('Portable', 0x0a63e): 'DtrmV2', #leak
+    ('Portable', 0x0a644): 'VDTRMV2',
+    ('Portable', 0x0a6dc): 'GETVOLINFO',
+    ('Portable', 0x0a884): 'SETVOLINFO',
+    ('Portable', 0x0a92c): 'CVFLGS', #leak
+    ('Portable', 0x0a940): 'GETVOL',
+    ('Portable', 0x0a988): 'SETVOL',
+    ('Portable', 0x0a9c8): 'SETDIR',
+    ('Portable', 0x0a9fc): 'GETDIR',
+    ('Portable', 0x0aa20): 'OPENWD',
+    ('Portable', 0x0aa62): 'FillWDCB', #leak
+    ('Portable', 0x0aacc): 'CLOSEWD',
+    ('Portable', 0x0ab06): 'GETWDINFO',
+    ('Portable', 0x0adbc): 'MFSFlush', #leak
+    ('Portable', 0x0aeae): 'GT1STFCB', #leak
+    ('Portable', 0x0aeb6): 'GTNXTFCB', #leak
+    ('Portable', 0x0aebe): 'Gt1stMatch', #leak
+    ('Portable', 0x0aecc): 'GtNxtMatch', #leak
+    ('Portable', 0x0aed6): 'OPENRF',
+    ('Portable', 0x0aee0): 'FILEOPEN',
+    ('Portable', 0x0aee6): 'VFILEOPEN',
+    ('Portable', 0x0aeee): 'FOpen1', #leak
+    ('Portable', 0x0b05c): 'PermssnChk', #leak
+    ('Portable', 0x0b062): 'VPERMSSNCHK',
+    ('Portable', 0x0b0c6): 'CREATEDIR',
+    ('Portable', 0x0b0d2): 'FILECREATE',
+    ('Portable', 0x0b14e): 'PUSHCNAME', #leak
+    ('Portable', 0x0b17e): 'POPCNAME', #leak
+    ('Portable', 0x0b18a): 'MFSOpen', #leak
+    ('Portable', 0x0b290): 'Gt1stWDCB', #leak
+    ('Portable', 0x0b298): 'GtNxtWDCB', #leak
+    ('Portable', 0x0b2fc): 'FILEDELETE',
+    ('Portable', 0x0b37c): 'RENAME',
+    ('Portable', 0x0b392): 'AfterVolCheckInRename', #leak
+    ('Portable', 0x0b452): 'AfterCMRenameCNInRename', #leak
+    ('Portable', 0x0b4a8): 'AfterCMGetCNinRename', #leak
+    ('Portable', 0x0b51a): 'RNmVol@70', #leak
+    ('Portable', 0x0b538): 'TFMOVE',
+    ('Portable', 0x0b5f2): 'RNmVol1', #leak
+    ('Portable', 0x0b758): 'SETFILTYPE',
+    ('Portable', 0x0b790): 'SETFILLOCK',
+    ('Portable', 0x0b79a): 'RSTFILLOCK',
+    ('Portable', 0x0b7dc): 'SETFILEINFO',
+    ('Portable', 0x0b80e): 'SETCATINFO',
+    ('Portable', 0x0b880): 'CkFilMod', #leak
+    ('Portable', 0x0b896): 'FNDFILNAME', #leak
+    ('Portable', 0x0b89c): 'VFNDFILNAME',
+    ('Portable', 0x0b954): 'AfterCMGetCNInFndFilName', #leak
+    ('Portable', 0x0b9c0): 'EXTOFFLINCK', #leak
+    ('Portable', 0x0b9d6): 'GETCATINFO',
+    ('Portable', 0x0b9e8): 'GETFILEINFO',
+    ('Portable', 0x0bc7c): 'ChgMFlLock', #leak
+    ('Portable', 0x0bdd2): 'TFSVCBTST',
+    ('Portable', 0x0be1c): 'GETFPOS',
+    ('Portable', 0x0be20): 'SETFPOS',
+    ('Portable', 0x0be24): 'FILEREAD',
+    ('Portable', 0x0be2a): 'VFILEREAD',
+    ('Portable', 0x0bf40): 'FILEWRITE',
+    ('Portable', 0x0bf46): 'VFILEWRITE',
+    ('Portable', 0x0c060): 'FLUSHFILE',
+    ('Portable', 0x0c06a): 'FILECLOSE',
+    ('Portable', 0x0c070): 'VFILECLOSE',
+    ('Portable', 0x0c08a): 'FClose', #leak
+    ('Portable', 0x0c090): 'VFCLOSE',
+    ('Portable', 0x0c0f4): 'AfterTruncateFile', #leak
+    ('Portable', 0x0c25c): 'GETEOF',
+    ('Portable', 0x0c26e): 'RfnCall', #leak
+    ('Portable', 0x0c274): 'VRFNCALL',
+    ('Portable', 0x0c2be): 'VTSTMOD',
+    ('Portable', 0x0c2d4): 'GETFCBINFO',
+    ('Portable', 0x0c3b2): 'FILEALLOC',
+    ('Portable', 0x0c3e2): 'SETEOF',
+    ('Portable', 0x0c452): 'VADJEOF',
+    ('Portable', 0x0c4f6): 'LG2PHYS',
+    ('Portable', 0x0c4fc): 'VLG2PHYS',
+    ('Portable', 0x0c6f2): 'VBLKALLOC',
+    ('Portable', 0x0c846): 'BLKDEALLOC',
+    ('Portable', 0x0c84c): 'VBLKDEALLOC',
+    ('Portable', 0x0c88c): 'BLKCHK',
+    ('Portable', 0x0c8e6): 'UPDATEFREE',
+    ('Portable', 0x0c91a): 'VREADBM',
+    ('Portable', 0x0c9c0): 'VDEALLOCFILE',
+    ('Portable', 0x0ca8e): 'EXTENDFILE',
+    ('Portable', 0x0ca94): 'VEXTENDFILE',
+    ('Portable', 0x0cc0a): 'FXMKEYCMP',
+    ('Portable', 0x0cc48): 'MAPFBLOCK',
+    ('Portable', 0x0cc4e): 'VMAPFBLOCK',
+    ('Portable', 0x0ccca): 'TRUNCATEFILE',
+    ('Portable', 0x0ccd0): 'VTRUNCATEFILE',
+    ('Portable', 0x0ce04): 'XFFLUSH', #leak
+    ('Portable', 0x0ce3e): 'VXFSEARCH',
+    ('Portable', 0x0cf86): 'AfterCMSetupInCMCreateCN', #leak
+    ('Portable', 0x0d0c2): 'CMDELETECN',
+    ('Portable', 0x0d0cc): 'AfterCMSetupInCMDeleteCN', #leak
+    ('Portable', 0x0d16e): 'CMGETCN',
+    ('Portable', 0x0d178): 'AfterCMSetupInCMGetCN', #leak
+    ('Portable', 0x0d18e): 'CMGETOFF',
+    ('Portable', 0x0d1f2): 'CMMOVECN',
+    ('Portable', 0x0d1fc): 'AfterCMSetupInCMMoveCN', #leak
+    ('Portable', 0x0d398): 'CMRENAMECN',
+    ('Portable', 0x0d3a2): 'AfterCMSetupInCMRenameCN', #leak
+    ('Portable', 0x0d4a0): 'CMUPDATECN',
+    ('Portable', 0x0d4a8): 'AfterCMSetupInCMUpdateCN', #leak
+    ('Portable', 0x0d4d2): 'CMSETUP', #leak
+    ('Portable', 0x0d4d8): 'VCMSETUP',
+    ('Portable', 0x0d4e0): 'UpdVCnts', #leak
+    ('Portable', 0x0d4f0): 'UpdRtCnts', #leak
+    ('Portable', 0x0d50a): 'BUILDKEY', #leak
+    ('Portable', 0x0d538): 'CMFLUSH',
+    ('Portable', 0x0d56c): 'CMKEYCMP',
+    ('Portable', 0x0d5a8): 'LOCCNODE',
+    ('Portable', 0x0d5c8): 'LOCCREC',
+    ('Portable', 0x0d5ce): 'VLOCCREC',
+    ('Portable', 0x0d5f6): 'UPDCNAME',
+    ('Portable', 0x0d616): 'VBTCLOSE',
+    ('Portable', 0x0d650): 'BTDELETE',
+    ('Portable', 0x0d656): 'VBTDELETE',
+    ('Portable', 0x0d802): 'BTFLUSH',
+    ('Portable', 0x0d808): 'VBTFLUSH',
+    ('Portable', 0x0d866): 'BTGETRECORD',
+    ('Portable', 0x0d86c): 'VBTGETRECORD',
+    ('Portable', 0x0d91e): 'BTINSERT',
+    ('Portable', 0x0d924): 'VBTINSERT',
+    ('Portable', 0x0dbbe): 'BTOPEN',
+    ('Portable', 0x0dbc4): 'VBTOPEN',
+    ('Portable', 0x0dc76): 'BTSEARCH',
+    ('Portable', 0x0dc7c): 'VBTSEARCH',
+    ('Portable', 0x0dd00): 'BTUPDATE',
+    ('Portable', 0x0dd06): 'VBTUPDATE',
+    ('Portable', 0x0dd2c): 'BTCleanUp', #leak
+    ('Portable', 0x0dd3a): 'BTSetUp', #leak
+    ('Portable', 0x0dd68): 'VALLOCNODE',
+    ('Portable', 0x0ddf8): 'EXTBTFILE',
+    ('Portable', 0x0ddfe): 'VEXTBTFILE',
+    ('Portable', 0x0dee6): 'FREENODE',
+    ('Portable', 0x0deec): 'VFREENODE',
+    ('Portable', 0x0df9e): 'VUPDALTMDB',
+    ('Portable', 0x0e092): 'RotateLt', #leak
+    ('Portable', 0x0e182): 'SPLITLT',
+    ('Portable', 0x0e20c): 'TREESEARCH',
+    ('Portable', 0x0e212): 'VTREESEARCH',
+    ('Portable', 0x0e2ca): 'BuildIRec', #leak
+    ('Portable', 0x0e2ec): 'CHKNODE',
+    ('Portable', 0x0e370): 'CLRNODE',
+    ('Portable', 0x0e38c): 'DELETEREC',
+    ('Portable', 0x0e3dc): 'GETLTSIB',
+    ('Portable', 0x0e3e6): 'GETRTSIB',
+    ('Portable', 0x0e416): 'GETMAXKEY',
+    ('Portable', 0x0e422): 'GETNODE',
+    ('Portable', 0x0e428): 'VGETNODE',
+    ('Portable', 0x0e45c): 'GETNODESIZ',
+    ('Portable', 0x0e474): 'GETOFFSET',
+    ('Portable', 0x0e48c): 'GETRECA',
+    ('Portable', 0x0e4a8): 'INITNODE',
+    ('Portable', 0x0e4da): 'INSERTREC',
+    ('Portable', 0x0e54c): 'LOCBTCB',
+    ('Portable', 0x0e556): 'LOCREC',
+    ('Portable', 0x0e588): 'LOCTPR',
+    ('Portable', 0x0e598): 'MOVOFFLT',
+    ('Portable', 0x0e5a8): 'MOVOFFRT',
+    ('Portable', 0x0e5be): 'MOVRECLT',
+    ('Portable', 0x0e5d4): 'MOVRECRT',
+    ('Portable', 0x0e5ee): 'RELNODE',
+    ('Portable', 0x0e5f4): 'VRELNODE',
+    ('Portable', 0x0e608): 'SEARCHNODE',
+    ('Portable', 0x0e664): 'UPDDREC',
+    ('Portable', 0x0e686): 'UPDIKEY',
+    ('Portable', 0x0e6b8): 'CACHE',
+    ('Portable', 0x0e6e2): 'FLUSHCACHE',
+    ('Portable', 0x0e6e8): 'VFLUSHCACHE',
+    ('Portable', 0x0e7cc): 'GETBLOCK',
+    ('Portable', 0x0e7d2): 'VGETBLOCK',
+    ('Portable', 0x0e9b4): 'INITCACHE',
+    ('Portable', 0x0ea0e): 'MARKBLOCK',
+    ('Portable', 0x0ea14): 'VMARKBLOCK',
+    ('Portable', 0x0ea1c): 'MARKA5BLOCK',
+    ('Portable', 0x0ea24): 'RELBLOCK',
+    ('Portable', 0x0ea2a): 'VRELBLOCK',
+    ('Portable', 0x0ea76): 'TRASHVBLKS',
+    ('Portable', 0x0ea7c): 'VTRASHVBLKS',
+    ('Portable', 0x0eaa4): 'TRASHFBLOCKS',
+    ('Portable', 0x0eaae): 'TRASHBLOCKS',
+    ('Portable', 0x0eb02): 'VTRASHBLOCKS',
+    ('Portable', 0x0eb44): 'CACHERDIP',
+    ('Portable', 0x0eb4a): 'VCACHERDIP',
+    ('Portable', 0x0eb70): 'CACHEWRIP',
+    ('Portable', 0x0eb76): 'VCACHEWRIP',
+    ('Portable', 0x0ebd2): 'WRITEOWNBUF',
+    ('Portable', 0x0ebda): 'WRITEBLOCK',
+    ('Portable', 0x0ec34): 'VBASICIO',
+    ('Portable', 0x0eca8): 'RDBLOCKS',
+    ('Portable', 0x0ecae): 'VRDBLOCKS',
+    ('Portable', 0x0ecf6): 'WRBLOCKS',
+    ('Portable', 0x0ecfc): 'VWRBLOCKS',
+    ('Portable', 0x0ed0e): 'VSETUPTAGS',
+    ('Portable', 0x0ed64): 'SMGlobalLoc',
+    ('Portable', 0x0ed6c): 'SMGlobHndl',
+    ('Portable', 0x0ed70): 'TimerCode',
+    ('Portable', 0x0ee56): 'InitTimer',
+    ('Portable', 0x0ee6e): 'WriteMinTimer',
+    ('Portable', 0x0ee8c): 'WriteTimer',
+    ('Portable', 0x0eeba): 'ReadTimer',
+    ('Portable', 0x0eed6): 'NewPtr',
+    ('Portable', 0x0eee0): 'NewSysPtr',
+    ('Portable', 0x0eeea): 'DisposPtr',
+    ('Portable', 0x0eef2): 'HLock',
+    ('Portable', 0x0eefa): 'MoveHHi',
+    ('Portable', 0x0ef02): 'HGetState',
+    ('Portable', 0x0ef0a): 'HSetState',
+    ('Portable', 0x0ef16): 'MemError',
+    ('Portable', 0x0ef1e): 'StripAddress',
+    ('Portable', 0x0ef26): 'RecoverHandle',
+    ('Portable', 0x0ef30): 'IsNuMac',
+    ('Portable', 0x0ef32): 'WaitBit',
+    ('Portable', 0x0ef42): 'inAppHeap',
+    ('Portable', 0x0ef6c): 'SndAllOff',
+    ('Portable', 0x0ef76): 'BlockInts',
+    ('Portable', 0x0ef82): 'UnBlockInts',
+    ('Portable', 0x0ef88): 'GestaltCall',
+    ('Portable', 0x0ef9c): 'MYGETRESOURCE',
+    ('Portable', 0x0f026): 'IsAscMac',
+    ('Portable', 0x0f064): 'initGlobals',
+    ('Portable', 0x0f0be): 'insertInQueue',
+    ('Portable', 0x0f14e): 'nextFromQueue',
+    ('Portable', 0x0f1c4): 'ChannelModifier',
+    ('Portable', 0x0f35c): 'processCommandFrom',
+    ('Portable', 0x0f3d8): 'processCommand',
+    ('Portable', 0x0f41c): 'processNextCommand',
+    ('Portable', 0x0f466): 'sendEmptyCommand',
+    ('Portable', 0x0f4ac): 'tickleModifier',
+    ('Portable', 0x0f4ea): 'findModifier',
+    ('Portable', 0x0f54e): 'disposChannel',
+    ('Portable', 0x0f620): 'checkChannel',
+    ('Portable', 0x0f652): 'pumpResource',
+    ('Portable', 0x0f6fa): 'OnTimeInterrupt',
+    ('Portable', 0x0f806): 'SNDAPPDEAD',
+    ('Portable', 0x0f85e): 'ASYNCHCALLBACK',
+    ('Portable', 0x0f8aa): 'SNDDOCOMMAND',
+    ('Portable', 0x0f94a): 'SNDDOIMMEDIATE',
+    ('Portable', 0x0f9a8): 'SNDADDMODIFIER',
+    ('Portable', 0x0fb36): 'SNDNEWCHANNEL',
+    ('Portable', 0x0fc32): 'SNDDISPOSECHANNEL',
+    ('Portable', 0x0fcd2): 'SNDPLAY',
+    ('Portable', 0x0ff0c): 'SNDCONTROL',
+    ('Portable', 0x10006): 'BUTTON',
+    ('Portable', 0x10018): 'TICKCOUNT',
+    ('Portable', 0x1005a): 'GETMOUSE',
+    ('Portable', 0x10070): 'STILLDOWN',
+    ('Portable', 0x10098): 'WAITMOUSEUP',
+    ('Portable', 0x100b6): 'EVENTAVAIL',
+    ('Portable', 0x100ba): 'GETNEXTEVENT',
+    ('Portable', 0x10144): 'AfterOSEventAvailInGetNextEvent', #leak
+    ('Portable', 0x10148): 'AfterGetOSEventInGetNextEvent', #leak
+    ('Portable', 0x10170): 'FromGNECommon', #leak
+    ('Portable', 0x101b8): 'AfterGetResourceInTryFKey', #leak
+    ('Portable', 0x10224): 'AfterGetMouseInGetNextEvent', #leak
+    ('Portable', 0x102f0): 'WAITNEXTEVENT',
+    ('Portable', 0x10368): 'WMGR',
+    ('Portable', 0x10376): 'NEWSTRING',
+    ('Portable', 0x1038e): 'SETSTRING',
+    ('Portable', 0x103b2): 'InsertWindow', #leak
+    ('Portable', 0x103ea): 'DELETEWINDOW',
+    ('Portable', 0x10402): 'CALCVIS',
+    ('Portable', 0x10460): 'CALCVISBEHIND',
+    ('Portable', 0x104a4): 'CLIPABOVE',
+    ('Portable', 0x104c8): 'PAINTONE',
+    ('portable', 0x104fc): 'AfterFirstSectRgnInGoPaintOne', #leak
+    ('Portable', 0x10504): 'AfterClipAbove', #leak
+    ('portable', 0x1051c): 'AfterSectRgnInGoPaintOne', #leak
+    ('portable', 0x10522): 'EraseInROM', #leak
+    ('portable', 0x10526): 'SkipEraseInROM', #leak
+    ('Portable', 0x1054c): 'TestClip', #leak
+    ('Portable', 0x1056c): 'NoDeskHook', #leak
+    ('Portable', 0x10578): 'PAINTBEHIND',
+    ('Portable', 0x105d8): 'GETNEWRGN',
+    ('Portable', 0x105e4): 'SAVEOLD',
+    ('Portable', 0x10612): 'DRAWNEW',
+    ('Portable', 0x1065a): 'AfterPaintBehindInDrawNew', #leak
+    ('Portable', 0x10672): 'SHOWHIDE',
+    ('Portable', 0x1068e): 'AfterSaveOldInShowHide', #leak
+    ('Portable', 0x10696): 'AfterCalcRgnCallInShowHide', #leak
+    ('Portable', 0x106a4): 'SETWPORT',
+    ('Portable', 0x106ae): 'RESTOREPORT',
+    ('Portable', 0x106b4): 'GETWMGRPORT',
+    ('Portable', 0x106c8): 'CHECKUPDATE',
+    ('Portable', 0x1075c): 'INITWINDOWS',
+    ('Portable', 0x10846): 'NEWWINDOW',
+    ('Portable', 0x10916): 'PaintNewOne', #leak
+    ('Portable', 0x1097a): 'CLOSEWINDOW',
+    ('Portable', 0x10990): 'AfterKillControlsInCloseWindow', #leak
+    ('Portable', 0x109ae): 'AfterDisposeRgnInCloseWindow', #leak
+    ('Portable', 0x109ea): 'MakeDeactive', #leak
+    ('Portable', 0x10a08): 'DISPOSEWINDOW',
+    ('Portable', 0x10a16): 'SHOWWINDOW',
+    ('Portable', 0x10a36): 'AfterShowHideInShowWindow', #leak
+    ('Portable', 0x10a3e): 'HIDEWINDOW',
+    ('Portable', 0x10a68): 'GETWREFCON',
+    ('Portable', 0x10a76): 'SETWREFCON',
+    ('Portable', 0x10a86): 'SETWINDOWPIC',
+    ('Portable', 0x10a8c): 'GETWINDOWPIC',
+    ('Portable', 0x10a92): 'GETWTITLE',
+    ('Portable', 0x10aaa): 'SETWTITLE',
+    ('Portable', 0x10afe): 'AfterUnionRgnInSetWTitle', #leak
+    ('Portable', 0x10b28): 'DELTAPOINT',
+    ('Portable', 0x10b84): 'MOVEWINDOW',
+    ('Portable', 0x10bbe): 'AfterOffsetRgnInMoveWindow', #leak
+    ('Portable', 0x10bca): 'NoBTF0', #leak
+    ('Portable', 0x10bf8): 'AfterPaintBehindInMoveWindow', #leak
+    ('Portable', 0x10c0e): 'AfterPaintOneInMoveWindow', #leak
+    ('Portable', 0x10c30): 'GETWVARIANT',
+    ('Portable', 0x10c48): 'CallWindow', #leak
+    ('Portable', 0x10c86): 'CallDWindow', #leak
+    ('Portable', 0x10c94): 'CallWCalc', #leak
+    ('Portable', 0x10cd8): 'HILITEWINDOW',
+    ('Portable', 0x10d12): 'ClipGAbove', #leak
+    ('Portable', 0x10d18): 'SIZEWINDOW',
+    ('Portable', 0x10d6c): 'ZOOMWINDOW',
+    ('Portable', 0x10dd2): 'TRACKGOAWAY',
+    ('Portable', 0x10dda): 'TRACKBOX',
+    ('Portable', 0x10e48): 'SELECTWINDOW',
+    ('Portable', 0x10e50): 'FromSelectWindow', #leak
+    ('Portable', 0x10e68): 'PostDoActivate', #leak
+    ('Portable', 0x10e6c): 'PreSkipUnHilite', #leak
+    ('Portable', 0x10e78): 'BRINGTOFRONT',
+    ('Portable', 0x10e7c): 'BTF1', #leak
+    ('Portable', 0x10efc): 'AfterPaintOneInBringToFront', #leak
+    ('Portable', 0x10f00): 'FromBTF1', #leak
+    ('Portable', 0x10f1a): 'SENDBEHIND',
+    ('Portable', 0x10f2a): 'AfterFrontWindowInSendBehind', #leak
+    ('Portable', 0x10f42): 'AfterSelectWindowInSendBehind', #leak
+    ('Portable', 0x10f60): 'AfterCalcVBehindInSendBehind', #leak
+    ('Portable', 0x10f64): 'AfterPaintBehindInSendBehind', #leak
+    ('Portable', 0x10f70): 'BEGINUPDATE',
+    ('Portable', 0x10fb0): 'ENDUPDATE',
+    ('Portable', 0x10fd8): 'FRONTWINDOW',
+    ('Portable', 0x11002): 'DRAGWINDOW',
+    ('Portable', 0x11070): 'FromDragWindow', #leak
+    ('Portable', 0x110bc): 'WMGRGRAY',
+    ('Portable', 0x110c4): 'DRAGGRAYRGN',
+    ('Portable', 0x110d0): 'DRAGTHERGN',
+    ('Portable', 0x110f6): 'AfterPenModeInDragTheRgn', #leak
+    ('Portable', 0x111fc): 'INVALRGN',
+    ('Portable', 0x111fe): 'IvalCommon', #leak
+    ('Portable', 0x11242): 'INVALRECT',
+    ('Portable', 0x11260): 'VALIDRGN',
+    ('Portable', 0x11264): 'VALIDRECT',
+    ('Portable', 0x11268): 'GROWWINDOW',
+    ('Portable', 0x11372): 'FINDWINDOW',
+    ('Portable', 0x113f6): 'DRAWGROWICON',
+    ('Portable', 0x11442): 'EndROMWMgr', #leak
+    ('Portable', 0x11444): 'INITMENUS',
+    ('Portable', 0x114b8): 'CALCMBHEIGHT',
+    ('Portable', 0x11546): 'CLEARMENUBAR',
+    ('Portable', 0x1155e): 'INSERTMENU',
+    ('Portable', 0x11600): 'GetHIndex', #leak
+    ('Portable', 0x1165a): 'DELETEMENU',
+    ('Portable', 0x116c0): 'DRAWMBAR',
+    ('Portable', 0x116ca): 'DRAWMENUBAR',
+    ('Portable', 0x116e8): 'HILITEMENU',
+    ('Portable', 0x1173a): 'ENABLEITEM',
+    ('Portable', 0x1175c): 'DISABLEITEM',
+    ('Portable', 0x11768): 'GETMENUPTR', #leak
+    ('Portable', 0x11776): 'GetA0List', #leak
+    ('Portable', 0x11792): 'GetHA0List', #leak
+    ('Portable', 0x117a2): 'MENUSELECT',
+    ('Portable', 0x118ee): 'POPUPMENUSELECT',
+    ('Portable', 0x11d96): 'AfterLoadResourceInCallMDEFProc', #leak
+    ('Portable', 0x11d9c): 'AfterCallToMDEFInCallMDEFProc', #leak
+    ('Portable', 0x11dd4): 'FULLCLIP',
+    ('Portable', 0x11dfc): 'GETMENUBAR',
+    ('Portable', 0x11e16): 'SETMENUBAR',
+    ('Portable', 0x11e2e): 'DISPOSEMENU',
+    ('Portable', 0x11e46): 'FLASHMENUBAR',
+    ('Portable', 0x11e84): 'CALLMBARPROC',
+    ('Portable', 0x11ed6): 'GETITEMRECORD', #leak
+    ('Portable', 0x11f52): 'GETITEMICON',
+    ('Portable', 0x11f56): 'SETITEMICON',
+    ('Portable', 0x11f5a): 'GETITEMCMD',
+    ('Portable', 0x11f5e): 'SETITEMCMD',
+    ('Portable', 0x11f62): 'GETITEMSTYLE',
+    ('Portable', 0x11f66): 'SETITEMSTYLE',
+    ('Portable', 0x11f6a): 'GETITEMMARK',
+    ('Portable', 0x11f6e): 'SETITEMMARK',
+    ('Portable', 0x11f72): 'CHECKITEM',
+    ('Portable', 0x11f86): 'UpChar', #leak
+    ('Portable', 0x11f8e): 'AfterUprStringInUpChar', #leak
+    ('Portable', 0x11f92): 'MENUKEY',
+    ('Portable', 0x12008): 'KeyNotFound', #leak
+    ('Portable', 0x12016): 'GOTMKEY', #leak
+    ('Portable', 0x120de): 'GETITEM',
+    ('Portable', 0x12134): 'CALCMENUSIZE',
+    ('Portable', 0x1216e): 'NEWMENU',
+    ('Portable', 0x121c0): 'APPENDMENU',
+    ('Portable', 0x121c8): 'INSMENUITEM',
+    ('Portable', 0x1235a): 'GETMHANDLE',
+    ('Portable', 0x12382): 'DELMENUITEM',
+    ('Portable', 0x123ba): 'SETITEM',
+    ('Portable', 0x12400): 'SETMENUFLASH',
+    ('Portable', 0x1240a): 'ADDRESMENU',
+    ('Portable', 0x12412): 'INSRTRESMENU',
+    ('Portable', 0x12570): 'COUNTMITEMS',
+    ('Portable', 0x1258c): 'PLOTICON',
+    ('Portable', 0x126c4): 'GETCVARIANT',
+    ('Portable', 0x12708): 'DISPOSECONTROL',
+    ('Portable', 0x1270e): 'EraseControlInDisposeControl', #leak
+    ('Portable', 0x12710): 'AfterEraseControlInDisposeControl', #leak
+    ('Portable', 0x1272c): 'KILLCONTROLS',
+    ('Portable', 0x1273e): 'DRAWONECONTROL',
+    ('Portable', 0x1274e): 'SHOWCONTROL',
+    ('Portable', 0x1276c): 'HIDECONTROL',
+    ('Portable', 0x12780): 'MOVECONTROL',
+    ('Portable', 0x127be): 'GETCREFCON',
+    ('Portable', 0x127cc): 'SETCREFCON',
+    ('Portable', 0x127dc): 'GETCTLACTION',
+    ('Portable', 0x127e0): 'SETCTLACTION',
+    ('Portable', 0x127e4): 'SIZECONTROL',
+    ('Portable', 0x1280c): 'HILITECONTROL',
+    ('Portable', 0x12838): 'GETCTITLE',
+    ('Portable', 0x12850): 'SETCTITLE',
+    ('Portable', 0x12874): 'AfterSetHandleSizeInSetCTitle', #leak
+    ('Portable', 0x12882): 'GoTstVisInSetCTitle', #leak
+    ('Portable', 0x12892): 'GETCTLVALUE',
+    ('Portable', 0x128a0): 'GETCTLMIN',
+    ('Portable', 0x128a4): 'GETCTLMAX',
+    ('Portable', 0x128a8): 'SETCTLVALUE',
+    ('Portable', 0x128ea): 'SETCTLMIN',
+    ('Portable', 0x128ee): 'SETCTLMAX',
+    ('Portable', 0x128f2): 'TESTCONTROL',
+    ('Portable', 0x12920): 'DRAGCONTROL',
+    ('Portable', 0x129d2): 'TRACKCONTROL',
+    ('Portable', 0x12ac0): 'UPDTCONTROLS',
+    ('Portable', 0x12ad0): 'DRAWCONTROLS',
+    ('Portable', 0x12b58): 'FINDCONTROL',
+    ('Portable', 0x12bd0): 'INITDIALOGS',
+    ('Portable', 0x12bea): 'InitDialogContinue', #leak
+    ('Portable', 0x12c86): 'STOPALERT',
+    ('Portable', 0x12c8a): 'NOTEALERT',
+    ('Portable', 0x12c8e): 'CAUTIONALERT',
+    ('Portable', 0x12c92): 'ALERT',
+    ('Portable', 0x12db0): 'GETNEWDIALOG',
+    ('Portable', 0x12dea): 'NEWDIALOG',
+    ('Portable', 0x12e6c): 'ClaimEvent', #leak
+    ('Portable', 0x12e84): 'ISDIALOGEVENT',
+    ('Portable', 0x12e92): 'IsDiaAfterClaimEvent', #leak
+    ('Portable', 0x12eba): 'IsDiaNotDlgExit', #leak
+    ('Portable', 0x12ec0): 'DIALOGSELECT',
+    ('Portable', 0x12ed4): 'DSAfterClaimEvent', #leak
+    ('Portable', 0x12efc): 'DSNotMineExit', #leak
+    ('Portable', 0x12f02): 'MODALDIALOG',
+    ('Portable', 0x12f78): 'DialogStdEntry', #leak
+    ('Portable', 0x12f90): 'DRAWDIALOG',
+    ('Portable', 0x12fa8): 'UPDTDIALOG',
+    ('Portable', 0x12fd0): 'CLOSEDIALOG',
+    ('Portable', 0x13054): 'DISPOSDIALOG',
+    ('Portable', 0x1308a): 'COULDDIALOG',
+    ('Portable', 0x13098): 'COULDALERT',
+    ('Portable', 0x130e6): 'FromGetADHndl', #leak
+    ('Portable', 0x130f2): 'FREEDIALOG',
+    ('Portable', 0x13100): 'FREEALERT',
+    ('Portable', 0x13152): 'PARAMTEXT',
+    ('Portable', 0x13176): 'ERRORSOUND',
+    ('Portable', 0x1317e): 'GETDITEM',
+    ('Portable', 0x131c4): 'SETDITEM',
+    ('Portable', 0x131fc): 'GETITEXT',
+    ('Portable', 0x1321c): 'SETITEXT',
+    ('Portable', 0x13280): 'SELITEXT',
+    ('Portable', 0x132dc): 'HIDEDITEM',
+    ('Portable', 0x1333a): 'SHOWDITEM',
+    ('Portable', 0x133ae): 'FINDDITEM',
+    ('Portable', 0x135b6): 'AfterH2HinDoStatic', #leak
+    ('Portable', 0x135d8): 'skipParam', #leak
+    ('Portable', 0x136da): 'TEKeyFromEventAD', #leak
+    ('Portable', 0x1383c): 'AfterTEAutoViewInSetNewEdit', #leak
+    ('Portable', 0x13872): 'FrameOut', #leak
+    ('Portable', 0x13914): 'INITRESOURCES',
+    ('Portable', 0x13a84): 'VSUPERLOAD',
+    ('Portable', 0x13bbc): 'VNEWMAP',
+    ('Portable', 0x13ca8): 'RSRCZONEINIT',
+    ('Portable', 0x13d32): 'AfterOpenRFInORFCommon', #leak
+    ('Portable', 0x13d3c): 'CREATERESFILE',
+    ('Portable', 0x13d40): 'AfterStdZEntryInCreateResFile', #leak
+    ('Portable', 0x13d52): 'AfterCreateInCreateResFile', #leak
+    ('Portable', 0x13d86): 'OPENRESFILE',
+    ('Portable', 0x13db6): 'OPENRFPERM',
+    ('Portable', 0x13dca): 'USERESFILE',
+    ('Portable', 0x13dd4): 'GETRESFILEATTRS',
+    ('Portable', 0x13de0): 'SETRESFILEATTRS',
+    ('Portable', 0x13e96): 'UPDATERESFILE',
+    ('Portable', 0x13f7e): 'VCMPFRM',
+    ('Portable', 0x14170): 'CLOSERESFILE',
+    ('Portable', 0x14210): 'COUNT1RESOURCES',
+    ('Portable', 0x14214): 'COUNTRESOURCES',
+    ('Portable', 0x1423a): 'GET1INDRESOURCE',
+    ('Portable', 0x1423e): 'GETINDRESOURCE',
+    ('Portable', 0x142d6): 'COUNT1TYPES',
+    ('Portable', 0x142da): 'COUNTTYPES',
+    ('Portable', 0x14320): 'GET1INDTYPE',
+    ('Portable', 0x14324): 'GETINDTYPE',
+    ('Portable', 0x14346): 'UNIQUE1ID',
+    ('Portable', 0x1434a): 'UNIQUEID',
+    ('Portable', 0x14384): 'GET1RESOURCE',
+    ('Portable', 0x14388): 'GETRESOURCE',
+    ('Portable', 0x143c8): 'GET1NAMEDRESOURCE',
+    ('Portable', 0x143cc): 'GETNAMEDRESOURCE',
+    ('Portable', 0x1448c): 'GetRsrcCnt', #leak
+    ('Portable', 0x144e8): 'StdZEntry', #leak
+    ('Portable', 0x144ec): 'Std1Entry', #leak
+    ('Portable', 0x14520): 'SwapROMMap', #leak
+    ('Portable', 0x145a6): 'RStdExit', #leak
+    ('Portable', 0x146d6): 'VCHECKLOAD',
+    ('Portable', 0x147a2): 'RREntry6', #leak
+    ('Portable', 0x147f0): 'RdData', #leak
+    ('Portable', 0x147fa): 'WrData', #leak
+    ('Portable', 0x1480e): 'SaveRegs', #leak
+    ('Portable', 0x1485a): 'SpaceAt', #leak
+    ('Portable', 0x14902): 'CheckGrowAt1', #leak
+    ('Portable', 0x14912): 'AfterSetEOFInCheckGrow', #leak
+    ('Portable', 0x1497a): 'LOADRESOURCE',
+    ('Portable', 0x149b8): 'RELEASERESOURCE',
+    ('Portable', 0x149e2): 'DETACHRESOURCE',
+    ('Portable', 0x149fa): 'CHANGEDRESOURCE',
+    ('Portable', 0x14a36): 'WRITERESOURCE',
+    ('Portable', 0x14a70): 'HOMERESFILE',
+    ('Portable', 0x14a9a): 'SETRESPURGE',
+    ('Portable', 0x14aba): 'SETRESLOAD',
+    ('Portable', 0x14ac4): 'CURRESFILE',
+    ('Portable', 0x14acc): 'RESERROR',
+    ('Portable', 0x14ad4): 'ADDREFERENCE',
+    ('Portable', 0x14ae4): 'RMVEREFERENCE',
+    ('Portable', 0x14aee): 'GETRESATTRS',
+    ('Portable', 0x14b02): 'SETRESATTRS',
+    ('Portable', 0x14b26): 'RefHandle', #leak
+    ('Portable', 0x14b34): 'GETRESINFO',
+    ('Portable', 0x14b7a): 'SETRESINFO',
+    ('Portable', 0x14bc4): 'ADDRESOURCE',
+    ('Portable', 0x14c16): 'AddNewRefWithoutUpdate', #leak
+    ('Portable', 0x14c9c): 'RMVERESOURCE',
+    ('Portable', 0x14d2e): 'AddName', #leak
+    ('Portable', 0x14da8): 'AfterSetHandleSizeInResizeMap', #leak
+    ('Portable', 0x14dee): 'AfterResizeMapInRmveName', #leak
+    ('Portable', 0x14e0c): 'At9InRmveName', #leak
+    ('Portable', 0x14e18): 'SIZERESOURCE',
+    ('Portable', 0x14e3a): 'MAXSIZERSRC',
+    ('Portable', 0x14e4e): 'RSRCMAPENTRY',
+    ('Portable', 0x14e5a): 'RGETRESOURCE',
+    ('Portable', 0x14eb4): 'XMUNGER',
+    ('Portable', 0x14fea): 'HANDTOHAND',
+    ('Portable', 0x15012): 'PTRTOXHAND',
+    ('Portable', 0x1501a): 'PTRTOHAND',
+    ('Portable', 0x15034): 'HANDANDHAND',
+    ('Portable', 0x15058): 'PTRANDHAND',
+    ('Portable', 0x15068): 'METHODDISPATCH',
+    ('Portable', 0x150c4): 'LONGMUL',
+    ('Portable', 0x150f0): 'FRACMUL',
+    ('Portable', 0x150f8): 'FIXMUL',
+    ('Portable', 0x15192): 'FixPtStdEntry', #leak
+    ('Portable', 0x151c2): 'FRACDIV',
+    ('Portable', 0x151c8): 'FIXDIV',
+    ('Portable', 0x15218): 'FRACSQRT',
+    ('Portable', 0x15252): 'FIXRATIO',
+    ('Portable', 0x1528c): 'LOWORD',
+    ('Portable', 0x15294): 'HIWORD',
+    ('Portable', 0x1529e): 'FIXROUND',
+    ('Portable', 0x152b8): 'FRACCOS',
+    ('Portable', 0x152c0): 'FRACSIN',
+    ('Portable', 0x15366): 'FIXATAN2',
+    ('Portable', 0x15388): 'AtLabel2InFixATan', #leak
+    ('Portable', 0x15424): 'FIX2X',
+    ('Portable', 0x1542a): 'FRAC2X',
+    ('Portable', 0x15456): 'X2FIX',
+    ('Portable', 0x1545c): 'X2FRAC',
+    ('Portable', 0x154b8): 'FIX2LONG',
+    ('Portable', 0x154bc): 'FRAC2FIX',
+    ('Portable', 0x154d8): 'LONG2FIX',
+    ('Portable', 0x154dc): 'FIX2FRAC',
+    ('Portable', 0x1552c): 'SysEvtDoneSEvt', #leak
+    ('Portable', 0x15536): 'SysEvtAfterFrontWindow', #leak
+    ('Portable', 0x15550): 'SearchWindow', #leak
+    ('Portable', 0x155c8): 'SYSTEMCLICK',
+    ('Portable', 0x15606): 'AfterLoadResourceInSystemClick', #leak
+    ('Portable', 0x15622): 'AfterFrontWindowInSystemClick', #leak
+    ('Portable', 0x15682): 'AfterTrackGoAwayInSystemClick', #leak
+    ('Portable', 0x1569c): 'SYSTEMTASK',
+    ('Portable', 0x156a0): 'AFTERNMTASKINSYSTEMTASK', #leak
+    ('Portable', 0x15720): 'SYSTEMMENU',
+    ('Portable', 0x15768): 'SYSTEMEDIT',
+    ('Portable', 0x15796): 'OPENDESKACC',
+    ('Portable', 0x157e4): 'CLOSEDESKACC',
+    ('Portable', 0x15902): 'GetPID',
+    ('Portable', 0x15944): 'GetFreeAux',
+    ('Portable', 0x1597c): 'AddAuxRec',
+    ('Portable', 0x159c0): 'LinkAuxRec',
+    ('Portable', 0x159fc): 'UnLinkAuxRecs',
+    ('Portable', 0x15a3a): 'InsertMarkRec',
+    ('Portable', 0x15ab6): 'InsertIconRec',
+    ('Portable', 0x15b02): 'ValidIconRec',
+    ('Portable', 0x15b58): 'NMINIT',
+    ('Portable', 0x15b90): '_NMInstall',
+    ('Portable', 0x15bde): '_NMRemove',
+    ('Portable', 0x15c3e): 'AddrInRange',
+    ('Portable', 0x15c98): 'COPYSTRING',
+    ('Portable', 0x15cd4): 'FLUSHAPPLNM',
+    ('Portable', 0x15d3c): 'NMFILTER',
+    ('Portable', 0x15de8): 'DEFBUTPROC',
+    ('Portable', 0x15e40): 'FindItem',
+    ('Portable', 0x15e9c): 'GetAppleMenu',
+    ('Portable', 0x15eec): 'CallMBarProc',
+    ('Portable', 0x15f7a): 'SWAPITEMMARKS',
+    ('Portable', 0x15fc8): 'ClearMarks',
+    ('Portable', 0x1600c): 'SWAPDAMARK',
+    ('Portable', 0x16100): 'MarkItem',
+    ('Portable', 0x1615c): 'RotateIcon',
+    ('Portable', 0x1619c): 'DoSound',
+    ('Portable', 0x161f4): 'DoDialog',
+    ('Portable', 0x163dc): 'DoRespProc',
+    ('Portable', 0x1642e): 'NMGNEFILTER',
+    ('Portable', 0x164f4): 'NMTASK',
+    ('Portable', 0x166f6): '__NMINSTALL',
+    ('Portable', 0x16702): '__NMREMOVE',
+    ('Portable', 0x1670e): 'NMInstall',
+    ('Portable', 0x16716): 'NMRemove',
+    ('Portable', 0x1671e): '_FC2X',
+    ('Portable', 0x1676a): '_fprocENTRYsp',
+    ('Portable', 0x16794): '_fprocEXITsp',
+    ('Portable', 0x167dc): 'GESTALTTRAP',
+    ('Portable', 0x16824): 'getGestalt',
+    ('Portable', 0x1686e): 'getSysVersion',
+    ('Portable', 0x16882): 'getRomVersion',
+    ('Portable', 0x1689a): 'getAuxVersion',
+    ('Portable', 0x168c0): 'getMachineType',
+    ('Portable', 0x168dc): 'getProcessor',
+    ('Portable', 0x168f4): 'getKeyboard',
+    ('Portable', 0x1692e): 'getFPUType',
+    ('Portable', 0x1697c): 'getMMUType',
+    ('Portable', 0x169b0): 'getPageSize',
+    ('Portable', 0x169fe): 'getRAMSize',
+    ('Portable', 0x16a40): 'getROMSize',
+    ('Portable', 0x16a8c): 'qdVersion',
+    ('Portable', 0x16ac0): 'getATalkVersion',
+    ('Portable', 0x16aee): 'PowerMgr',
+    ('Portable', 0x16b2a): 'getAddrMode',
+    ('Portable', 0x16b46): 'getSoundAttr',
+    ('Portable', 0x16bc0): 'getTimeMgrType',
+    ('Portable', 0x16bf8): 'getSCCRd',
+    ('Portable', 0x16c0a): 'getSCCWr',
+    ('Portable', 0x16c1c): 'getRBV',
+    ('Portable', 0x16c4a): 'getVIA1',
+    ('Portable', 0x16c5c): 'getVIA2',
+    ('Portable', 0x16c8a): 'VMInfo',
+    ('Portable', 0x16c9a): 'getFirstSlot',
+    ('Portable', 0x16cea): 'getMachSpecific',
+    ('Portable', 0x16dfa): 'Internal',
+    ('Portable', 0x16e4c): 'INITGESTALT',
+    ('Portable', 0x16fec): 'newGestalt',
+    ('Portable', 0x17118): 'removeLong',
+    ('Portable', 0x171f2): 'findLong',
+    ('Portable', 0x172a2): 'NewSPtr',
+    ('Portable', 0x172b0): 'NewCPtr',
+    ('Portable', 0x172be): 'NewSCPtr',
+    ('Portable', 0x172cc): 'NewSHandle',
+    ('Portable', 0x172da): 'NewCHandle',
+    ('Portable', 0x172e8): 'NewSCHandle',
+    ('Portable', 0x172f6): 'EQUALSTRING',
+    ('Portable', 0x1733c): 'NGETTRAPADDRESS',
+    ('Portable', 0x17354): 'DisposPtr',
+    ('Portable', 0x17360): 'DisposHandle',
+    ('Portable', 0x1736c): 'HLock',
+    ('Portable', 0x17378): 'HUnlock',
+    ('Portable', 0x17384): 'SetHandleSize',
+    ('Portable', 0x17394): 'GetHandleSize',
+    ('Portable', 0x1739c): 'BlockMove',
+    ('Portable', 0x173b0): 'HGetState',
+    ('Portable', 0x173b8): 'HSetState',
+    ('Portable', 0x173c8): 'StripAddress',
+    ('Portable', 0x173d0): 'Enqueue',
+    ('Portable', 0x173dc): 'Dequeue',
+    ('Portable', 0x173e8): 'Delay',
+    ('Portable', 0x173f8): 'ROMANNAME',
+    ('Portable', 0x173fe): 'ROMANSCRIPT',
+    ('Portable', 0x17422): 'ROMANDISPTABLE',
+    ('Portable', 0x17444): 'CHARBYTE',
+    ('Portable', 0x17450): 'CHARTYPE',
+    ('Portable', 0x174b4): 'PIXEL2CHAR',
+    ('Portable', 0x17564): 'CHAR2PIXEL',
+    ('Portable', 0x175a6): 'TRANSLIT',
+    ('Portable', 0x1767a): 'FINDWORD',
+    ('Portable', 0x177c2): 'HILITETEXT',
+    ('Portable', 0x177f4): 'DRAWJUST',
+    ('Portable', 0x1781e): 'MEASUREJUST',
+    ('Portable', 0x1784a): 'PARSETABLE',
+    ('Portable', 0x1786a): 'FIXSPEXTRA',
+    ('Portable', 0x1790e): 'XVISIBLELENGTH',
+    ('Portable', 0x17952): 'PRINTACTION',
+    ('Portable', 0x1798c): 'SWAPICON',
+    ('Portable', 0x17996): 'XSWAPICON',
+    ('Portable', 0x17a46): 'SWAPKYBD',
+    ('Portable', 0x17a50): 'XSWAPKYBD',
+    ('Portable', 0x17b52): 'FIXSMGRWORLD',
+    ('Portable', 0x17b5c): 'XFIXSMGRWORLD',
+    ('Portable', 0x17c84): 'SMGRCALCRECT',
+    ('Portable', 0x17cde): 'SMGRINITFONTS',
+    ('Portable', 0x17d5a): 'SMGRPOSTMUNGING',
+    ('Portable', 0x17dca): 'STDUNLINK',
+    ('Portable', 0x17dcc): 'STDEXIT',
+    ('Portable', 0x17dd2): 'XSCRIPTUTIL',
+    ('Portable', 0x17e0a): 'UTILTABLEBASE',
+    ('Portable', 0x17e26): 'UTILTABLE',
+    ('Portable', 0x17e76): 'BITBUCKET',
+    ('Portable', 0x17e7a): 'BITBUCKETREG',
+    ('Portable', 0x18200): 'MONTHSTARTS',
+    ('Portable', 0x1821a): 'LEAPSTARTS',
+    ('Portable', 0x18236): 'SECSINDAYX',
+    ('Portable', 0x18242): 'MAXOLDDATE',
+    ('Portable', 0x1824c): 'MAXVAL',
+    ('Portable', 0x18260): 'VALIDDATE',
+    ('Portable', 0x182f8): 'TOGGLEDATE',
+    ('Portable', 0x18604): 'LONGDATE2SECS',
+    ('Portable', 0x18764): 'LONGDIV',
+    ('Portable', 0x187ba): 'LONGSECS2DATE',
+    ('Portable', 0x1895a): 'VALIDLONG',
+    ('Portable', 0x18996): 'BLOCK2STRING',
+    ('Portable', 0x189ee): 'COMPARE',
+    ('Portable', 0x18a02): 'MATCHSTRING',
+    ('Portable', 0x18a60): 'INITDATECACHE',
+    ('Portable', 0x18c6e): 'STRING2DATE',
+    ('Portable', 0x19056): 'STRING2TIME',
+    ('Portable', 0x1920c): 'STYLEDLINEBREAK',
+    ('Portable', 0x193ac): 'FINDCARRIAGE',
+    ('Portable', 0x193c6): 'FORMATORDER',
+    ('Portable', 0x19474): 'INTLTOKENIZE',
+    ('Portable', 0x19b60): 'CHARCOMP',
+    ('Portable', 0x19b88): 'NEXTFORMATCLASS',
+    ('Portable', 0x19b96): 'GETSANECLASS',
+    ('Portable', 0x19ba8): 'SENDBYTE',
+    ('Portable', 0x19bbe): 'SENDCHARREV0',
+    ('Portable', 0x19bc0): 'SENDCHAR0',
+    ('Portable', 0x19bcc): 'SENDCHARREV',
+    ('Portable', 0x19bda): 'SENDCHAR',
+    ('Portable', 0x19c5e): 'CHECKEXP',
+    ('Portable', 0x19c9e): 'CHECKPARTSINTEGRITY',
+    ('Portable', 0x19d4a): 'ISSUBSTRING',
+    ('Portable', 0x19dc0): 'MAKEEXP',
+    ('Portable', 0x19e3a): 'PROCESSLEAD',
+    ('Portable', 0x19e72): 'GETC',
+    ('Portable', 0x19e8a): 'XSTR2FORM',
+    ('Portable', 0x1a25e): 'TACKONEXP',
+    ('Portable', 0x1a2a6): 'TRANSLATETOTEXT',
+    ('Portable', 0x1a3fc): 'CHECKFORM',
+    ('Portable', 0x1a4d8): 'XFORM2STR',
+    ('Portable', 0x1a57e): 'MATCHINGSUBSTRING',
+    ('Portable', 0x1a5ec): 'MATCHINGBLOCKS',
+    ('Portable', 0x1a644): 'CHECKFORDIGITS',
+    ('Portable', 0x1a6ee): 'COND',
+    ('Portable', 0x1a74e): 'EXPMATCHING',
+    ('Portable', 0x1a79e): 'XFORMSTR2X',
+    ('Portable', 0x1ace0): 'NUM2DEC',
+    ('Portable', 0x1acf4): 'INT2STRING',
+    ('Portable', 0x1ad18): 'CONVERTTOSTRING',
+    ('Portable', 0x1ae56): 'EXPHANDLING',
+    ('Portable', 0x1aeb0): 'APPENDSYMBOL',
+    ('Portable', 0x1b016): 'XFORMX2STR',
+    ('Portable', 0x1b404): 'SMGRINITIALIZE',
+    ('Portable', 0x1b5ae): 'SMGRTABLE',
+    ('Portable', 0x1b5f6): 'PATCHTABLE',
+    ('Portable', 0x1b5fe): 'ROMANTABLE',
+    ('Portable', 0x1b60e): 'disable',
+    ('Portable', 0x1b61e): 'spl',
+    ('Portable', 0x1b64a): 'GETCURSOR',
+    ('Portable', 0x1b658): 'GETSTRING',
+    ('Portable', 0x1b660): 'GETICON',
+    ('Portable', 0x1b668): 'GETPICTURE',
+    ('Portable', 0x1b670): 'GETNEWWINDOW',
+    ('Portable', 0x1b68c): 'FromGetNewWind', #leak
+    ('Portable', 0x1b6ce): 'GETNEWCONTROL',
+    ('Portable', 0x1b720): 'GETMENU',
+    ('Portable', 0x1b7a6): 'GETNEWMBAR',
+    ('Portable', 0x1b820): 'TEGETTEXT',
+    ('Portable', 0x1b82c): 'TEINIT',
+    ('Portable', 0x1b872): 'TEDISPOSE',
+    ('Portable', 0x1b8d0): 'TEXTBOX',
+    ('Portable', 0x1b9b0): 'TESETTEXT',
+    ('Portable', 0x1bab8): 'TECALTEXT',
+    ('Portable', 0x1bb1c): 'TESETSELECT',
+    ('Portable', 0x1bb4c): 'TENEW',
+    ('Portable', 0x1bc14): 'TESTYLNEW',
+    ('Portable', 0x1bd2e): 'TEUPDATE',
+    ('Portable', 0x1bd5c): 'TECLICK',
+    ('Portable', 0x1be78): 'VPIXEL2CHAR',
+    ('Portable', 0x1c3e4): 'XTRIMMEASURE',
+    ('Portable', 0x1c48e): 'VCHAR2PIXEL',
+    ('Portable', 0x1c6dc): 'TEDISPATCH',
+    ('Portable', 0x1c6f4): 'TECOPY',
+    ('Portable', 0x1c7cc): 'TECUT',
+    ('Portable', 0x1c7dc): 'TEDELETE',
+    ('Portable', 0x1c93c): 'XFINDWORD',
+    ('Portable', 0x1ca2e): 'XFINDLINE',
+    ('Portable', 0x1cdf6): 'TEACTIVATE',
+    ('Portable', 0x1ce18): 'TEDEACTIVATE',
+    ('Portable', 0x1ce2e): 'TEIDLE',
+    ('Portable', 0x1ce56): 'TEPASTE',
+    ('Portable', 0x1d1be): 'TEINSERT',
+    ('Portable', 0x1d1ec): 'TEKEY',
+    ('Portable', 0x1d2d6): 'TESETJUST',
+    ('Portable', 0x1d2fc): 'TESCROLL',
+    ('Portable', 0x1d352): 'TEPINSCROLL',
+    ('Portable', 0x1d3da): 'TESELVIEW',
+    ('Portable', 0x1d450): 'TEAUTOVIEW',
+    ('Portable', 0x1da3c): 'TEGETOFFSET',
+    ('Portable', 0x1df18): 'UNLOADSCRAP',
+    ('Portable', 0x1df4e): 'LOADSCRAP',
+    ('Portable', 0x1df82): 'ZEROSCRAP',
+    ('Portable', 0x1dfce): 'GETSCRAP',
+    ('Portable', 0x1e03e): 'PUTSCRAP',
+    ('Portable', 0x1e064): 'PutScrapExit', #leak
+    ('Portable', 0x1e074): 'DoPutAppendMem', #leak
+    ('Portable', 0x1e082): 'DoPutAppendFile', #leak
+    ('Portable', 0x1e084): 'PRGLUE',
+    ('Portable', 0x1e324): 'INITALLPACKS',
+    ('Portable', 0x1e348): 'PACK4',
+    ('Portable', 0x1e36a): 'PACK5',
+    ('Portable', 0x1e3e8): 'PACK0',
+    ('Portable', 0x1e3ea): 'PACK1',
+    ('Portable', 0x1e3ec): 'PACK2',
+    ('Portable', 0x1e3ee): 'PACK3',
+    ('Portable', 0x1e3f4): 'PACK6',
+    ('Portable', 0x1e3f6): 'PACK7',
+    ('Portable', 0x1e3f8): 'PACK8',
+    ('Portable', 0x1e3fa): 'PACK9',
+    ('Portable', 0x1e3fc): 'PACK10',
+    ('Portable', 0x1e3fe): 'PACK11',
+    ('Portable', 0x1e400): 'PACK12',
+    ('Portable', 0x1e402): 'PACK13',
+    ('Portable', 0x1e404): 'PACK14',
+    ('Portable', 0x1e406): 'PACK15',
+    ('Portable', 0x1e480): 'DATE2SECS',
+    ('Portable', 0x1e5ee): 'FMSWAPFONT',
+    ('Portable', 0x1f0b6): 'FPOINTONE',
+    ('Portable', 0x1f124): 'GETFONTNAME',
+    ('Portable', 0x1f192): 'REALFONT',
+    ('Portable', 0x1f1fc): 'GETFNUM',
+    ('Portable', 0x1f240): 'SETFONTLOCK',
+    ('Portable', 0x1f268): 'SETFSCALEDISABLE',
+    ('Portable', 0x1f276): 'SETFRACTENABLE',
+    ('Portable', 0x1f27e): 'FONTMETRICS',
+    ('Portable', 0x1f44a): 'SETCURSOR',
+    ('Portable', 0x1f466): 'HIDECURSOR',
+    ('Portable', 0x1f46c): 'SHOWCURSOR',
+    ('Portable', 0x1f472): 'SHIELDCURSOR',
+    ('Portable', 0x1f4a2): 'OBSCURECURSOR',
+    ('Portable', 0x1f4a8): 'BITNOT',
+    ('Portable', 0x1f4b0): 'BITAND',
+    ('Portable', 0x1f4b8): 'BITXOR',
+    ('Portable', 0x1f4c2): 'BITOR',
+    ('Portable', 0x1f4ca): 'BITSHIFT',
+    ('Portable', 0x1f4e0): 'BITTST',
+    ('Portable', 0x1f4ee): 'BITSET',
+    ('Portable', 0x1f4f8): 'BITCLR',
+    ('Portable', 0x1f510): 'RANDOM',
+    ('Portable', 0x1f562): 'FORECOLOR',
+    ('Portable', 0x1f566): 'BACKCOLOR',
+    ('Portable', 0x1f568): 'PORTLONG',
+    ('Portable', 0x1f574): 'COLORBIT',
+    ('Portable', 0x1f576): 'PORTWORD',
+    ('Portable', 0x1f582): 'GETMASKTAB',
+    ('Portable', 0x1f588): 'LEFTMASK',
+    ('Portable', 0x1f594): 'RIGHTMASK',
+    ('Portable', 0x1f5a0): 'BITMASK',
+    ('Portable', 0x1f5ac): 'MASKTAB',
+    ('Portable', 0x1f60c): 'PATEXPAND',
+    ('Portable', 0x1f6d4): 'COLORMAP',
+    ('Portable', 0x1f748): 'GETPIXEL',
+    ('Portable', 0x1f77c): 'STUFFHEX',
+    ('Portable', 0x1f7b6): 'XORSLAB',
+    ('Portable', 0x1f7fa): 'DRAWSLAB',
+    ('Portable', 0x1f88a): 'SLABMODE',
+    ('Portable', 0x1f8e4): 'FASTSLABMODE',
+    ('Portable', 0x1f8f8): 'NEWHANDLE',
+    ('Portable', 0x1f90c): 'SETHSIZE',
+    ('Portable', 0x1f91a): 'INITGRAF',
+    ('Portable', 0x1f9e0): 'OPENPORT',
+    ('Portable', 0x1f9f8): 'INITPORT',
+    ('Portable', 0x1fa78): 'CLOSEPORT',
+    ('Portable', 0x1fa90): 'SETSTDPROCS',
+    ('Portable', 0x1faca): 'LOCALTOGLOBAL',
+    ('Portable', 0x1fad2): 'GLOBALTOLOCAL',
+    ('Portable', 0x1fafe): 'ADDPT',
+    ('Portable', 0x1fb06): 'SUBPT',
+    ('Portable', 0x1fb24): 'SETPORT',
+    ('Portable', 0x1fb2c): 'GETPORT',
+    ('Portable', 0x1fb36): 'GRAFDEVICE',
+    ('Portable', 0x1fb3c): 'SETPORTBITS',
+    ('Portable', 0x1fb54): 'BACKPAT',
+    ('Portable', 0x1fb62): 'PORTSIZE',
+    ('Portable', 0x1fb82): 'MOVEPORTTO',
+    ('Portable', 0x1fbae): 'SETORIGIN',
+    ('Portable', 0x1fbe2): 'CLIPRECT',
+    ('Portable', 0x1fbf4): 'SETCLIP',
+    ('Portable', 0x1fc00): 'GETCLIP',
+    ('Portable', 0x1fc14): 'SETPT',
+    ('Portable', 0x1fc1e): 'EQUALPT',
+    ('Portable', 0x1fc2a): 'STDTEXT',
+    ('Portable', 0x1fdb6): 'CALLTEXT',
+    ('Portable', 0x1fdd6): 'TEXTFACE',
+    ('Portable', 0x1fde2): 'DRAWCHAR',
+    ('Portable', 0x1fdf0): 'CHARWIDTH',
+    ('Portable', 0x1fe08): 'TEXTFONT',
+    ('Portable', 0x1fe0c): 'TEXTMODE',
+    ('Portable', 0x1fe10): 'TEXTSIZE',
+    ('Portable', 0x1fe16): 'SPACEEXTRA',
+    ('Portable', 0x1fe22): 'DRAWSTRING',
+    ('Portable', 0x1fe34): 'DRAWTEXT',
+    ('Portable', 0x1fe4c): 'STRINGWIDTH',
+    ('Portable', 0x1fe5c): 'TEXTWIDTH',
+    ('Portable', 0x1fec4): 'STDTXMEAS',
+    ('Portable', 0x1ff6a): 'MEASURETEXT',
+    ('Portable', 0x20032): 'GETFONTINFO',
+    ('Portable', 0x200d4): 'DRTEXT',
+    ('Portable', 0x2081e): 'STDLINE',
+    ('Portable', 0x20832): 'StdLineRtn', #leak
+    ('Portable', 0x2089e): 'StdLineNotPic', #leak
+    ('Portable', 0x208b0): 'LINETO',
+    ('Portable', 0x208c6): 'LINE',
+    ('Portable', 0x208de): 'MOVETO',
+    ('Portable', 0x208fe): 'DOLINE',
+    ('Portable', 0x20976): 'HIDEPEN',
+    ('Portable', 0x2097a): 'SHOWPEN',
+    ('Portable', 0x20986): 'GETPENSTATE',
+    ('Portable', 0x2098a): 'SETPENSTATE',
+    ('Portable', 0x209ac): 'GETPEN',
+    ('Portable', 0x209bc): 'PENSIZE',
+    ('Portable', 0x209ca): 'PENMODE',
+    ('Portable', 0x209d0): 'PENPAT',
+    ('Portable', 0x209e4): 'PENNORMAL',
+    ('Portable', 0x20a02): 'DRAWLINE',
+    ('Portable', 0x20f4a): 'PUTLINE',
+    ('Portable', 0x21034): 'STDRECT',
+    ('Portable', 0x2104c): 'StdRectRtn', #leak
+    ('Portable', 0x2105a): 'StdRectNotPic', #leak
+    ('Portable', 0x21096): 'PUSHVERB',
+    ('Portable', 0x210c8): 'FILLRECT',
+    ('Portable', 0x210de): 'FRAMERECT',
+    ('Portable', 0x210e2): 'PAINTRECT',
+    ('Portable', 0x210e6): 'ERASERECT',
+    ('Portable', 0x210ea): 'INVERTRECT',
+    ('Portable', 0x210ee): 'CALLRECT',
+    ('Portable', 0x2110e): 'DRAWRECT',
+    ('Portable', 0x2114a): 'FRRECT',
+    ('Portable', 0x21238): 'SETRECT',
+    ('Portable', 0x21246): 'EQUALRECT',
+    ('Portable', 0x21260): 'EMPTYRECT',
+    ('Portable', 0x2127a): 'OFFSETRECT',
+    ('Portable', 0x2128c): 'INSETRECT',
+    ('Portable', 0x2129e): 'SECTRECT',
+    ('Portable', 0x212c6): 'RSECT',
+    ('Portable', 0x2133a): 'UNIONRECT',
+    ('Portable', 0x21378): 'PT2RECT',
+    ('Portable', 0x213ae): 'PTINRECT',
+    ('Portable', 0x213de): 'PUTRECT',
+    ('Portable', 0x2143a): 'BITBLT',
+    ('Portable', 0x218e8): 'RGNBLT',
+    ('Portable', 0x21e26): 'STDRRECT',
+    ('Portable', 0x21e5e): 'StdRRectRtn', #leak
+    ('Portable', 0x21e6c): 'StdRRectNotPic', #leak
+    ('Portable', 0x21eb8): 'FRAMEROUNDRECT',
+    ('Portable', 0x21ebc): 'PAINTROUNDRECT',
+    ('Portable', 0x21ec0): 'ERASEROUNDRECT',
+    ('Portable', 0x21ec4): 'INVERTROUNDRECT',
+    ('Portable', 0x21ec8): 'FILLROUNDRECT',
+    ('Portable', 0x21ede): 'CALLRRECT',
+    ('Portable', 0x21f02): 'STDOVAL',
+    ('Portable', 0x21f1a): 'StdOvalRtn', #leak
+    ('Portable', 0x21f28): 'StdOvalNotPic', #leak
+    ('Portable', 0x21f8a): 'FRAMEOVAL',
+    ('Portable', 0x21f8e): 'PAINTOVAL',
+    ('Portable', 0x21f92): 'ERASEOVAL',
+    ('Portable', 0x21f96): 'INVERTOVAL',
+    ('Portable', 0x21f9a): 'FILLOVAL',
+    ('Portable', 0x21fb0): 'CALLOVAL',
+    ('Portable', 0x21fd0): 'PUTOVAL',
+    ('Portable', 0x2210e): 'STDARC',
+    ('Portable', 0x22126): 'StdArcRtn', #leak
+    ('Portable', 0x22144): 'StdArcNotPic', #leak
+    ('Portable', 0x2218c): 'FRAMEARC',
+    ('Portable', 0x22190): 'PAINTARC',
+    ('Portable', 0x22194): 'ERASEARC',
+    ('Portable', 0x22198): 'INVERTARC',
+    ('Portable', 0x2219c): 'FILLARC',
+    ('Portable', 0x221b2): 'CALLARC',
+    ('Portable', 0x221d6): 'DRAWARC',
+    ('Portable', 0x22334): 'FromDrawArc', #leak
+    ('Portable', 0x22862): 'INITOVAL',
+    ('Portable', 0x22904): 'BUMPOVAL',
+    ('Portable', 0x22946): 'ANGLEFROMSLOPE',
+    ('Portable', 0x22984): 'SLOPEFROMANGLE',
+    ('Portable', 0x22aa8): 'PTTOANGLE',
+    ('Portable', 0x22b38): 'STDPOLY',
+    ('Portable', 0x22b50): 'StdPolyRtn', #leak
+    ('Portable', 0x22b60): 'StdPolyNotPic', #leak
+    ('Portable', 0x22bae): 'FRAMEPOLY',
+    ('Portable', 0x22bb2): 'PAINTPOLY',
+    ('Portable', 0x22bb6): 'ERASEPOLY',
+    ('Portable', 0x22bba): 'INVERTPOLY',
+    ('Portable', 0x22bbe): 'FILLPOLY',
+    ('Portable', 0x22bd4): 'CALLPOLY',
+    ('Portable', 0x22bf4): 'OPENPOLY',
+    ('Portable', 0x22c28): 'CLOSEPOLY',
+    ('Portable', 0x22c96): 'KILLPOLY',
+    ('Portable', 0x22c9e): 'OFFSETPOLY',
+    ('Portable', 0x22cba): 'MAPPOLY',
+    ('Portable', 0x22d16): 'FRPOLY',
+    ('Portable', 0x22d56): 'SORTVECTORS',
+    ('Portable', 0x22df8): 'PAINTVECTOR',
+    ('Portable', 0x232f2): 'DRAWPOLY',
+    ('Portable', 0x2344c): 'STDRGN',
+    ('Portable', 0x23464): 'StdRgnRtn', #leak
+    ('Portable', 0x23476): 'StdRgnNotPic', #leak
+    ('Portable', 0x234b2): 'FRAMERGN',
+    ('Portable', 0x234b6): 'PAINTRGN',
+    ('Portable', 0x234ba): 'ERASERGN',
+    ('Portable', 0x234be): 'INVERTRGN',
+    ('Portable', 0x234c2): 'FILLRGN',
+    ('Portable', 0x234d8): 'CALLRGN',
+    ('Portable', 0x234f8): 'DRAWRGN',
+    ('Portable', 0x23534): 'FRRGN',
+    ('Portable', 0x235a4): 'NEWRGN',
+    ('Portable', 0x235c8): 'DISPOSERGN',
+    ('Portable', 0x235d0): 'OPENRGN',
+    ('Portable', 0x235fe): 'CLOSERGN',
+    ('Portable', 0x23654): 'COPYRGN',
+    ('Portable', 0x236a2): 'SETEMPTYRGN',
+    ('Portable', 0x236ae): 'SETRECTRGN',
+    ('Portable', 0x2370a): 'RECTRGN',
+    ('Portable', 0x23718): 'OFFSETRGN',
+    ('Portable', 0x2374a): 'INSETRGN',
+    ('Portable', 0x237e6): 'EMPTYRGN',
+    ('Portable', 0x237f6): 'EQUALRGN',
+    ('Portable', 0x23834): 'SECTRGN',
+    ('Portable', 0x23838): 'UNIONRGN',
+    ('Portable', 0x2383c): 'DIFFRGN',
+    ('Portable', 0x23840): 'XORRGN',
+    ('Portable', 0x23844): 'DORGNOP',
+    ('Portable', 0x2392a): 'PTINRGN',
+    ('Portable', 0x2398a): 'RECTINRGN',
+    ('Portable', 0x23a10): 'TRIMRECT',
+    ('Portable', 0x23a6e): 'MAPRGN',
+    ('Portable', 0x23b1c): 'BITMAPRGN',
+    ('Portable', 0x23dc2): 'INITRGN',
+    ('Portable', 0x23dfa): 'SEEKRGN',
+    ('Portable', 0x23ed2): 'RGNOP',
+    ('Portable', 0x240fc): 'SECTSCAN',
+    ('Portable', 0x24102): 'DIFFSCAN',
+    ('Portable', 0x24106): 'UNIONSCAN',
+    ('Portable', 0x24148): 'INSETSCAN',
+    ('Portable', 0x24192): 'XORSCAN',
+    ('Portable', 0x241a8): 'SORTPOINTS',
+    ('Portable', 0x2423c): 'CULLPOINTS',
+    ('Portable', 0x2428e): 'PUTRGN',
+    ('Portable', 0x24310): 'PACKRGN',
+    ('Portable', 0x243d8): 'STDBITS',
+    ('Portable', 0x243e8): 'PortableStdBitsRtn', #leak
+    ('Portable', 0x24510): 'StdBitsStart2', #leak
+    ('Portable', 0x24514): 'StdBitsOK', #leak
+    ('Portable', 0x24516): 'PortableStdBitsNotPict', #leak
+    ('Portable', 0x24554): 'COPYBITS',
+    ('Portable', 0x245fa): 'COPYMASK',
+    ('Portable', 0x2483a): 'SEEDFILL',
+    ('Portable', 0x24842): 'CALCMASK',
+    ('Portable', 0x248c6): 'SeedFill', #leak
+    ('Portable', 0x24986): 'GoHome', #leak
+    ('Portable', 0x24998): 'SCROLLRECT',
+    ('Portable', 0x24a96): 'PACKBITS',
+    ('Portable', 0x24b56): 'UNPACKBITS',
+    ('Portable', 0x24b9c): 'STRETCHBITS',
+    ('Portable', 0x24bd4): 'XRGNBLT', #leak
+    ('Portable', 0x24c0c): 'BackToROM', #leak
+    ('Portable', 0x25068): 'SETUPSTRETCH',
+    ('Portable', 0x2540a): 'GETUBYTE',
+    ('Portable', 0x2541c): 'GETSBYTE',
+    ('Portable', 0x2542e): 'GETWORD',
+    ('Portable', 0x2543e): 'GETLONG',
+    ('Portable', 0x2544e): 'STDCOMMENT',
+    ('Portable', 0x254ae): 'STDGETPIC',
+    ('Portable', 0x254ce): 'STDPUTPIC',
+    ('Portable', 0x2554e): 'PICCOMMENT',
+    ('Portable', 0x25564): 'OPENPICTURE',
+    ('Portable', 0x25598): 'OpenPictptchEntry', #leak
+    ('Portable', 0x25616): 'OpenPictDone', #leak
+    ('Portable', 0x25620): 'CLOSEPICTURE',
+    ('Portable', 0x2562e): 'ClosePictptchEntry', #leak
+    ('Portable', 0x25634): 'ClosePictptchEntryNew', #leak
+    ('Portable', 0x25656): 'ClosePictGoHome', #leak
+    ('Portable', 0x2565c): 'KILLPICTURE',
+    ('Portable', 0x25664): 'DRAWPICTURE',
+    ('Portable', 0x25782): 'DPQuit', #leak
+    ('Portable', 0x257a6): 'DPGoHome', #leak
+    ('Portable', 0x257b2): 'STDOPCODEPROC',
+    ('Portable', 0x25800): 'PICITEM',
+    ('Portable', 0x258e0): 'XClip', #leak
+    ('Portable', 0x258ec): 'XClip2', #leak
+    ('Portable', 0x25974): 'XPnSize', #leak
+    ('Portable', 0x259c4): 'GetVers', #leak
+    ('Portable', 0x259f0): 'OvalEnd', #leak
+    ('Portable', 0x25a0e): 'XOrigin', #leak
+    ('Portable', 0x25b26): 'LNOK', #leak
+    ('Portable', 0x25b9c): 'TextOP', #leak
+    ('Portable', 0x25bee): 'RectOP', #leak
+    ('Portable', 0x25c16): 'RRectOP', #leak
+    ('Portable', 0x25c46): 'OvalOP', #leak
+    ('Portable', 0x25c78): 'ArcOP', #leak
+    ('Portable', 0x25ca6): 'PolyOP', #leak
+    ('Portable', 0x25cea): 'RgnOP', #leak
+    ('Portable', 0x25e58): 'Bits', #leak
+    ('Portable', 0x25eee): 'CommentOP', #leak
+    ('Portable', 0x25f12): 'LongCom', #leak
+    ('Portable', 0x25fc8): 'GetRect', #leak
+    ('Portable', 0x26052): 'Kill1', #leak
+    ('Portable', 0x2605a): 'Abort', #leak
+    ('Portable', 0x26062): 'Done', #leak
+    ('Portable', 0x2606c): 'MAPMODE',
+    ('Portable', 0x26096): 'SKIPPICDATA',
+    ('Portable', 0x260c2): 'GETPICDATA',
+    ('Portable', 0x260f2): 'GETPICTABLE',
+    ('Portable', 0x2614c): 'GETPICPIXPAT',
+    ('Portable', 0x261fa): 'GETPM1DEEP',
+    ('Portable', 0x26376): 'RGB2OLD',
+    ('Portable', 0x263a0): 'RGB2PAT',
+    ('Portable', 0x263e2): 'RGB2PIXEL',
+    ('Portable', 0x263fa): 'PUTPICDATA',
+    ('Portable', 0x26410): 'DPUTPICBYTE',
+    ('Portable', 0x26416): 'PUTPICBYTE',
+    ('Portable', 0x26428): 'PUTPICWORD',
+    ('Portable', 0x2643a): 'PUTPICLONG',
+    ('Portable', 0x2644a): 'PUTPICPAT',
+    ('Portable', 0x26456): 'PUTPICRECT',
+    ('Portable', 0x26498): 'PUTPICRGN',
+    ('Portable', 0x264b6): 'PUTPICVERB',
+    ('Portable', 0x265b4): 'CHECKPIC',
+    ('Portable', 0x2667e): 'SCALEPT',
+    ('Portable', 0x266d6): 'MAPPT',
+    ('Portable', 0x26738): 'MAPRECT',
+    ('Portable', 0x26750): 'MAPRATIO',
+    ('Portable', 0x267f8): 'ShowCrsr', #leak
+    ('Portable', 0x269a0): 'SCRNADDRESS',
+    ('Portable', 0x269a8): 'SCRNSIZE',
+    ('Portable', 0x269b8): 'SCRNBITMAP',
+    ('Portable', 0x269cc): 'CRSRVBLTASK',
+    ('Portable', 0x26b5c): 'PINRECT',
+    ('Portable', 0x2cfc0): 'SeekCk', #leak
+    ('Portable', 0x2d7c8): 'GetDrive', #leak
+    ('Portable', 0x2d838): 'AdrAndSense', #leak
+    ('Portable', 0x2d85a): 'AdrAndStrb', #leak
+    ('Portable', 0x2d85c): 'Pulse', #leak
+    ('Portable', 0x2d902): 'Wait100', #leak
+    ('Portable', 0x2d9f6): 'recalSlow', #leak
+    ('Portable', 0x2da92): 'InvalTrkCache', #leak
+    ('Portable', 0x2daa6): 'RWPowerUp', #leak
+    ('Portable', 0x2e82c): 'FmtTrkRet', #leak
+    ('Portable', 0x2eac2): 'EmptyPD', #leak
+    ('Portable', 0x2eade): 'SyncCallRtn', #leak
+    ('Portable', 0x2eb5a): 'SetChipMode', #leak
+    ('IIci', 0x00022): 'DISPOFF',
+    ('IIci', 0x00026): 'CRITICAL',
+    ('IIci', 0x0002e): 'ROMLOC',
+    ('IIci', 0x0008c): 'STARTBOOT',
+    ('IIci', 0x000a6): 'STARTDOTCLOCKCONT',
+    ('IIci', 0x000b8): 'STARTINIT1',
+    ('IIci', 0x001a6): 'BOOTRETRY',
+    ('IIci', 0x001dc): 'EGRETPATCHCONT',
+    ('IIci', 0x00200): 'EGRETPATCH1CONT',
+    ('IIci', 0x00322): 'SOUNDINITPATCHRTN',
+    ('IIci', 0x00324): 'SOUNDINITPATCHRTN',
+    ('IIci', 0x0037e): 'GETRBVSIZE',
+    ('IIci', 0x00380): 'PATCHSPACE1',
+    ('IIci', 0x00470): 'JMPTBLINIT',
+    ('IIci', 0x00472): 'JMPTBL2',
+    ('IIci', 0x0047e): 'NEWTRANSLATE24TO32',
+    ('IIci', 0x00480): 'FILLWITHONES',
+    ('IIci', 0x00490): 'COMPBOOTSTACK',
+    ('IIci', 0x004b0): 'SETUPSYSAPPZONE',
+    ('IIci', 0x00530): 'DRAWBEEPSCREEN',
+    ('IIci', 0x0054a): 'DRAWBEEPSCREENRETURN',
+    ('IIci', 0x00580): 'INITSHUTDOWNMGR',
+    ('IIci', 0x00590): 'INITHIMEMGLOBALS',
+    ('IIci', 0x00600): 'INITGLOBALVARS',
+    ('IIci', 0x006f0): 'SWITCHGOODIES',
+    ('IIci', 0x0075c): 'WDCBSWOS',
+    ('IIci', 0x0075e): 'PMSPSWOS',
+    ('IIci', 0x00760): 'INITSWITCHERTABLE',
+    ('IIci', 0x00780): 'GETPRAM',
+    ('IIci', 0x007c0): 'WHICHCPU',
+    ('IIci', 0x007f0): 'WHICHBOARD',
+    ('IIci', 0x00800): 'SETUPTIMEK',
+    ('IIci', 0x008e0): 'RUNDIAGS',
+    ('IIci', 0x00908): 'STARTTESTFLAGS',
+    ('IIci', 0x00910): 'SETUPHWBASES',
+    ('IIci', 0x009a0): 'INITSCSI',
+    ('IIci', 0x009c0): 'INITIWM',
+    ('IIci', 0x009d8): 'INITIWMRETURN',
+    ('IIci', 0x00a2e): 'INITSCC',
+    ('IIci', 0x00a30): 'INITSCC',
+    ('IIci', 0x00a70): 'CONFIGURERAM',
+    ('IIci', 0x00be0): 'INITVIDGLOBALS',
+    ('IIci', 0x00bf0): 'RDVIDPARAM',
+    ('IIci', 0x00ca0): 'OPENSDRVR',
+    ('IIci', 0x00d00): 'OPNVIDDEFLT',
+    ('IIci', 0x00d50): 'INITVIDDEFLT',
+    ('IIci', 0x00d90): 'ADDVIDDEVICE',
+    ('IIci', 0x00de0): 'GETDEFVIDMODE',
+    ('IIci', 0x00e40): 'INITDEFGAMMA',
+    ('IIci', 0x00f40): 'INITDUMMYSCREEN',
+    ('IIci', 0x01000): 'FROVIDEO',
+    ('IIci', 0x01050): 'INITCRSRVARS',
+    ('IIci', 0x01060): 'INITCRSRMGR',
+    ('IIci', 0x010f0): 'INITIOMGR',
+    ('IIci', 0x0118a): 'SNDNAME',
+    ('IIci', 0x011a0): 'INITMEMMGR',
+    ('IIci', 0x011d0): 'INITRSRCMGR',
+    ('IIci', 0x011f0): 'INITDTQUEUE',
+    ('IIci', 0x01210): 'INITSLOTS',
+    ('IIci', 0x01240): 'GOOFYDOEJECT',
+    ('IIci', 0x01250): 'OPENNETBOOTPATCH',
+    ('IIci', 0x01282): 'FMCPARITYPATCH',
+    ('IIci', 0x01292): 'FLAGSPATCH',
+    ('IIci', 0x01298): 'FMCPARITYPATCH',
+    ('IIci', 0x012a8): 'INITEGRETPATCH',
+    ('IIci', 0x012e0): 'INITEGRETPATCH1',
+    ('IIci', 0x01300): 'GOTOINITMMU',
+    ('IIci', 0x0130a): 'CLOSENETBOOTPATCH',
+    ('IIci', 0x01324): 'CHECKFOREGRET',
+    ('IIci', 0x0133a): 'SETBUFPTRPATCH',
+    ('IIci', 0x01350): 'FINDSTARTUPDEVICE',
+    ('IIci', 0x01390): 'GETDEFAULTSTARTUP',
+    ('IIci', 0x013a0): 'SETDEFAULTSTARTUP',
+    ('IIci', 0x013b0): 'GETOSDEFAULT',
+    ('IIci', 0x013c0): 'SETOSDEFAULT',
+    ('IIci', 0x013e0): 'GETVIDEODEFAULT',
+    ('IIci', 0x013f0): 'SETVIDEODEFAULT',
+    ('IIci', 0x01400): 'INTERNALWAIT',
+    ('IIci', 0x01430): 'EMBARKONSEARCH',
+    ('IIci', 0x01460): 'WAITFORINTERNAL',
+    ('IIci', 0x014f0): 'LOADSLOTDRVRS',
+    ('IIci', 0x01560): 'LOADDRIVERS',
+    ('IIci', 0x01590): 'PLANSTRATEGY',
+    ('IIci', 0x015a0): 'FINDNEXTCANDIDATE',
+    ('IIci', 0x015c0): 'NEXTDQENTRY',
+    ('IIci', 0x015d0): 'SELECTDEVICE',
+    ('IIci', 0x015f0): 'CHECKMOUSEEJECT',
+    ('IIci', 0x01600): 'GETSTARTUPINFO',
+    ('IIci', 0x0161e): 'BOOTBLOCKFLUSHRETURN',
+    ('IIci', 0x01620): 'REACTTOFAILURE',
+    ('IIci', 0x01640): 'VISUALUPDATE',
+    ('IIci', 0x0167c): 'ENABLEXFLASH',
+    ('IIci', 0x01690): 'SHOWDEVICEFAIL',
+    ('IIci', 0x016a0): 'SHOWSUCCESS',
+    ('IIci', 0x016c0): 'EJECTME',
+    ('IIci', 0x016d0): 'ISREJECT',
+    ('IIci', 0x016f0): 'ISITFLOPORDEF',
+    ('IIci', 0x01700): 'ISITFLOPPY',
+    ('IIci', 0x01710): 'ISITANYTHING',
+    ('IIci', 0x01720): 'NEVERAGAIN',
+    ('IIci', 0x01740): 'INBOOTMASK',
+    ('IIci', 0x01750): 'HAPPYMAC',
+    ('IIci', 0x0175c): 'SHOWPLAINDISK',
+    ('IIci', 0x01762): 'SHOWDISKQ',
+    ('IIci', 0x01768): 'SHOWDISKX',
+    ('IIci', 0x0176c): 'PLOTMYICON',
+    ('IIci', 0x0177e): 'PSHICNRECT',
+    ('IIci', 0x01798): 'PLOTICNN',
+    ('IIci', 0x017da): 'ERASEMYICON',
+    ('IIci', 0x01c00): 'IGETTIMEOUT',
+    ('IIci', 0x01c10): 'ISETTIMEOUT',
+    ('IIci', 0x01c30): 'IGETWAITFLAGS',
+    ('IIci', 0x01c40): 'ISETWAITFLAGS',
+    ('IIci', 0x01c60): 'IDISABLEDYNWAIT',
+    ('IIci', 0x01c80): 'IENABLEDYNWAIT',
+    ('IIci', 0x01ca0): 'IDISABLEPERMWAIT',
+    ('IIci', 0x01cc0): 'IENABLEPERMWAIT',
+    ('IIci', 0x01ce0): 'GETRAWTIMEOUT',
+    ('IIci', 0x01d00): 'SETRAWTIMEOUT',
+    ('IIci', 0x01d24): 'THEBOOT',
+    ('IIci', 0x02170): 'CENTERRECT',
+    ('IIci', 0x021a0): 'MOUSEINIT',
+    ('IIci', 0x021e0): 'OPENBDRVRS',
+    ('IIci', 0x02240): 'OPENSLOTS',
+    ('IIci', 0x022e0): 'INITEVENTS',
+    ('IIci', 0x02310): 'CRITERR',
+    ('IIci', 0x02524): 'PUTICON',
+    ('IIci', 0x025f0): 'SYSERRINIT',
+    ('IIci', 0x02650): 'DEBUGGER',
+    ('IIci', 0x02690): 'DEBUGPROLOG',
+    ('IIci', 0x026a0): 'TODEEPSHIT',
+    ('IIci', 0x026f0): 'GENEXCPS',
+    ('IIci', 0x02708): 'IRQEXCEPTION',
+    ('IIci', 0x0270a): 'NMIEXCP',
+    ('IIci', 0x02720): 'SYSTEMERROR',
+    ('IIci', 0x02726): 'SYSERR1',
+    ('IIci', 0x02736): 'SYSERR2',
+    ('IIci', 0x027c0): 'ALLOCFAKERGNS',
+    ('IIci', 0x0280e): 'DSERRORHANDLER',
+    ('IIci', 0x02e38): 'SAVEPATCHRTN',
+    ('IIci', 0x02e46): 'ROMBERRANDVBRRTN',
+    ('IIci', 0x02e8c): 'INITVIAS',
+    ('IIci', 0x02e96): 'INITVIAS',
+    ('IIci', 0x02f18): 'GETHARDWAREINFO',
+    ('IIci', 0x02f1e): 'GETHARDWAREINFO',
+    ('IIci', 0x02f24): 'GETHARDWARECONT',
+    ('IIci', 0x02f26): 'GETHARDWAREINFO',
+    ('IIci', 0x02f28): 'GETHARDWAREINFO',
+    ('IIci', 0x02f2c): 'GETHARDWARECONT',
+    ('IIci', 0x02f2e): 'GETHARDWARECONT',
+    ('IIci', 0x02f32): 'GETHARDWAREINFO',
+    ('IIci', 0x02f34): 'GETHARDWAREINFO',
+    ('IIci', 0x02f38): 'GETHARDWARECONT',
+    ('IIci', 0x02f3a): 'GETHARDWARECONT',
+    ('IIci', 0x02f3c): 'FOUNDMATCH',
+    ('IIci', 0x02f44): 'FOUNDMATCH',
+    ('IIci', 0x02f46): 'FOUNDMATCH',
+    ('IIci', 0x02f50): 'FOUNDMATCH',
+    ('IIci', 0x02f52): 'FOUNDMATCH',
+    ('IIci', 0x02f5e): 'CHECKNEXTMAP',
+    ('IIci', 0x02f64): 'GETHARDWAREINFO',
+    ('IIci', 0x02f66): 'CHECKNEXTMAP',
+    ('IIci', 0x02f68): 'CHECKNEXTMAP',
+    ('IIci', 0x02f6a): 'MAPFOUND',
+    ('IIci', 0x02f72): 'MAPFOUND',
+    ('IIci', 0x02f74): 'MAPFOUND',
+    ('IIci', 0x02f7e): 'MAPFOUND',
+    ('IIci', 0x02f80): 'MAPFOUND',
+    ('IIci', 0x02f82): 'FOUNDMATCH',
+    ('IIci', 0x02fa4): 'CHECKNEXTMAP',
+    ('IIci', 0x02fb0): 'MAPFOUND',
+    ('IIci', 0x03050): 'SCSI96ANDRPURESUME',
+    ('IIci', 0x03056): 'CHECKFEATURES',
+    ('IIci', 0x03058): 'SCSI96ANDRPURESUME',
+    ('IIci', 0x0305a): 'SCSI96ANDRPURESUME',
+    ('IIci', 0x0305e): 'CHECKFEATURES',
+    ('IIci', 0x03060): 'CHECKFEATURES',
+    ('IIci', 0x03064): 'SCSI96ANDRPURESUME',
+    ('IIci', 0x03066): 'SCSI96ANDRPURESUME',
+    ('IIci', 0x0306a): 'CHECKFEATURES',
+    ('IIci', 0x0306c): 'CHECKFEATURES',
+    ('IIci', 0x03096): 'SCSI96ANDRPURESUME',
+    ('IIci', 0x0309c): 'CHECKFEATURES',
+    ('IIci', 0x031ac): 'CHECKFORNIAGRA',
+    ('IIci', 0x031b4): 'CHECKFORNIAGRA',
+    ('IIci', 0x031b6): 'CHECKFORNIAGRA',
+    ('IIci', 0x031c0): 'CHECKFORNIAGRA',
+    ('IIci', 0x031c2): 'CHECKFORNIAGRA',
+    ('IIci', 0x031f2): 'CHECKFORNIAGRA',
+    ('IIci', 0x031f4): 'CHECKFORUNKNOWN',
+    ('IIci', 0x031fc): 'CHECKFORUNKNOWN',
+    ('IIci', 0x031fe): 'CHECKFORUNKNOWN',
+    ('IIci', 0x03208): 'CHECKFORUNKNOWN',
+    ('IIci', 0x0320a): 'CHECKFORUNKNOWN',
+    ('IIci', 0x0323a): 'CHECKFORUNKNOWN',
+    ('IIci', 0x03aaa): 'VIA1INITDARTANIAN',
+    ('IIci', 0x03ab2): 'VIA1INITDARTANIAN',
+    ('IIci', 0x03ac2): 'VIA1INITDARTANIAN',
+    ('IIci', 0x03ace): 'VIA2INITDARTANIAN',
+    ('IIci', 0x03ad6): 'VIA2INITDARTANIAN',
+    ('IIci', 0x03ae6): 'VIA2INITDARTANIAN',
+    ('IIci', 0x03b00): 'VIA1INITDARTANIAN',
+    ('IIci', 0x03b08): 'VIA1INITDARTANIAN',
+    ('IIci', 0x03b24): 'VIA2INITDARTANIAN',
+    ('IIci', 0x03b2c): 'VIA2INITDARTANIAN',
+    ('IIci', 0x03b7a): 'VIA1INITDARTANIAN',
+    ('IIci', 0x03b9e): 'VIA2INITDARTANIAN',
+    ('IIci', 0x03bd4): 'VIDEOINFODAFB',
+    ('IIci', 0x03bdc): 'VIDEOINFODAFB',
+    ('IIci', 0x03bec): 'VIDEOINFODAFB',
+    ('IIci', 0x03c2a): 'VIDEOINFODAFB',
+    ('IIci', 0x03c32): 'VIDEOINFODAFB',
+    ('IIci', 0x03ca8): 'VIDEOINFODAFB',
+    ('IIci', 0x03cf8): 'GOTBUSERROR',
+    ('IIci', 0x03d00): 'GOTBUSERROR',
+    ('IIci', 0x03d10): 'GOTBUSERROR',
+    ('IIci', 0x03d52): 'GOTBUSERROR',
+    ('IIci', 0x03d5a): 'GOTBUSERROR',
+    ('IIci', 0x03d64): 'CHECKFOREAGLEDECODER',
+    ('IIci', 0x03dd6): 'GOTBUSERROR',
+    ('IIci', 0x03dec): 'GOTBUSERROR',
+    ('IIci', 0x03e00): 'MMUSTUFF',
+    ('IIci', 0x03e0c): 'INITMMUGLOBALS',
+    ('IIci', 0x03e60): 'MMUCLEANUPFOR8MB',
+    ('IIci', 0x04032): 'ENABLECACHESPATCH',
+    ('IIci', 0x04052): 'DISABLEMMUPATCH',
+    ('IIci', 0x040a8): 'SWITCHMMUPATCH',
+    ('IIci', 0x04106): 'SETUPMISCSCSI',
+    ('IIci', 0x04146): 'SETUPSCSITIME',
+    ('IIci', 0x0417a): 'SYSERRINITPATCH',
+    ('IIci', 0x04192): 'INITMEMMGRPATCH',
+    ('IIci', 0x0419e): 'INITMEMDISPANDSHUTDOWNMGRS',
+    ('IIci', 0x041ac): 'DRAWBEEPSCREENPATCH',
+    ('IIci', 0x041d2): 'BOOTBLOCKFLUSHPATCH',
+    ('IIci', 0x041e6): 'INSTALLSONYDRIVERPATCH',
+    ('IIci', 0x041fe): 'POWERDWNPTCH',
+    ('IIci', 0x04230): 'INITHWROUTINES',
+    ('IIci', 0x0424a): 'INITSNDHW',
+    ('IIci', 0x04266): 'INITSNDNORAM',
+    ('IIci', 0x042fe): 'INITMMU',
+    ('IIci', 0x0438a): 'INITSWIM2',
+    ('IIci', 0x043b6): 'INITSWIM2',
+    ('IIci', 0x043bc): 'INITSWIM2',
+    ('IIci', 0x04414): 'SETUPTIMEKPATCH',
+    ('IIci', 0x0444e): 'STARTDOTCLOCK',
+    ('IIci', 0x04468): 'PRENETBOOTPATCH',
+    ('IIci', 0x04480): 'PREGESTALTPATCH',
+    ('IIci', 0x04498): 'STARTREADPRAM',
+    ('IIci', 0x04670): 'TESTFORRPU',
+    ('IIci', 0x04672): 'TESTFORRPU',
+    ('IIci', 0x046a8): 'TESTFORVIER',
+    ('IIci', 0x046aa): 'TESTVIERWRAP',
+    ('IIci', 0x046ac): 'TESTVIERWRAP',
+    ('IIci', 0x046d6): 'TESTFORRVIER',
+    ('IIci', 0x046d8): 'TESTFORRVIER',
+    ('IIci', 0x046fe): 'TESTFORSCSIDMA',
+    ('IIci', 0x04700): 'TESTFORSCSIDMA',
+    ('IIci', 0x04706): 'TESTFORSCSI96',
+    ('IIci', 0x04708): 'TESTFORSCSI96',
+    ('IIci', 0x04712): 'TESTFORSCC',
+    ('IIci', 0x04714): 'TESTFORSCC',
+    ('IIci', 0x0477a): 'TESTFORIOP',
+    ('IIci', 0x0477c): 'TESTFORIOP',
+    ('IIci', 0x047ae): 'TESTFORSONIC',
+    ('IIci', 0x047b0): 'TESTFORSONIC',
+    ('IIci', 0x047b4): 'TESTFORPATCHROM',
+    ('IIci', 0x047b6): 'TESTFORPATCHROM',
+    ('IIci', 0x047ba): 'TESTFORPATCHROM',
+    ('IIci', 0x047c6): 'GETVIAINPUTS',
+    ('IIci', 0x047c8): 'GETVIAINPUTS',
+    ('IIci', 0x047cc): 'GETVIAINPUTS',
+    ('IIci', 0x04848): 'MEMORYCTRLINITPATCH',
+    ('IIci', 0x04860): 'MEMORYCTRLINITPATCH',
+    ('IIci', 0x04862): 'MEMORYCTRLINITPATCH',
+    ('IIci', 0x04866): 'MEMORYCTRLINITPATCH',
+    ('IIci', 0x048c8): 'RELOADBERRVBR',
+    ('IIci', 0x04972): 'RELOADBERRVBR',
+    ('IIci', 0x04976): 'RELOADBERRVBR',
+    ('IIci', 0x04986): 'RELOADBERRVBR',
+    ('IIci', 0x04994): 'RELOADBERRVBR',
+    ('IIci', 0x049ae): 'SCSI96ANDRPUPATCH',
+    ('IIci', 0x049b6): 'RELOADBERRVBR',
+    ('IIci', 0x049be): 'SCSI96ANDRPUPATCH',
+    ('IIci', 0x049e4): 'SCSI96ANDRPUPATCH',
+    ('IIci', 0x049ee): 'SCSI96ANDRPUPATCH',
+    ('IIci', 0x04a06): 'SCSI96ANDRPUPATCH',
+    ('IIci', 0x04a16): 'SAVEPATCH',
+    ('IIci', 0x04a24): 'OPTIONALSPATCH',
+    ('IIci', 0x04a26): 'SAVEPATCH',
+    ('IIci', 0x04a34): 'OPTIONALSPATCH',
+    ('IIci', 0x04a4c): 'SAVEPATCH',
+    ('IIci', 0x04a56): 'SAVEPATCH',
+    ('IIci', 0x04a5a): 'OPTIONALSPATCH',
+    ('IIci', 0x04a5e): 'RELOADBERRVBR',
+    ('IIci', 0x04a64): 'OPTIONALSPATCH',
+    ('IIci', 0x04a6e): 'SAVEPATCH',
+    ('IIci', 0x04a7c): 'OPTIONALSPATCH',
+    ('IIci', 0x04a84): 'GETHARDWAREINFOPATCH',
+    ('IIci', 0x04a94): 'GETHARDWAREINFOPATCH',
+    ('IIci', 0x04a96): 'SCSI96ANDRPUPATCH',
+    ('IIci', 0x04abe): 'GETHARDWAREINFOPATCH',
+    ('IIci', 0x04ac4): 'GETHARDWAREINFOPATCH',
+    ('IIci', 0x04adc): 'GETHARDWAREINFOPATCH',
+    ('IIci', 0x04afe): 'SAVEPATCH',
+    ('IIci', 0x04b0a): 'INITMMUGLOBALS',
+    ('IIci', 0x04b0c): 'OPTIONALSPATCH',
+    ('IIci', 0x04b5e): 'MMUCLEANUPFOR8MB',
+    ('IIci', 0x04b6c): 'GETHARDWAREINFOPATCH',
+    ('IIci', 0x04de4): 'IOPMSGREQUEST',
+    ('IIci', 0x04ed2): 'IOPMOVEDATA',
+    ('IIci', 0x05036): 'IOPINTERRUPT',
+    ('IIci', 0x0508c): 'IOPINTERRUPT',
+    ('IIci', 0x051f8): 'MOVEREQHANDLER',
+    ('IIci', 0x05218): 'INITIOPMGR',
+    ('IIci', 0x05262): 'INITIOPMGR',
+    ('IIci', 0x052dc): 'SCCIOPBYPASS',
+    ('IIci', 0x05324): 'SCCIOPHWINIT',
+    ('IIci', 0x05326): 'SCCIOPBYPASS',
+    ('IIci', 0x0536e): 'SCCIOPHWINIT',
+    ('IIci', 0x05430): 'HWPRIVPROC',
+    ('IIci', 0x05448): 'HWPRIV',
+    ('IIci', 0x0548c): 'SWAPDATACACHE',
+    ('IIci', 0x054aa): 'FLUSHDATACACHE',
+    ('IIci', 0x054ba): 'ENABLEEXTCACHE',
+    ('IIci', 0x054c0): 'EDISKPROTECTION',
+    ('IIci', 0x054f4): 'DISABLEEXTCACHE',
+    ('IIci', 0x0550e): 'FLUSHEXTCACHE',
+    ('IIci', 0x05520): 'MEMORYDPROC',
+    ('IIci', 0x05538): 'MEMORYDISPATCH',
+    ('IIci', 0x056f4): 'WAITFORSCSIDEVSNUB',
+    ('IIci', 0x05890): 'READSLOTBYTE',
+    ('IIci', 0x058b0): 'READSLOTWORD',
+    ('IIci', 0x058d0): 'READSLOTLONG',
+    ('IIci', 0x058f0): 'GETCSTRING',
+    ('IIci', 0x0592c): 'BackToGetCString', #leak
+    ('iiCi', 0x05972): 'TheDoneLabel', #leak
+    ('IIci', 0x05980): 'GETSLOTBLOCK',
+    ('IIci', 0x059d0): 'FINDSLOTSTRUCT',
+    ('IIci', 0x059e0): 'READSLOTSTRUCT',
+    ('IIci', 0x05a70): 'READSLOTINFO',
+    ('IIci', 0x05aa0): 'SLOTDISPOSPTR',
+    ('IIci', 0x05ac0): 'READSLOTDRVRNAME',
+    ('IIci', 0x05b40): 'FINDDEVBASE',
+    ('IIci', 0x05bf0): 'CARDCHANGED',
+    ('IIci', 0x05c10): 'SLOTEXEC',
+    ('IIci', 0x05c80): 'CALCSPOINTER',
+    ('IIci', 0x05d10): 'GETSLOTDRVR',
+    ('IIci', 0x05dc2): 'ORIGGETSLOTDRVR',
+    ('IIci', 0x05dde): 'ENDGETSLOTDRVR',
+    ('IIci', 0x05de0): 'STARTSDECLMGR',
+    ('IIci', 0x05e0c): 'DOZEROFIRST',
+    ('IIci', 0x05e20): 'INITSLOTMGR',
+    ('IIci', 0x05e98): 'INITSINFO',
+    ('IIci', 0x05f4c): 'VERIFYSLOT',
+    ('IIci', 0x05fa4): 'VERIFYSLOTDONE',
+    ('IIci', 0x060a0): 'INITSRSRCTABLE',
+    ('IIci', 0x060c2): 'INITSRSRC',
+    ('IIci', 0x06146): 'INITSPRAM',
+    ('IIci', 0x06180): 'READINITSPRAM',
+    ('IIci', 0x061a0): 'INITPRAMRECS',
+    ('IIci', 0x061e0): 'WRITEINITSPRAM',
+    ('IIci', 0x061e8): 'DONEINITSPRAM',
+    ('IIci', 0x061f0): 'INITPRIMARY',
+    ('IIci', 0x06242): 'PRIMARY_INIT',
+    ('IIci', 0x0624a): 'PRIMARYINITRTN',
+    ('IIci', 0x0625c): 'STUBCHECKSLOT',
+    ('IIci', 0x06262): 'STUBADDCARD',
+    ('IIci', 0x06268): 'STUBREMOVECARD',
+    ('IIci', 0x062bc): 'SECONDARY_INIT',
+    ('IIci', 0x062c0): 'SECONDARY_INIT',
+    ('IIci', 0x062ec): 'STUBDOSECONDARY',
+    ('IIci', 0x0636e): 'GETBOARD',
+    ('IIci', 0x063b8): 'PUTSLOTPRAM',
+    ('IIci', 0x063c2): 'INITSLOTPRAM',
+    ('IIci', 0x06440): 'FINDSINFORECPTR',
+    ('IIci', 0x06460): 'FINDSRSRCPTR',
+    ('IIci', 0x06468): 'GETSRSRCPTR',
+    ('IIci', 0x06480): 'PTRTOSLOT',
+    ('IIci', 0x064d0): 'READFHEADER',
+    ('IIci', 0x06520): 'CKCARDSTAT',
+    ('IIci', 0x06540): 'SLOTVERSION',
+    ('IIci', 0x06550): 'NEXTSRSRC',
+    ('IIci', 0x0655a): 'GETSRSRC',
+    ('IIci', 0x06580): 'NEXTTYPESRSRC',
+    ('IIci', 0x06584): 'GETTYPESRSRC',
+    ('IIci', 0x06600): 'UPDATESRT',
+    ('IIci', 0x0660c): 'INSERTSRT',
+    ('IIci', 0x0668a): 'SEARCHSRT',
+    ('IIci', 0x0669c): 'FINDSRTREC',
+    ('IIci', 0x0670c): 'DELETESRTREC',
+    ('IIci', 0x067a8): 'SLOTRSRCINFO',
+    ('IIci', 0x067ac): 'GETSRSRCINFO',
+    ('IIci', 0x067d0): 'SETSRSRCSTATE',
+    ('IIci', 0x0680a): 'PNEWSRTENTRY',
+    ('IIci', 0x06882): 'PINITENTRY',
+    ('IIci', 0x0695c): 'PALLOCSRTBLK',
+    ('IIci', 0x06984): 'GETSRTENTRY',
+    ('IIci', 0x069c4): 'PSRTOSPBLOCK',
+    ('IIci', 0x06a20): 'CALCSTEP',
+    ('IIci', 0x06b50): 'OFFSETDATA',
+    ('IIci', 0x06be0): 'READPBSIZE',
+    ('IIci', 0x06c50): 'PREAD4BYTES',
+    ('IIci', 0x06cb0): 'PBUSEXCEPTION',
+    ('IIci', 0x06cf6): 'PINSTALLBUS',
+    ('IIci', 0x06cfa): 'PINSTALLBUS',
+    ('IIci', 0x06d24): 'PRESTOREBUS',
+    ('IIci', 0x06d32): 'PRESTOREBUS',
+    ('IIci', 0x06d46): 'PRIMARY_INIT',
+    ('IIci', 0x06d60): 'INITJMPTBL',
+    ('IIci', 0x06e16): 'SLOTMANAGER',
+    ('IIci', 0x06e30): 'SINTCORE',
+    ('IIci', 0x06e56): 'SINTINSTALL',
+    ('IIci', 0x06e7a): 'SINTREMOVE',
+    ('IIci', 0x06eaa): 'RBVSLOTINT',
+    ('IIci', 0x06ec0): 'OSSSLOTINT',
+    ('IIci', 0x06eca): 'SLOTINTCOMMON',
+    ('IIci', 0x06eec): 'RUNSLOTHANDLERS',
+    ('IIci', 0x06f94): 'INITSDTBL',
+    ('IIci', 0x06fb4): 'INITSPTBL',
+    ('IIci', 0x06fc0): 'SYSTEMBEEP',
+    ('IIci', 0x07040): 'ORIGBOOTBEEP',
+    ('IIci', 0x07052): 'ORIGBOOTBEEP6',
+    ('IIci', 0x07058): 'ORIGERRORBEEP1',
+    ('IIci', 0x0705e): 'ORIGERRORBEEP2',
+    ('IIci', 0x07064): 'ORIGERRORBEEP3',
+    ('IIci', 0x0706a): 'ORIGERRORBEEP4',
+    ('IIci', 0x0742a): 'TSTRETRY',
+    ('IIci', 0x07438): 'RDDONE',
+    ('IIci', 0x07488): 'UNIMPLEMENTED',
+    ('IIci', 0x0748e): 'DOSCSISTAT',
+    ('IIci', 0x074b2): 'DOSCSIRESET',
+    ('IIci', 0x074be): 'NOBYTEEXIT',
+    ('IIci', 0x074c4): 'SCSIEXITCLEANUP',
+    ('IIci', 0x074dc): 'DOSCSIGET',
+    ('IIci', 0x07554): 'DOSCSICMD',
+    ('IIci', 0x07574): 'NEWSCSIWBLIND',
+    ('IIci', 0x07578): 'NEWSCSIWRITE',
+    ('IIci', 0x0757c): 'NEWSCSIRBLIND',
+    ('IIci', 0x07580): 'NEWSCSIREAD',
+    ('IIci', 0x07632): 'DOSCSICOMPLETE',
+    ('IIci', 0x07690): 'DOSCSIMSGIN',
+    ('IIci', 0x076a4): 'DOSCSIMSGOUT',
+    ('IIci', 0x076b2): 'SCSISTDEXIT',
+    ('IIci', 0x076be): 'ARBITRATE',
+    ('IIci', 0x07714): 'SELECT',
+    ('IIci', 0x0797a): 'ALTBUSCALL',
+    ('IIci', 0x0799c): 'DOREQUESTIO',
+    ('IIci', 0x079c2): 'DOKILLIO',
+    ('IIci', 0x079cc): 'DOBUSINFO',
+    ('IIci', 0x07a04): 'RESETBUS',
+    ('IIci', 0x07a78): 'ENDEQUEUE',
+    ('IIci', 0x07b06): 'LOGERROR',
+    ('IIci', 0x07b1e): 'CLEARSTATE',
+    ('IIci', 0x07c1c): 'CLEARBUS',
+    ('IIci', 0x07c34): 'MESSAGE',
+    ('IIci', 0x07c86): 'PREFLIGHT',
+    ('IIci', 0x07d84): 'SETUP',
+    ('IIci', 0x07dc6): 'FIND',
+    ('IIci', 0x07e3c): 'SETTIMER',
+    ('IIci', 0x07e54): 'TIMETASK',
+    ('IIci', 0x07ecc): 'SCSIDT',
+    ('IIci', 0x08236): 'COMMAND',
+    ('IIci', 0x082ac): 'STATUSPHASE',
+    ('IIci', 0x082f8): 'MSGIN',
+    ('IIci', 0x0835c): 'MSGINVALIDIN',
+    ('IIci', 0x08374): 'MSGIDENTIFYIN',
+    ('IIci', 0x083c0): 'MSGCMDCOMPLETE',
+    ('IIci', 0x08582): 'MSGSAVEDATAPTR',
+    ('IIci', 0x085b2): 'MSGRESTOREPTRS',
+    ('IIci', 0x085ec): 'MSGDISCONNECT',
+    ('IIci', 0x08612): 'MSGMSGREJIN',
+    ('IIci', 0x08668): 'MSGLCCF',
+    ('IIci', 0x086d6): 'MSGOUT',
+    ('IIci', 0x0871e): 'MSGIDENTIFYOUT',
+    ('IIci', 0x08764): 'MSGMSGREJOUT',
+    ('IIci', 0x08790): 'MSGINVALIDOUT',
+    ('IIci', 0x087e0): 'MSGBUSDEVRST',
+    ('IIci', 0x087e2): 'MSGKILLIO',
+    ('IIci', 0x0883a): 'MSGNOOP',
+    ('IIci', 0x08858): 'DATAIO',
+    ('IIci', 0x08978): 'DATADMA',
+    ('IIci', 0x08a58): 'DISENABLE',
+    ('IIci', 0x08a64): 'BUSERRHANDLER',
+    ('IIci', 0x08aa8): 'ARB',
+    ('IIci', 0x08b4c): 'SEL',
+    ('IIci', 0x08bea): 'DELAY22',
+    ('IIci', 0x08bfc): 'SCSIINTHND',
+    ('IIci', 0x08cfa): 'TRANSFER',
+    ('IIci', 0x08d3a): 'SLOWREAD',
+    ('IIci', 0x08d94): 'SLOWWRITE',
+    ('IIci', 0x08e3a): 'VFASTWRITEOSS',
+    ('IIci', 0x08eb4): 'PFASTWRITEOSS',
+    ('IIci', 0x08f52): 'PFASTWRITE',
+    ('IIci', 0x09042): 'FASTWRITEOSS',
+    ('IIci', 0x09156): 'VFASTREADOSS',
+    ('IIci', 0x0919c): 'DMAPENDINGPATCH',
+    ('IIci', 0x091d0): 'PFASTREADOSS',
+    ('IIci', 0x0924c): 'PFASTREAD',
+    ('IIci', 0x092ea): 'FASTREADOSS',
+    ('IIci', 0x093ce): 'SLOWCOMP',
+    ('IIci', 0x09434): 'FASTCOMP',
+    ('IIci', 0x09680): 'SCSIINTHNDRESUME',
+    ('IIci', 0x09698): 'INITSCSIDONE',
+    ('IIci', 0x097e0): 'SCSISETFLAGS',
+    ('IIci', 0x09830): 'CACHEPROC',
+    ('IIci', 0x09840): 'CACHETRAP',
+    ('IIci', 0x09956): 'DEQUEUE',
+    ('IIci', 0x0999e): 'INITQUEUE',
+    ('IIci', 0x09a66): 'GETTRAPADDRESS',
+    ('IIci', 0x09a6e): 'SETTRAPADDRESS',
+    ('IIci', 0x09a76): 'CACHEFLUSH',
+    ('IIci', 0x09a7c): 'VCACHEFLUSH',
+    ('IIci', 0x09a96): 'INITDISPATCHER',
+    ('IIci', 0x09ae6): 'BADTRAP',
+    ('IIci', 0x09b00): 'INTHND',
+    ('IIci', 0x09d00): 'SCCIOPBYPASSINT',
+    ('IIci', 0x09e16): 'POWEROFF',
+    ('IIci', 0x09e22): 'POWEROFFCONT',
+    ('IIci', 0x09e2a): 'POWEROFFCONT',
+    ('IIci', 0x09e56): 'INITINTHANDLER',
+    ('IIci', 0x09eb8): 'INTHANDLERNOVIA2',
+    ('IIci', 0x09ec4): 'INTHANDLERNOVIA2CONT',
+    ('IIci', 0x09ed0): 'GOTSLOTHANDLER',
+    ('IIci', 0x09f4c): 'DISABLEINTSOURCES',
+    ('IIci', 0x09f9a): 'ENABLE60HZINTS',
+    ('IIci', 0x09fba): 'ENABLEONESECINTS',
+    ('IIci', 0x09fc6): 'ENABLESLOTINTS',
+    ('IIci', 0x09fee): 'ENABLESWIMIOPINTS',
+    ('IIci', 0x0a00e): 'ENABLEASCINTS',
+    ('IIci', 0x0a02e): 'DISABLEASCINTS',
+    ('IIci', 0x0a04c): 'CLEARASCINT',
+    ('IIci', 0x0a062): 'ENABLESCSIINTS',
+    ('IIci', 0x0a094): 'DISABLESCSIINTS',
+    ('IIci', 0x0a0c4): 'CLEARSCSIINT',
+    ('IIci', 0x0a0f0): 'DEBUGUTIL',
+    ('IIci', 0x0a146): 'POLLDONE',
+    ('IIci', 0x0a14a): 'RUNKBD',
+    ('IIci', 0x0a17c): 'RUNDONE',
+    ('IIci', 0x0a182): 'ENABLEPARITYINTS',
+    ('IIci', 0x0a1e8): 'DISPTCHTSK',
+    ('IIci', 0x0a1ee): 'VDISPTCH',
+    ('IIci', 0x0a280): 'VREMOVE',
+    ('IIci', 0x0a296): 'VBLINT',
+    ('IIci', 0x0a312): 'SLOTVINSTALL',
+    ('IIci', 0x0a318): 'SLOTVREMOVE',
+    ('IIci', 0x0a328): 'ATTACHVBL',
+    ('IIci', 0x0a332): 'DOVBLTASK',
+    ('IIci', 0x0a350): 'INITVBLQS',
+    ('IIci', 0x0a37a): 'GETINDADB',
+    ('IIci', 0x0a3a6): 'GETADBINFO',
+    ('IIci', 0x0a3ac): 'SETADBINFO',
+    ('IIci', 0x0a3dc): 'ADBOP',
+    ('IIci', 0x0a42c): 'RUNADBREQUEST',
+    ('IIci', 0x0a45e): 'EXPLICITREQUESTDONE',
+    ('IIci', 0x0a494): 'IMPLICITREQUESTDONE',
+    ('IIci', 0x0a534): 'EGRETCHECK',
+    ('IIci', 0x0a752): 'ADBREINIT',
+    ('IIci', 0x0a776): 'ADBPROC',
+    ('IIci', 0x0a7b0): 'INITADBDRVR',
+    ('IIci', 0x0a802): 'INITADB',
+    ('IIci', 0x0a8ae): 'HWDEPENDENTDONE',
+    ('IIci', 0x0aa84): 'RSETKMAP',
+    ('IIci', 0x0ad7a): 'KEYTRANS',
+    ('IIci', 0x0ae96): 'AfterFreezeTimeInRmvTime', #leak
+    ('IIci', 0x0aeec): 'INSTIME',
+    ('IIci', 0x0af02): 'MultAndMerge', #leak
+    ('IIci', 0x0af1a): 'PRIMETIME',
+    ('IIci', 0x0af3e): 'AfterFreezeTimeInPrimeTime', #leak
+    ('IIci', 0x0b02e): 'AfterFreezeTimeInTimer2Int', #leak
+    ('IIci', 0x0b0c6): 'INITTIMEMGR',
+    ('IIci', 0x0b16a): 'PRAMIO',
+    ('IIci', 0x0b186): 'READXPRAM',
+    ('IIci', 0x0b190): 'WRITEXPRAM',
+    ('IIci', 0x0b1ae): 'XPRAMCONT',
+    ('IIci', 0x0b1da): 'XPRAMEXIT1',
+    ('IIci', 0x0b1e4): 'CLKNOMEM',
+    ('IIci', 0x0b27c): 'VALIDATEPRAM',
+    ('IIci', 0x0b288): 'VALIDATEPRAMCONT',
+    ('IIci', 0x0b418): 'OSEVENTAVAIL',
+    ('IIci', 0x0b4a2): 'GETOSEVENT',
+    ('IIci', 0x0b4cc): 'FLUSHEVENTS',
+    ('IIci', 0x0b526): 'FETCH',
+    ('IIci', 0x0b56a): 'STASH',
+    ('IIci', 0x0b572): 'IODONE',
+    ('IIci', 0x0b656): 'VGODRIVER',
+    ('IIci', 0x0b75c): 'OPENPATCHRTN',
+    ('IIci', 0x0b760): 'OPENPATCHRTN1',
+    ('IIci', 0x0b766): 'OPEN',
+    ('IIci', 0x0baaa): 'CLOSE',
+    ('IIci', 0x0bacc): 'VWAITUNTIL',
+    ('IIci', 0x0bb1c): 'READ',
+    ('IIci', 0x0bb36): 'IORWCS',
+    ('IIci', 0x0bb8c): 'VSYNCWAIT',
+    ('IIci', 0x0bb9a): 'WRITE',
+    ('IIci', 0x0bba4): 'WRITEUPDATERETURN',
+    ('IIci', 0x0bbae): 'CONTROL',
+    ('IIci', 0x0bbbe): 'STATUS',
+    ('IIci', 0x0bbe4): 'KILLIO',
+    ('IIci', 0x0bc38): 'DRVRINSTALL',
+    ('IIci', 0x0bc96): 'DRVRREMOVE',
+    ('IIci', 0x0bcc6): 'ADDDRIVE',
+    ('IIci', 0x0bd72): 'UNLOADSEG',
+    ('IIci', 0x0bdba): 'APPZONEADDR',
+    ('IIci', 0x0bddc): 'FLUSHAPPLVBLS',
+    ('IIci', 0x0be04): 'CHAIN',
+    ('IIci', 0x0be0a): 'LAUNCH',
+    ('IIci', 0x0bf06): 'VSEGSTACK',
+    ('IIci', 0x0bf54): 'EXITTOSHELL',
+    ('IIci', 0x0bf8e): 'VLAUNCHINIT',
+    ('IIci', 0x0bfc0): 'GETAPPPARMS',
+    ('IIci', 0x0bfdc): 'INSTALLRDRIVERS',
+    ('IIci', 0x0c03e): 'SGLDREND',
+    ('IIci', 0x0c042): 'READPARAM',
+    ('IIci', 0x0c05c): 'WRITEPARAM',
+    ('IIci', 0x0c07c): 'READDATETIME',
+    ('IIci', 0x0c086): 'SETDATETIME',
+    ('IIci', 0x0c08e): 'DELAY',
+    ('IIci', 0x0c0a0): 'LWRSTRING',
+    ('IIci', 0x0c108): 'UPRSTRING',
+    ('IIci', 0x0c11e): 'CMPSTRING',
+    ('IIci', 0x0c134): 'RELSTRING',
+    ('IIci', 0x0c5a8): 'READPRAM',
+    ('IIci', 0x0c5b2): 'READPRAMPATCHRTN',
+    ('IIci', 0x0c5cc): 'INITUTIL',
+    ('IIci', 0x0c676): 'PRAMINIT',
+    ('IIci', 0x0c68a): 'PRAMINITTBL',
+    ('IIci', 0x0c69e): 'READTIME',
+    ('IIci', 0x0c6de): 'WRITETIMEPATCHRTN',
+    ('IIci', 0x0c70a): 'WPON',
+    ('IIci', 0x0c712): 'WPOFF',
+    ('IIci', 0x0c724): 'WRITEPRAMPATCHRTN',
+    ('IIci', 0x0c750): 'SYSENVIRONS',
+    ('IIci', 0x0c860): 'INITRELIABILITY',
+    ('IIci', 0x0c8e0): 'RELTIMETASK',
+    ('IIci', 0x0c920): 'BLOCKMOVES',
+    ('IIci', 0x0c9c4): 'BMMOVELONGS',
+    ('IIci', 0x0c9d8): 'BMEXIT16',
+    ('IIci', 0x0c9f4): 'BMOVERLAP',
+    ('IIci', 0x0ca16): 'BMVERYSHORT',
+    ('IIci', 0x0cb20): 'HEAP',
+    ('IIci', 0x0cc60): 'INITMEMVECT',
+    ('IIci', 0x0ccfe): 'SETAPPLBASE',
+    ('IIci', 0x0cd52): 'INITAPPLZONE',
+    ('IIci', 0x0cde4): 'VIAZINIT',
+    ('IIci', 0x0cefe): 'VIAZPOSTINIT',
+    ('IIci', 0x0cf08): 'INITZONE',
+    ('IIci', 0x0d068): 'GETZONE',
+    ('IIci', 0x0d07a): 'SETZONE',
+    ('IIci', 0x0d08c): 'MAXBLOCK',
+    ('IIci', 0x0d0a8): 'COMPACTMEM',
+    ('IIci', 0x0d11a): 'PURGEMEM',
+    ('IIci', 0x0d158): 'PURGESPACE',
+    ('IIci', 0x0d174): 'FREEMEM',
+    ('IIci', 0x0d18a): 'RESRVMEM',
+    ('IIci', 0x0d1ac): 'BackToResrvMem24', #leak
+    ('IIci', 0x0d1cc): 'BackToResrvMem32', #leak
+    ('IIci', 0x0d1d2): 'MAXMEM',
+    ('IIci', 0x0d23e): 'SETGROWZONE',
+    ('IIci', 0x0d254): 'SETAPPLLIMIT',
+    ('IIci', 0x0d2be): 'STACKSPACE',
+    ('IIci', 0x0d2dc): 'MAXAPPLZONE',
+    ('IIci', 0x0d360): 'NEWPTR',
+    ('IIci', 0x0d372): 'BackToNewPtr24', #leak
+    ('IIci', 0x0d38a): 'BackToNewPtr32', #leak
+    ('IIci', 0x0d3a0): 'DISPOSEPTR',
+    ('IIci', 0x0d3cc): 'GETPTRSIZE',
+    ('IIci', 0x0d3e4): 'SETPTRSIZE',
+    ('IIci', 0x0d3fc): 'PTRZONE',
+    ('IIci', 0x0d422): 'NEWEMPTYHANDLE',
+    ('IIci', 0x0d448): 'NWHANDLE',
+    ('IIci', 0x0d484): 'DSPOSEHANDLE',
+    ('IIci', 0x0d4b4): 'GETHANDLESIZE',
+    ('IIci', 0x0d4d0): 'SETHANDLESIZE',
+    ('IIci', 0x0d4f2): 'HANDLEZONE',
+    ('IIci', 0x0d504): 'RECOVERHANDLE',
+    ('IIci', 0x0d574): 'EMPTYHANDLE',
+    ('IIci', 0x0d59a): 'REALLOCHANDLE',
+    ('IIci', 0x0d628): 'HLOCK',
+    ('IIci', 0x0d64e): 'HUNLOCK',
+    ('IIci', 0x0d670): 'HPURGE',
+    ('IIci', 0x0d68e): 'HNOPURGE',
+    ('IIci', 0x0d6b6): 'HRSRC',
+    ('IIci', 0x0d6d4): 'HNORSRC',
+    ('IIci', 0x0d6f2): 'HGETFLAGS',
+    ('IIci', 0x0d718): 'HSETFLAGS',
+    ('IIci', 0x0d734): 'MOREMASTERS',
+    ('IIci', 0x0d746): 'BackToMoreMasters24', #leak
+    ('IIci', 0x0d758): 'BackToMoreMasters32', #leak
+    ('IIci', 0x0d764): 'STRIPADDRESS',
+    ('IIci', 0x0d772): 'MOVEHHI',
+    ('IIci', 0x0db50): 'HEAPGUTS',
+    ('IIci', 0x0db5c): 'DHBUSERRHANDLER',
+    ('IIci', 0x0dc2e): 'MMPPROLOGUE',
+    ('IIci', 0x0dc6e): 'MMHPROLOGUE',
+    ('IIci', 0x0dc7c): 'AfterSetRetryFlagInMMHPrologue', #leak
+    ('IIci', 0x0dce4): 'MMNOPROLOGUE',
+    ('IIci', 0x0dd04): 'MMMMPROLOGUE',
+    ('IIci', 0x0dd1e): 'MMPROLOGUE',
+    ('IIci', 0x0dd68): 'MMRHPROLOGUE',
+    ('IIci', 0x0ddd8): 'MMEPILOGUE',
+    ('IIci', 0x0dde4): 'MMNOERREPILOGUE',
+    ('IIci', 0x0ddee): 'MAKEBKF',
+    ('IIci', 0x0ddf4): 'A32MAKEBKF',
+    ('IIci', 0x0de4a): 'EH',
+    ('IIci', 0x0de6a): 'A32EH',
+    ('IIci', 0x0deae): 'a24PurgeBlock', #leak
+    ('IIci', 0x0dec6): 'a32PurgeBlock', #leak
+    ('IIci', 0x0dedc): 'PURGEHEAP',
+    ('IIci', 0x0df70): 'A32PURGEHEAP',
+    ('IIci', 0x0e002): 'TOTEPURGEABLES',
+    ('IIci', 0x0e042): 'A32TOTEPURGEABLES',
+    ('IIci', 0x0e09a): 'BKCOMPACTS',
+    ('IIci', 0x0e0e0): 'A32BKCOMPACTS',
+    ('IIci', 0x0e1e6): 'ALLOCBK',
+    ('IIci', 0x0e234): 'A32ALLOCBK',
+    ('IIci', 0x0e334): 'HBlockMove', #leak
+    ('IIci', 0x0e344): 'COMPACTHP',
+    ('IIci', 0x0e3cc): 'A32COMPACTHP',
+    ('IIci', 0x0e476): 'TOMAXLIMIT',
+    ('IIci', 0x0e47e): 'MAXLIMIT',
+    ('IIci', 0x0e498): 'A32MAXLIMIT',
+    ('IIci', 0x0e4ae): 'ZONEADJUSTEND',
+    ('IIci', 0x0e4d0): 'A32ZONEADJUSTEND',
+    ('IIci', 0x0e4f6): 'a24GrowZone', #leak
+    ('IIci', 0x0e542): 'a32GrowZone', #leak
+    ('IIci', 0x0e58e): 'ACTUALS',
+    ('IIci', 0x0e5a2): 'A32ACTUALS',
+    ('IIci', 0x0e5ba): 'GETSIZE',
+    ('IIci', 0x0e5d2): 'A32GETSIZE',
+    ('IIci', 0x0e5f2): 'CLEARGZSTUFF',
+    ('IIci', 0x0e5fc): 'SETSIZE',
+    ('IIci', 0x0e778): 'A32SETSIZE',
+    ('IIci', 0x0e91c): 'ADJUSTFREE',
+    ('IIci', 0x0e92a): 'SubtractFree', #leak
+    ('IIci', 0x0e936): 'NEXTMASTER',
+    ('IIci', 0x0e952): 'A32NEXTMASTER',
+    ('IIci', 0x0e96e): 'HMAKEMOREMASTERS',
+    ('IIci', 0x0e982): 'BackToa24HMakeMoreMasters', #leak
+    ('IIci', 0x0e99e): 'A32HMAKEMOREMASTERS',
+    ('IIci', 0x0e9b4): 'BackToa32HMakeMoreMasters', #leak
+    ('IIci', 0x0e9d0): 'RELEASEMP',
+    ('IIci', 0x0e9da): 'MAKEPTRSPC',
+    ('IIci', 0x0ea62): 'A32MAKEPTRSPC',
+    ('IIci', 0x0ecbc): 'FREEBK',
+    ('IIci', 0x0ece8): 'A32FREEBK',
+    ('IIci', 0x0ed12): 'STDGZ',
+    ('IIci', 0x0ed66): 'MEMMGREND',
+    ('IIci', 0x0ed70): 'SHUTDOWN',
+    ('IIci', 0x0ed7e): 'SHUTDOWNDISP',
+    ('IIci', 0x0ee70): 'CALLROUTINES',
+    ('IIci', 0x0ef94): 'FSQUEUESYNC',
+    ('IIci', 0x0ef98): 'FSQUEUE', #leak
+    ('IIci', 0x0f000): 'FSAsync', #leak
+    ('IIci', 0x0f04c): 'CMDDONE',
+    ('IIci', 0x0f0e0): 'AfterExtFSHook', #leak
+    ('IIci', 0x0f166): 'FINITQUEUE',
+    ('IIci', 0x0f180): 'DSHOOK',
+    ('IIci', 0x0f1a8): 'AfterMountVolInDSHook', #leak
+    ('IIci', 0x0f244): 'AfterSysErrorInDSHook', #leak
+    ('IIci', 0x0f300): 'DSExit', #leak
+    ('IIci', 0x0f368): 'INITFS',
+    ('IIci', 0x0f456): 'DIVUP',
+    ('IIci', 0x0f46a): 'ROUNDALLOC',
+    ('IIci', 0x0f4ac): 'GETVCBRFN',
+    ('IIci', 0x0f524): 'MARKVCB',
+    ('IIci', 0x0f526): 'MARKVCBTIME',
+    ('IIci', 0x0f52e): 'MarkVCBDirty', #leak
+    ('IIci', 0x0f534): 'FLUSHMDB',
+    ('IIci', 0x0f53a): 'VFLUSHMDB',
+    ('IIci', 0x0f5fc): 'MAKESTKPB',
+    ('IIci', 0x0f60e): 'MOUNTVOL',
+    ('IIci', 0x0f662): 'OldMtVolAfterFSQueue', #leak
+    ('IIci', 0x0f824): 'VCHECKREMOUNT',
+    ('IIci', 0x0f950): 'MtVolOK', #leak
+    ('IIci', 0x0f9ae): 'VMTCHECK',
+    ('IIci', 0x0fb8a): 'VBMCHK',
+    ('IIci', 0x0fbc6): 'DsposVCB', #leak
+    ('IIci', 0x0fbfa): 'DsposVBlks', #leak
+    ('IIci', 0x0fc6c): 'FINDDRIVE',
+    ('IIci', 0x0fc72): 'VFINDDRIVE',
+    ('IIci', 0x0fc98): 'OFFLINE',
+    ('IIci', 0x0fcfe): 'FlushBuffersAtflVCaches', #leak
+    ('IIci', 0x0fd34): 'FlushBuffersAtflBufExit', #leak
+    ('IIci', 0x0fd3e): 'EJECT',
+    ('IIci', 0x0fdbe): 'OfflineEjectCallsFlushBuffers', #leak
+    ('IIci', 0x0fdc4): 'OfflineEjectCallsMFSFlush', #leak
+    ('IIci', 0x0fdfc): 'EjectIt', #leak
+    ('IIci', 0x0fe18): 'UNMOUNTVOL',
+    ('IIci', 0x0fe80): 'FlushVFiles', #leak
+    ('IIci', 0x0febe): 'FLUSHVOL',
+    ('IIci', 0x0fed8): 'FlUnMntAfterMFSCheck', #leak
+    ('IIci', 0x0fee4): 'FlUnMntCallsFlushBuffers', #leak
+    ('IIci', 0x0fefa): 'CkExtFS', #leak
+    ('IIci', 0x0ff00): 'VCKEXTFS',
+    ('IIci', 0x0ff0a): 'DTRMV3', #leak
+    ('IIci', 0x0ff10): 'VDTRMV3',
+    ('IIci', 0x0ff1e): 'DtrmV1', #leak
+    ('IIci', 0x0ff24): 'VDTRMV1',
+    ('IIci', 0x10056): 'DtrmV2', #leak
+    ('IIci', 0x1005c): 'VDTRMV2',
+    ('IIci', 0x100f4): 'GETVOLINFO',
+    ('IIci', 0x1029c): 'SETVOLINFO',
+    ('IIci', 0x10344): 'CVFLGS', #leak
+    ('IIci', 0x10358): 'GETVOL',
+    ('IIci', 0x103a0): 'SETVOL',
+    ('IIci', 0x103e0): 'SETDIR',
+    ('IIci', 0x10414): 'GETDIR',
+    ('IIci', 0x10438): 'OPENWD',
+    ('IIci', 0x1047a): 'FillWDCB', #leak
+    ('IIci', 0x104e4): 'CLOSEWD',
+    ('IIci', 0x1051e): 'GETWDINFO',
+    ('IIci', 0x107d4): 'MFSFlush', #leak
+    ('IIci', 0x108c6): 'GT1STFCB', #leak
+    ('IIci', 0x108ce): 'GTNXTFCB', #leak
+    ('IIci', 0x108d6): 'Gt1stMatch', #leak
+    ('IIci', 0x108e4): 'GtNxtMatch', #leak
+    ('IIci', 0x108ee): 'OPENRF',
+    ('IIci', 0x108f8): 'FILEOPEN',
+    ('IIci', 0x108fe): 'VFILEOPEN',
+    ('IIci', 0x10906): 'FOpen1', #leak
+    ('IIci', 0x10a74): 'PermssnChk', #leak
+    ('IIci', 0x10a7a): 'VPERMSSNCHK',
+    ('IIci', 0x10ade): 'CREATEDIR',
+    ('IIci', 0x10aea): 'FILECREATE',
+    ('IIci', 0x10b66): 'PUSHCNAME', #leak
+    ('IIci', 0x10b96): 'POPCNAME', #leak
+    ('IIci', 0x10ba2): 'MFSOpen', #leak
+    ('IIci', 0x10ca8): 'Gt1stWDCB', #leak
+    ('IIci', 0x10cb0): 'GtNxtWDCB', #leak
+    ('IIci', 0x10d14): 'FILEDELETE',
+    ('IIci', 0x10d94): 'RENAME',
+    ('IIci', 0x10daa): 'AfterVolCheckInRename', #leak
+    ('IIci', 0x10e6a): 'AfterCMRenameCNInRename', #leak
+    ('IIci', 0x10ec0): 'AfterCMGetCNinRename', #leak
+    ('IIci', 0x10f0a): 'RNmVol1', #leak
+    ('IIci', 0x10f30): 'RNmVol@70', #leak
+    ('IIci', 0x10f50): 'TFMOVE',
+    ('IIci', 0x11170): 'SETFILTYPE',
+    ('IIci', 0x111a8): 'SETFILLOCK',
+    ('IIci', 0x111b2): 'RSTFILLOCK',
+    ('IIci', 0x111f4): 'SETFILEINFO',
+    ('IIci', 0x11226): 'SETCATINFO',
+    ('IIci', 0x11298): 'CkFilMod', #leak
+    ('IIci', 0x112ae): 'FNDFILNAME', #leak
+    ('IIci', 0x112b4): 'VFNDFILNAME',
+    ('IIci', 0x1136c): 'AfterCMGetCNInFndFilName', #leak
+    ('IIci', 0x113d8): 'EXTOFFLINCK', #leak
+    ('IIci', 0x113ee): 'GETCATINFO',
+    ('IIci', 0x11400): 'GETFILEINFO',
+    ('IIci', 0x11694): 'ChgMFlLock', #leak
+    ('IIci', 0x117ea): 'TFSVCBTST',
+    ('IIci', 0x11834): 'GETFPOS',
+    ('IIci', 0x11838): 'SETFPOS',
+    ('IIci', 0x1183c): 'FILEREAD',
+    ('IIci', 0x11842): 'VFILEREAD',
+    ('IIci', 0x11958): 'FILEWRITE',
+    ('IIci', 0x1195e): 'VFILEWRITE',
+    ('IIci', 0x11a78): 'FLUSHFILE',
+    ('IIci', 0x11a82): 'FILECLOSE',
+    ('IIci', 0x11a88): 'VFILECLOSE',
+    ('IIci', 0x11aa2): 'FClose', #leak
+    ('IIci', 0x11aa8): 'VFCLOSE',
+    ('IIci', 0x11b0c): 'AfterTruncateFile', #leak
+    ('IIci', 0x11c74): 'GETEOF',
+    ('IIci', 0x11c86): 'RfnCall', #leak
+    ('IIci', 0x11c8c): 'VRFNCALL',
+    ('IIci', 0x11cd6): 'VTSTMOD',
+    ('IIci', 0x11cec): 'GETFCBINFO',
+    ('IIci', 0x11dca): 'FILEALLOC',
+    ('IIci', 0x11dfa): 'SETEOF',
+    ('IIci', 0x11e6a): 'VADJEOF',
+    ('IIci', 0x11f0e): 'LG2PHYS',
+    ('IIci', 0x11f14): 'VLG2PHYS',
+    ('IIci', 0x12116): 'VBLKALLOC',
+    ('IIci', 0x1226a): 'BLKDEALLOC',
+    ('IIci', 0x12270): 'VBLKDEALLOC',
+    ('IIci', 0x122b0): 'BLKCHK',
+    ('IIci', 0x1230a): 'UPDATEFREE',
+    ('IIci', 0x1233e): 'VREADBM',
+    ('IIci', 0x123e6): 'VDEALLOCFILE',
+    ('IIci', 0x124b4): 'EXTENDFILE',
+    ('IIci', 0x124ba): 'VEXTENDFILE',
+    ('IIci', 0x12630): 'FXMKEYCMP',
+    ('IIci', 0x1266e): 'MAPFBLOCK',
+    ('IIci', 0x12674): 'VMAPFBLOCK',
+    ('IIci', 0x126f0): 'TRUNCATEFILE',
+    ('IIci', 0x126f6): 'VTRUNCATEFILE',
+    ('IIci', 0x1282a): 'XFFLUSH', #leak
+    ('IIci', 0x12864): 'VXFSEARCH',
+    ('IIci', 0x129ba): 'AfterCMSetupInCMCreateCN', #leak
+    ('IIci', 0x12af6): 'CMDELETECN',
+    ('IIci', 0x12b00): 'AfterCMSetupInCMDeleteCN', #leak
+    ('IIci', 0x12ba2): 'CMGETCN',
+    ('IIci', 0x12bac): 'AfterCMSetupInCMGetCN', #leak
+    ('IIci', 0x12bc2): 'CMGETOFF',
+    ('IIci', 0x12c26): 'CMMOVECN',
+    ('IIci', 0x12c30): 'AfterCMSetupInCMMoveCN', #leak
+    ('IIci', 0x12dcc): 'CMRENAMECN',
+    ('IIci', 0x12dd6): 'AfterCMSetupInCMRenameCN', #leak
+    ('IIci', 0x12ed4): 'CMUPDATECN',
+    ('IIci', 0x12edc): 'AfterCMSetupInCMUpdateCN', #leak
+    ('IIci', 0x12f06): 'CMSETUP', #leak
+    ('IIci', 0x12f0c): 'VCMSETUP',
+    ('IIci', 0x12f14): 'UpdVCnts', #leak
+    ('IIci', 0x12f24): 'UpdRtCnts', #leak
+    ('IIci', 0x12f40): 'BUILDKEY', #leak
+    ('IIci', 0x12f6e): 'CMFLUSH',
+    ('IIci', 0x12fa2): 'CMKEYCMP',
+    ('IIci', 0x12fde): 'LOCCNODE',
+    ('IIci', 0x12ffe): 'LOCCREC',
+    ('IIci', 0x13004): 'VLOCCREC',
+    ('IIci', 0x1302c): 'UPDCNAME',
+    ('IIci', 0x13056): 'VBTCLOSE',
+    ('IIci', 0x13090): 'BTDELETE',
+    ('IIci', 0x13096): 'VBTDELETE',
+    ('IIci', 0x13242): 'BTFLUSH',
+    ('IIci', 0x13248): 'VBTFLUSH',
+    ('IIci', 0x132a6): 'BTGETRECORD',
+    ('IIci', 0x132ac): 'VBTGETRECORD',
+    ('IIci', 0x1335e): 'BTINSERT',
+    ('IIci', 0x13364): 'VBTINSERT',
+    ('IIci', 0x135fe): 'BTOPEN',
+    ('IIci', 0x13604): 'VBTOPEN',
+    ('IIci', 0x136b6): 'BTSEARCH',
+    ('IIci', 0x136bc): 'VBTSEARCH',
+    ('IIci', 0x13740): 'BTUPDATE',
+    ('IIci', 0x13746): 'VBTUPDATE',
+    ('IIci', 0x1376c): 'BTCleanUp', #leak
+    ('IIci', 0x1377a): 'BTSetUp', #leak
+    ('IIci', 0x137b6): 'VALLOCNODE',
+    ('IIci', 0x13846): 'EXTBTFILE',
+    ('IIci', 0x1384c): 'VEXTBTFILE',
+    ('IIci', 0x13934): 'FREENODE',
+    ('IIci', 0x1393a): 'VFREENODE',
+    ('IIci', 0x139ec): 'VUPDALTMDB',
+    ('IIci', 0x13ae0): 'RotateLt', #leak
+    ('IIci', 0x13bd0): 'SPLITLT',
+    ('IIci', 0x13c5a): 'TREESEARCH',
+    ('IIci', 0x13c60): 'VTREESEARCH',
+    ('IIci', 0x13d20): 'BuildIRec', #leak
+    ('IIci', 0x13d42): 'CHKNODE',
+    ('IIci', 0x13dc6): 'CLRNODE',
+    ('IIci', 0x13de2): 'DELETEREC',
+    ('IIci', 0x13e32): 'GETLTSIB',
+    ('IIci', 0x13e3c): 'GETRTSIB',
+    ('IIci', 0x13e6c): 'GETMAXKEY',
+    ('IIci', 0x13e78): 'GETNODE',
+    ('IIci', 0x13e7e): 'VGETNODE',
+    ('IIci', 0x13eb2): 'GETNODESIZ',
+    ('IIci', 0x13eca): 'GETOFFSET',
+    ('IIci', 0x13ee2): 'GETRECA',
+    ('IIci', 0x13efe): 'INITNODE',
+    ('IIci', 0x13f30): 'INSERTREC',
+    ('IIci', 0x13fa2): 'LOCBTCB',
+    ('IIci', 0x13fac): 'LOCREC',
+    ('IIci', 0x13fde): 'LOCTPR',
+    ('IIci', 0x13fee): 'MOVOFFLT',
+    ('IIci', 0x13ffe): 'MOVOFFRT',
+    ('IIci', 0x14014): 'MOVRECLT',
+    ('IIci', 0x1402a): 'MOVRECRT',
+    ('IIci', 0x14044): 'RELNODE',
+    ('IIci', 0x1404a): 'VRELNODE',
+    ('IIci', 0x1405e): 'SEARCHNODE',
+    ('IIci', 0x140ba): 'UPDDREC',
+    ('IIci', 0x140dc): 'UPDIKEY',
+    ('IIci', 0x14110): 'CACHE',
+    ('IIci', 0x1413a): 'FLUSHCACHE',
+    ('IIci', 0x14140): 'VFLUSHCACHE',
+    ('IIci', 0x14224): 'GETBLOCK',
+    ('IIci', 0x1422a): 'VGETBLOCK',
+    ('IIci', 0x1440c): 'INITCACHE',
+    ('IIci', 0x14466): 'MARKBLOCK',
+    ('IIci', 0x1446c): 'VMARKBLOCK',
+    ('IIci', 0x14474): 'MARKA5BLOCK',
+    ('IIci', 0x1447c): 'RELBLOCK',
+    ('IIci', 0x14482): 'VRELBLOCK',
+    ('IIci', 0x144ce): 'TRASHVBLKS',
+    ('IIci', 0x144d4): 'VTRASHVBLKS',
+    ('IIci', 0x144fc): 'TRASHFBLOCKS',
+    ('IIci', 0x14506): 'TRASHBLOCKS',
+    ('IIci', 0x1455a): 'VTRASHBLOCKS',
+    ('IIci', 0x1459c): 'CACHERDIP',
+    ('IIci', 0x145a2): 'VCACHERDIP',
+    ('IIci', 0x145c8): 'CACHEWRIP',
+    ('IIci', 0x145ce): 'VCACHEWRIP',
+    ('IIci', 0x1462a): 'WRITEOWNBUF',
+    ('IIci', 0x14632): 'WRITEBLOCK',
+    ('IIci', 0x1468c): 'VBASICIO',
+    ('IIci', 0x14700): 'RDBLOCKS',
+    ('IIci', 0x14706): 'VRDBLOCKS',
+    ('IIci', 0x1474e): 'WRBLOCKS',
+    ('IIci', 0x14754): 'VWRBLOCKS',
+    ('IIci', 0x14766): 'VSETUPTAGS',
+    ('IIci', 0x147c4): 'INITEGRETALT',
+    ('IIci', 0x147d0): 'SMGlobalLoc',
+    ('IIci', 0x147d8): 'SMGlobHndl',
+    ('IIci', 0x147e0): 'TimerCode',
+    ('IIci', 0x14800): 'EGRETDISPATCH',
+    ('IIci', 0x14886): 'CHECKPACKET',
+    ('IIci', 0x148d2): 'InitTimer',
+    ('IIci', 0x148ea): 'WriteMinTimer',
+    ('IIci', 0x14908): 'WriteTimer',
+    ('IIci', 0x14936): 'ReadTimer',
+    ('IIci', 0x14960): 'NewPtr',
+    ('IIci', 0x14970): 'NewSysPtr',
+    ('IIci', 0x14980): 'DisposPtr',
+    ('IIci', 0x14990): 'HLock',
+    ('IIci', 0x149a0): 'MoveHHi',
+    ('IIci', 0x149b0): 'HGetState',
+    ('IIci', 0x149c0): 'HSetState',
+    ('IIci', 0x149d0): 'MemError',
+    ('IIci', 0x149e0): 'StripAddress',
+    ('IIci', 0x149f0): 'RecoverHandle',
+    ('IIci', 0x14a00): 'IsNuMac',
+    ('IIci', 0x14a10): 'WaitBit',
+    ('IIci', 0x14a20): 'inAppHeap',
+    ('IIci', 0x14a50): 'SndAllOff',
+    ('IIci', 0x14a60): 'BlockInts',
+    ('IIci', 0x14a70): 'UnBlockInts',
+    ('IIci', 0x14a80): 'GestaltCall',
+    ('IIci', 0x14aa0): 'MYGETRESOURCE',
+    ('IIci', 0x14b20): 'IsAscMac',
+    ('IIci', 0x14b60): 'initGlobals',
+    ('IIci', 0x14bb0): 'insertInQueue',
+    ('IIci', 0x14bb4): 'SETRESPONSEPARAMS',
+    ('IIci', 0x14bec): 'PSEUDOCNTTABLE',
+    ('IIci', 0x14c30): 'nextFromQueue',
+    ('IIci', 0x14c4c): 'EGRETINIT',
+    ('IIci', 0x14c90): 'ChannelModifier',
+    ('IIci', 0x14cc8): 'SENDEGRETCMD',
+    ('IIci', 0x14e20): 'processCommandFrom',
+    ('IIci', 0x14e90): 'processCommand',
+    ('IIci', 0x14ea4): 'CHK4EGRETORCUDA',
+    ('IIci', 0x14ec0): 'processNextCommand',
+    ('IIci', 0x14ee6): 'CHKFIRMWARE',
+    ('IIci', 0x14f00): 'sendEmptyCommand',
+    ('IIci', 0x14f40): 'tickleModifier',
+    ('IIci', 0x14f70): 'findModifier',
+    ('IIci', 0x14fd0): 'disposChannel',
+    ('IIci', 0x150a0): 'checkChannel',
+    ('IIci', 0x150c0): 'pumpResource',
+    ('IIci', 0x150f0): 'EGRETPATCHES',
+    ('IIci', 0x15160): 'OnTimeInterrupt',
+    ('IIci', 0x15204): 'XPRAMPATCH',
+    ('IIci', 0x15260): 'SNDAPPDEAD',
+    ('IIci', 0x15274): 'VALIDATEPRAMPATCH',
+    ('IIci', 0x152b0): 'ASYNCHCALLBACK',
+    ('IIci', 0x152f0): 'SNDDOCOMMAND',
+    ('IIci', 0x15308): 'READPRAMBYTE',
+    ('IIci', 0x15380): 'SNDDOIMMEDIATE',
+    ('IIci', 0x153d0): 'SNDADDMODIFIER',
+    ('IIci', 0x15454): 'POWEROFFPATCH',
+    ('IIci', 0x15466): 'EGRETPOWEROFF',
+    ('IIci', 0x154c4): 'ENABLEONESECINTS',
+    ('IIci', 0x154d2): 'STARTEGRET1SECIRQ',
+    ('IIci', 0x15504): 'DEBUGENTERCONT',
+    ('IIci', 0x1553c): 'DEBUGEXITCONT',
+    ('IIci', 0x15550): 'SNDNEWCHANNEL',
+    ('IIci', 0x1557a): 'READPRAMPATCH',
+    ('IIci', 0x155ec): 'READTIMEPATCH',
+    ('IIci', 0x15640): 'SNDDISPOSECHANNEL',
+    ('IIci', 0x1564e): 'WRITETIMEPATCH',
+    ('IIci', 0x1569e): 'WRITEPRAMPATCH',
+    ('IIci', 0x156d0): 'SNDPLAY',
+    ('IIci', 0x15900): 'SNDCONTROL',
+    ('IIci', 0x159ec): 'BUTTON',
+    ('IIci', 0x159fe): 'TICKCOUNT',
+    ('IIci', 0x15a40): 'GETMOUSE',
+    ('IIci', 0x15a56): 'STILLDOWN',
+    ('IIci', 0x15a7e): 'WAITMOUSEUP',
+    ('IIci', 0x15a9c): 'EVENTAVAIL',
+    ('IIci', 0x15aa0): 'GETNEXTEVENT',
+    ('IIci', 0x15b2a): 'AfterOSEventAvailInGetNextEvent', #leak
+    ('IIci', 0x15b2e): 'AfterGetOSEventInGetNextEvent', #leak
+    ('IIci', 0x15b50): 'FromGNECommon', #leak
+    ('IIci', 0x15b98): 'AfterGetResourceInTryFKey', #leak
+    ('IIci', 0x15c04): 'AfterGetMouseInGetNextEvent', #leak
+    ('IIci', 0x15c28): 'AfterOSEventAvailInCheckActivate', #leak
+    ('IIci', 0x15c4a): 'AfterSystemUserWindowInCheckActivate', #leak
+    ('IIci', 0x15cd0): 'WAITNEXTEVENT',
+    ('IIci', 0x15d84): 'AfterSetCtlColorInNewControl', #leak
+    ('IIci', 0x15e48): 'GetCVariantInCallControl', #leak
+    ('IIci', 0x15e84): 'GETCVARIANT',
+    ('IIci', 0x15ef8): 'DISPOSECONTROL',
+    ('IIci', 0x15f00): 'EraseControlInDisposeControl', #leak
+    ('IIci', 0x15f02): 'AfterEraseControlInDisposeControl', #leak
+    ('IIci', 0x15f78): 'KILLCONTROLS',
+    ('IIci', 0x15f8a): 'DRAWONECONTROL',
+    ('IIci', 0x15f9a): 'SHOWCONTROL',
+    ('IIci', 0x15fb8): 'HIDECONTROL',
+    ('IIci', 0x15fcc): 'MOVECONTROL',
+    ('IIci', 0x1600a): 'GETCREFCON',
+    ('IIci', 0x16018): 'SETCREFCON',
+    ('IIci', 0x16028): 'GETCTLACTION',
+    ('IIci', 0x1602c): 'SETCTLACTION',
+    ('IIci', 0x16030): 'SIZECONTROL',
+    ('IIci', 0x16058): 'HILITECONTROL',
+    ('IIci', 0x16084): 'GETCTITLE',
+    ('IIci', 0x1609c): 'SETCTITLE',
+    ('IIci', 0x160c0): 'AfterSetHandleSizeInSetCTitle', #leak
+    ('IIci', 0x160ce): 'GoTstVisInSetCTitle', #leak
+    ('IIci', 0x160de): 'GETCTLVALUE',
+    ('IIci', 0x160ec): 'GETCTLMIN',
+    ('IIci', 0x160f0): 'GETCTLMAX',
+    ('IIci', 0x160f4): 'SETCTLVALUE',
+    ('IIci', 0x16136): 'SETCTLMIN',
+    ('IIci', 0x1613a): 'SETCTLMAX',
+    ('IIci', 0x1613e): 'TESTCONTROL',
+    ('IIci', 0x1616c): 'DRAGCONTROL',
+    ('IIci', 0x161d8): 'AfterDragTheRgnInDragControl', #leak
+    ('IIci', 0x16218): 'OwnerPortInROM', #leak
+    ('IIci', 0x16236): 'TRACKCONTROL',
+    ('IIci', 0x16324): 'UPDTCONTROLS',
+    ('IIci', 0x16334): 'DRAWCONTROLS',
+    ('IIci', 0x163bc): 'FINDCONTROL',
+    ('IIci', 0x1642a): 'CMGREND',
+    ('IIci', 0x16430): '_FC2X',
+    ('IIci', 0x16480): '_fprocENTRYsp',
+    ('IIci', 0x164b0): '_fprocEXITsp',
+    ('IIci', 0x16500): 'GESTALTTRAP',
+    ('IIci', 0x1692c): 'STDRESULT',
+    ('IIci', 0x1693c): 'INITGESTALT',
+    ('IIci', 0x16af0): 'newGestalt',
+    ('IIci', 0x16c00): 'removeLong',
+    ('IIci', 0x16cb0): 'findLong',
+    ('IIci', 0x16d50): 'INITMENUS',
+    ('IIci', 0x16de2): 'CALCMBHEIGHT',
+    ('IIci', 0x16e02): 'SetWPort', #leak
+    ('IIci', 0x16ea0): 'CLEARMENUBAR',
+    ('IIci', 0x16ec6): 'INSERTMENU',
+    ('IIci', 0x16f68): 'GetHIndex', #leak
+    ('IIci', 0x16fc2): 'DELETEMENU',
+    ('IIci', 0x17032): 'DELMCENTRIES',
+    ('IIci', 0x170ac): 'DRAWMBAR',
+    ('IIci', 0x170b6): 'DRAWMENUBAR',
+    ('IIci', 0x170d4): 'HILITEMENU',
+    ('IIci', 0x17126): 'ENABLEITEM',
+    ('IIci', 0x17148): 'DISABLEITEM',
+    ('IIci', 0x17154): 'GETMENUPTR', #leak
+    ('IIci', 0x17162): 'GetA0List', #leak
+    ('IIci', 0x1717e): 'GetHA0List', #leak
+    ('IIci', 0x1718e): 'MENUSELECT',
+    ('IIci', 0x172d2): 'POPUPMENUSELECT',
+    ('IIci', 0x177aa): 'AfterLoadResourceInCallMDEFProc', #leak
+    ('IIci', 0x177b0): 'AfterCallToMDEFInCallMDEFProc', #leak
+    ('IIci', 0x177e8): 'FULLCLIP',
+    ('IIci', 0x17810): 'MENUCHOICE',
+    ('IIci', 0x17818): 'GETMENUBAR',
+    ('IIci', 0x17832): 'GETMCINFO',
+    ('IIci', 0x17842): 'SETMENUBAR',
+    ('IIci', 0x1785a): 'SETMCINFO',
+    ('IIci', 0x17876): 'DISPOSEMENU',
+    ('IIci', 0x1788e): 'DISPMCINFO',
+    ('IIci', 0x17898): 'FLASHMENUBAR',
+    ('IIci', 0x178d6): 'CALLMBARPROC',
+    ('IIci', 0x17928): 'GETITEMRECORD', #leak
+    ('IIci', 0x179a4): 'GETITEMICON',
+    ('IIci', 0x179a8): 'SETITEMICON',
+    ('IIci', 0x179ac): 'GETITEMCMD',
+    ('IIci', 0x179b0): 'SETITEMCMD',
+    ('IIci', 0x179b4): 'GETITEMSTYLE',
+    ('IIci', 0x179b8): 'SETITEMSTYLE',
+    ('IIci', 0x179bc): 'GETITEMMARK',
+    ('IIci', 0x179c0): 'SETITEMMARK',
+    ('IIci', 0x179c4): 'CHECKITEM',
+    ('IIci', 0x179d8): 'UpChar', #leak
+    ('IIci', 0x179e0): 'AfterUprStringInUpChar', #leak
+    ('IIci', 0x179e4): 'SETMCENTRIES',
+    ('IIci', 0x17b5e): 'GETMCENTRY',
+    ('IIci', 0x17b8c): 'MENUKEY',
+    ('IIci', 0x17c06): 'KeyNotFound', #leak
+    ('IIci', 0x17c14): 'GOTMKEY', #leak
+    ('IIci', 0x17cdc): 'GETITEM',
+    ('IIci', 0x17d32): 'CALCMENUSIZE',
+    ('IIci', 0x17d6c): 'NEWMENU',
+    ('IIci', 0x17dbe): 'APPENDMENU',
+    ('IIci', 0x17dc6): 'INSMENUITEM',
+    ('IIci', 0x17f58): 'GETMHANDLE',
+    ('IIci', 0x17f80): 'DELMENUITEM',
+    ('IIci', 0x17fc6): 'SETITEM',
+    ('IIci', 0x1800c): 'SETMENUFLASH',
+    ('IIci', 0x18016): 'ADDRESMENU',
+    ('IIci', 0x1801e): 'INSRTRESMENU',
+    ('IIci', 0x1817c): 'COUNTMITEMS',
+    ('IIci', 0x18198): 'PLOTICON',
+    ('IIci', 0x181d4): 'MMGREND',
+    ('IIci', 0x181e0): 'WMGR',
+    ('IIci', 0x181ee): 'SetUpColor', #leak
+    ('IIci', 0x18230): 'NEWSTRING',
+    ('IIci', 0x18248): 'SETSTRING',
+    ('IIci', 0x1826c): 'InsertWindow', #leak
+    ('IIci', 0x182a4): 'DELETEWINDOW',
+    ('IIci', 0x182bc): 'CALCVIS',
+    ('IIci', 0x1831a): 'CALCVISBEHIND',
+    ('IIci', 0x1835e): 'CLIPABOVE',
+    ('IIci', 0x18382): 'PAINTONE',
+    ('IIci', 0x183b6): 'AfterFirstSectRgnInGoPaintOne', #leak
+    ('IIci', 0x183be): 'AfterClipAbove', #leak
+    ('IIci', 0x183d6): 'AfterSectRgnInGoPaintOne', #leak
+    ('IIci', 0x183dc): 'EraseInROM', #leak
+    ('IIci', 0x1840a): 'SkipEraseInROM', #leak
+    ('IIci', 0x18432): 'TestClip', #leak
+    ('IIci', 0x18454): 'NoDeskHook', #leak
+    ('IIci', 0x1848a): 'PAINTBEHIND',
+    ('IIci', 0x184e2): 'GETNEWRGN',
+    ('IIci', 0x184ee): 'SAVEOLD',
+    ('IIci', 0x1851c): 'DRAWNEW',
+    ('IIci', 0x18564): 'AfterPaintBehindInDrawNew', #leak
+    ('IIci', 0x1857c): 'SHOWHIDE',
+    ('IIci', 0x18598): 'AfterSaveOldInShowHide', #leak
+    ('IIci', 0x185a0): 'AfterCalcRgnCallInShowHide', #leak
+    ('IIci', 0x185b8): 'SETWPORT',
+    ('IIci', 0x185c2): 'RESTOREPORT',
+    ('IIci', 0x185c8): 'GETWMGRPORT',
+    ('IIci', 0x185d2): 'GETCWMGRPORT',
+    ('IIci', 0x185dc): 'CHECKUPDATE',
+    ('IIci', 0x1867a): 'INITWINDOWS',
+    ('IIci', 0x18786): 'INITWINDOWSRGNRETURN',
+    ('IIci', 0x187b0): 'INITWINDOWSCRTRETURN',
+    ('IIci', 0x187c4): 'INITWINDOWSLCDRETURN',
+    ('IIci', 0x1885e): 'NEWCWINDOW',
+    ('IIci', 0x18870): 'NEWWINDOW',
+    ('IIci', 0x18972): 'PaintNewOne', #leak
+    ('IIci', 0x189d6): 'CLOSEWINDOW',
+    ('IIci', 0x189e4): 'CloseWindowAfterCallToCancelActivate', #leak
+    ('IIci', 0x189ec): 'AfterKillControlsInCloseWindow', #leak
+    ('IIci', 0x18a7e): 'AfterDisposeRgnInCloseWindow', #leak
+    ('IIci', 0x18ac4): 'MakeDeactive', #leak
+    ('IIci', 0x18ae2): 'DISPOSEWINDOW',
+    ('IIci', 0x18af0): 'SHOWWINDOW',
+    ('IIci', 0x18b10): 'AfterShowHideInShowWindow', #leak
+    ('IIci', 0x18b18): 'HIDEWINDOW',
+    ('IIci', 0x18b42): 'GETWREFCON',
+    ('IIci', 0x18b50): 'SETWREFCON',
+    ('IIci', 0x18b60): 'SETWINDOWPIC',
+    ('IIci', 0x18b66): 'GETWINDOWPIC',
+    ('IIci', 0x18b6c): 'GETWTITLE',
+    ('IIci', 0x18b84): 'SETWTITLE',
+    ('IIci', 0x18bd8): 'AfterUnionRgnInSetWTitle', #leak
+    ('IIci', 0x18c02): 'DELTAPOINT',
+    ('IIci', 0x18c5e): 'MOVEWINDOW',
+    ('IIci', 0x18c9c): 'AfterOffsetRgnInMoveWindow', #leak
+    ('IIci', 0x18ca8): 'NoBTF0', #leak
+    ('IIci', 0x18cd6): 'AfterPaintBehindInMoveWindow', #leak
+    ('IIci', 0x18cec): 'AfterPaintOneInMoveWindow', #leak
+    ('IIci', 0x18dd8): 'GETWVARIANT',
+    ('IIci', 0x18e0e): 'CallWindow', #leak
+    ('IIci', 0x18e4c): 'CallDWindow', #leak
+    ('IIci', 0x18e5a): 'CallWCalc', #leak
+    ('IIci', 0x18e9e): 'HILITEWINDOW',
+    ('IIci', 0x18ed8): 'ClipGAbove', #leak
+    ('IIci', 0x18ede): 'SIZEWINDOW',
+    ('IIci', 0x18f36): 'ZOOMWINDOW',
+    ('IIci', 0x18f9c): 'TRACKGOAWAY',
+    ('IIci', 0x18fa4): 'TRACKBOX',
+    ('IIci', 0x19014): 'SELECTWINDOW',
+    ('IIci', 0x1901c): 'FromSelectWindow', #leak
+    ('IIci', 0x19034): 'PostDoActivate', #leak
+    ('IIci', 0x19038): 'PreSkipUnHilite', #leak
+    ('IIci', 0x19048): 'BRINGTOFRONT',
+    ('IIci', 0x1904c): 'BTF1', #leak
+    ('IIci', 0x190cc): 'AfterPaintOneInBringToFront', #leak
+    ('IIci', 0x190d0): 'FromBTF1', #leak
+    ('IIci', 0x190ea): 'SENDBEHIND',
+    ('IIci', 0x190fa): 'AfterFrontWindowInSendBehind', #leak
+    ('IIci', 0x19112): 'AfterSelectWindowInSendBehind', #leak
+    ('IIci', 0x19130): 'AfterCalcVBehindInSendBehind', #leak
+    ('IIci', 0x19134): 'AfterPaintBehindInSendBehind', #leak
+    ('IIci', 0x19140): 'BEGINUPDATE',
+    ('IIci', 0x19184): 'ENDUPDATE',
+    ('IIci', 0x191ac): 'FRONTWINDOW',
+    ('IIci', 0x191d6): 'DRAGWINDOW',
+    ('IIci', 0x19244): 'FromDragWindow', #leak
+    ('IIci', 0x19290): 'WMGRGRAY',
+    ('IIci', 0x19298): 'DRAGGRAYRGN',
+    ('IIci', 0x192a4): 'DRAGTHERGN',
+    ('IIci', 0x192ca): 'AfterPenModeInDragTheRgn', #leak
+    ('IIci', 0x19492): 'AfterFrameRectInFastPaint', #leak
+    ('IIci', 0x194b2): 'INVALRGN',
+    ('IIci', 0x194b4): 'IvalCommon', #leak
+    ('IIci', 0x194f8): 'INVALRECT',
+    ('IIci', 0x19516): 'VALIDRGN',
+    ('IIci', 0x1951a): 'VALIDRECT',
+    ('IIci', 0x1951e): 'GROWWINDOW',
+    ('IIci', 0x19648): 'FINDWINDOW',
+    ('IIci', 0x196cc): 'DRAWGROWICON',
+    ('IIci', 0x196ea): 'SETDESKCPAT',
+    ('IIci', 0x19714): 'AfterPaintOneInSetDeskCPat', #leak
+    ('IIci', 0x19736): 'SETWINCOLOR',
+    ('IIci', 0x1978c): 'AfterPaintOneInSetWinColor', #leak
+    ('IIci', 0x1978e): 'SETCTLCOLOR',
+    ('IIci', 0x1979c): 'SetCtlColorAfterSetGuts', #leak
+    ('IIci', 0x197ac): 'SetEndInROM', #leak
+    ('IIci', 0x197b6): 'SetGutsInROM', #leak
+    ('IIci', 0x1987e): 'GETAUXWIN',
+    ('IIci', 0x19884): 'GETAUXCTL',
+    ('IIci', 0x198b8): 'EndROMWMgr', #leak
+    ('IIci', 0x198ba): 'WMGREND',
+    ('IIci', 0x198c0): 'DMGR',
+    ('IIci', 0x198ca): 'INITDIALOGS',
+    ('IIci', 0x198e4): 'InitDialogContinue', #leak
+    ('IIci', 0x19980): 'STOPALERT',
+    ('IIci', 0x19984): 'NOTEALERT',
+    ('IIci', 0x19988): 'CAUTIONALERT',
+    ('IIci', 0x1998c): 'ALERT',
+    ('IIci', 0x19a48): 'AfterPlotCIconInDoAlert', #leak
+    ('IIci', 0x19af8): 'GETNEWDIALOG',
+    ('IIci', 0x19b90): 'NEWCDIALOG',
+    ('IIci', 0x19b94): 'NEWDIALOG',
+    ('IIci', 0x19c4e): 'ClaimEvent', #leak
+    ('IIci', 0x19c66): 'ISDIALOGEVENT',
+    ('IIci', 0x19c74): 'IsDiaAfterClaimEvent', #leak
+    ('IIci', 0x19c9c): 'IsDiaNotDlgExit', #leak
+    ('IIci', 0x19ca2): 'DIALOGSELECT',
+    ('IIci', 0x19cb6): 'DSAfterClaimEvent', #leak
+    ('IIci', 0x19cde): 'DSNotMineExit', #leak
+    ('IIci', 0x19ce4): 'MODALDIALOG',
+    ('IIci', 0x19d76): 'DialogStdEntry', #leak
+    ('IIci', 0x19d82): 'DialogStdExit', #leak
+    ('IIci', 0x19d8e): 'DRAWDIALOG',
+    ('IIci', 0x19da6): 'UPDTDIALOG',
+    ('IIci', 0x19dc2): 'EndInWind', #leak
+    ('IIci', 0x19dce): 'CLOSEDIALOG',
+    ('IIci', 0x19e14): 'BeginInWind', #leak
+    ('IIci', 0x19e52): 'DISPOSDIALOG',
+    ('IIci', 0x19ec6): 'COULDDIALOG',
+    ('IIci', 0x19ed4): 'COULDALERT',
+    ('IIci', 0x19f2e): 'AfterGetResourceInDoColor', #leak
+    ('IIci', 0x19f64): 'FromGetADHndl', #leak
+    ('IIci', 0x19f80): 'FREEDIALOG',
+    ('IIci', 0x19f8e): 'FREEALERT',
+    ('IIci', 0x19ff2): 'PARAMTEXT',
+    ('IIci', 0x1a016): 'ERRORSOUND',
+    ('IIci', 0x1a01e): 'GETDITEM',
+    ('IIci', 0x1a064): 'SETDITEM',
+    ('IIci', 0x1a09c): 'GETITEXT',
+    ('IIci', 0x1a0bc): 'SETITEXT',
+    ('IIci', 0x1a128): 'SELITEXT',
+    ('IIci', 0x1a184): 'HIDEDITEM',
+    ('IIci', 0x1a1e2): 'SHOWDITEM',
+    ('IIci', 0x1a256): 'FINDDITEM',
+    ('IIci', 0x1a4fc): 'AfterH2HinDoStatic', #leak
+    ('IIci', 0x1a51e): 'skipParam', #leak
+    ('IIci', 0x1a656): 'TEKeyFromEventAD', #leak
+    ('IIci', 0x1a804): 'SetUpText', #leak
+    ('IIci', 0x1a91c): 'RestoreTE', #leak
+    ('IIci', 0x1a98e): 'FrameOut', #leak
+    ('IIci', 0x1aa0e): 'DMGREND',
+    ('IIci', 0x1aa10): 'RMGR',
+    ('IIci', 0x1aa32): 'INITRESOURCES',
+    ('IIci', 0x1ac14): 'ADDROMRSRC',
+    ('IIci', 0x1ac9c): 'VSUPERLOAD',
+    ('IIci', 0x1add4): 'VNEWMAP',
+    ('IIci', 0x1aec0): 'RSRCZONEINIT',
+    ('IIci', 0x1af4a): 'AfterOpenRFInORFCommon', #leak
+    ('IIci', 0x1af54): 'CREATERESFILE',
+    ('IIci', 0x1af58): 'AfterStdZEntryInCreateResFile', #leak
+    ('IIci', 0x1af6a): 'AfterCreateInCreateResFile', #leak
+    ('IIci', 0x1af9e): 'OPENRESFILE',
+    ('IIci', 0x1afce): 'OPENRFPERM',
+    ('IIci', 0x1afe2): 'USERESFILE',
+    ('IIci', 0x1afec): 'GETRESFILEATTRS',
+    ('IIci', 0x1aff8): 'SETRESFILEATTRS',
+    ('IIci', 0x1b0ae): 'UPDATERESFILE',
+    ('IIci', 0x1b196): 'VCMPFRM',
+    ('IIci', 0x1b388): 'CLOSERESFILE',
+    ('IIci', 0x1b428): 'COUNT1RESOURCES',
+    ('IIci', 0x1b42c): 'COUNTRESOURCES',
+    ('IIci', 0x1b452): 'GET1INDRESOURCE',
+    ('IIci', 0x1b456): 'GETINDRESOURCE',
+    ('IIci', 0x1b4ee): 'COUNT1TYPES',
+    ('IIci', 0x1b4f2): 'COUNTTYPES',
+    ('IIci', 0x1b538): 'GET1INDTYPE',
+    ('IIci', 0x1b53c): 'GETINDTYPE',
+    ('IIci', 0x1b55e): 'UNIQUE1ID',
+    ('IIci', 0x1b562): 'UNIQUEID',
+    ('IIci', 0x1b59c): 'GET1RESOURCE',
+    ('IIci', 0x1b5a0): 'GETRESOURCE',
+    ('IIci', 0x1b5e0): 'GET1NAMEDRESOURCE',
+    ('IIci', 0x1b5e4): 'GETNAMEDRESOURCE',
+    ('IIci', 0x1b698): 'GETTYPES',
+    ('IIci', 0x1b6a4): 'GetRsrcCnt', #leak
+    ('IIci', 0x1b6c2): 'IDSCAN',
+    ('IIci', 0x1b6d0): 'TYPESCAN',
+    ('IIci', 0x1b6e2): 'SKIPTOENTRY',
+    ('IIci', 0x1b700): 'StdZEntry', #leak
+    ('IIci', 0x1b704): 'Std1Entry', #leak
+    ('IIci', 0x1b70e): 'VRMGRSTDENTRY',
+    ('IIci', 0x1b73e): 'SwapROMMap', #leak
+    ('IIci', 0x1b7c4): 'RStdExit', #leak
+    ('IIci', 0x1b7ca): 'VRMGRSTDEXIT',
+    ('IIci', 0x1b8fa): 'VCHECKLOAD',
+    ('IIci', 0x1b9c6): 'RREntry6', #leak
+    ('IIci', 0x1ba14): 'RdData', #leak
+    ('IIci', 0x1ba1e): 'WrData', #leak
+    ('IIci', 0x1ba32): 'SaveRegs', #leak
+    ('IIci', 0x1ba7e): 'SpaceAt', #leak
+    ('IIci', 0x1bb26): 'CheckGrowAt1', #leak
+    ('IIci', 0x1bb36): 'AfterSetEOFInCheckGrow', #leak
+    ('IIci', 0x1bb9e): 'LOADRESOURCE',
+    ('IIci', 0x1bbdc): 'RELEASERESOURCE',
+    ('IIci', 0x1bc06): 'DETACHRESOURCE',
+    ('IIci', 0x1bc1e): 'CHANGEDRESOURCE',
+    ('IIci', 0x1bc5a): 'WRITERESOURCE',
+    ('IIci', 0x1bc94): 'HOMERESFILE',
+    ('IIci', 0x1bcbe): 'SETRESPURGE',
+    ('IIci', 0x1bcde): 'SETRESLOAD',
+    ('IIci', 0x1bce8): 'CURRESFILE',
+    ('IIci', 0x1bcf0): 'RESERROR',
+    ('IIci', 0x1bcf8): 'ADDREFERENCE',
+    ('IIci', 0x1bd08): 'RMVEREFERENCE',
+    ('IIci', 0x1bd12): 'GETRESATTRS',
+    ('IIci', 0x1bd26): 'SETRESATTRS',
+    ('IIci', 0x1bd4a): 'RefHandle', #leak
+    ('IIci', 0x1bd58): 'GETRESINFO',
+    ('IIci', 0x1bd9e): 'SETRESINFO',
+    ('IIci', 0x1bde8): 'ADDRESOURCE',
+    ('IIci', 0x1be3a): 'AddNewRefWithoutUpdate', #leak
+    ('IIci', 0x1bec0): 'RMVERESOURCE',
+    ('IIci', 0x1bf52): 'ADDNAME',
+    ('IIci', 0x1bfba): 'RESIZEMAP',
+    ('IIci', 0x1bfcc): 'AfterSetHandleSizeInResizeMap', #leak
+    ('IIci', 0x1bfe6): 'RMVENAME',
+    ('IIci', 0x1c012): 'AfterResizeMapInRmveName', #leak
+    ('IIci', 0x1c030): 'At9InRmveName', #leak
+    ('IIci', 0x1c03c): 'SIZERESOURCE',
+    ('IIci', 0x1c05e): 'MAXSIZERSRC',
+    ('IIci', 0x1c072): 'RSRCMAPENTRY',
+    ('IIci', 0x1c07e): 'RGETRESOURCE',
+    ('IIci', 0x1c0aa): 'IAPPEND',
+    ('IIci', 0x1c0de): 'XMUNGER',
+    ('IIci', 0x1c214): 'HANDTOHAND',
+    ('IIci', 0x1c23c): 'PTRTOXHAND',
+    ('IIci', 0x1c244): 'PTRTOHAND',
+    ('IIci', 0x1c25e): 'HANDANDHAND',
+    ('IIci', 0x1c282): 'PTRANDHAND',
+    ('IIci', 0x1c292): 'METHODDISPATCH',
+    ('IIci', 0x1c2ee): 'LONGMUL',
+    ('IIci', 0x1c30c): 'FRACMUL',
+    ('IIci', 0x1c312): 'FIXMUL',
+    ('IIci', 0x1c3d0): 'FixPtStdEntry', #leak
+    ('IIci', 0x1c400): 'FRACDIV',
+    ('IIci', 0x1c406): 'FIXDIV',
+    ('IIci', 0x1c456): 'FRACSQRT',
+    ('IIci', 0x1c490): 'FIXRATIO',
+    ('IIci', 0x1c4e2): 'LOWORD',
+    ('IIci', 0x1c4ea): 'HIWORD',
+    ('IIci', 0x1c4f4): 'FIXROUND',
+    ('IIci', 0x1c50e): 'FRACCOS',
+    ('IIci', 0x1c516): 'FRACSIN',
+    ('IIci', 0x1c5bc): 'FIXATAN2',
+    ('IIci', 0x1c5de): 'AtLabel2InFixATan', #leak
+    ('IIci', 0x1c67a): 'FIX2X',
+    ('IIci', 0x1c680): 'FRAC2X',
+    ('IIci', 0x1c6ac): 'X2FIX',
+    ('IIci', 0x1c6b2): 'X2FRAC',
+    ('IIci', 0x1c70e): 'FIX2LONG',
+    ('IIci', 0x1c712): 'FRAC2FIX',
+    ('IIci', 0x1c72e): 'LONG2FIX',
+    ('IIci', 0x1c732): 'FIX2FRAC',
+    ('IIci', 0x1c790): 'SysEvtDoneSEvt', #leak
+    ('IIci', 0x1c79c): 'SysEvtAfterFrontWindow', #leak
+    ('IIci', 0x1c7b4): 'SearchWindow', #leak
+    ('IIci', 0x1c82c): 'SYSTEMCLICK',
+    ('IIci', 0x1c856): 'SystemClickContinue', #leak
+    ('IIci', 0x1c86a): 'AfterLoadResourceInSystemClick', #leak
+    ('IIci', 0x1c886): 'AfterFrontWindowInSystemClick', #leak
+    ('IIci', 0x1c894): 'DoneSClick', #leak
+    ('IIci', 0x1c8a0): 'CheckDeskHook', #leak
+    ('IIci', 0x1c8e6): 'AfterTrackGoAwayInSystemClick', #leak
+    ('IIci', 0x1c900): 'SYSTEMTASK',
+    ('IIci', 0x1c904): 'AFTERNMTASKINSYSTEMTASK', #leak
+    ('IIci', 0x1c980): 'SYSTEMMENU',
+    ('IIci', 0x1c9c8): 'SYSTEMEDIT',
+    ('IIci', 0x1c9f6): 'OPENDESKACC',
+    ('IIci', 0x1ca44): 'CLOSEDESKACC',
+    ('IIci', 0x1ca60): 'GetPID',
+    ('IIci', 0x1caa0): 'GetFreeAux',
+    ('IIci', 0x1cad0): 'AddAuxRec',
+    ('IIci', 0x1cb10): 'LinkAuxRec',
+    ('IIci', 0x1cb40): 'UnLinkAuxRecs',
+    ('IIci', 0x1cb70): 'InsertMarkRec',
+    ('IIci', 0x1cbe0): 'InsertIconRec',
+    ('IIci', 0x1cc20): 'ValidIconRec',
+    ('IIci', 0x1cc60): 'NMINIT',
+    ('IIci', 0x1cc90): '_NMInstall',
+    ('IIci', 0x1ccd0): '_NMRemove',
+    ('IIci', 0x1cd20): 'AddrInRange',
+    ('IIci', 0x1cd70): 'COPYSTRING',
+    ('IIci', 0x1cda0): 'FLUSHAPPLNM',
+    ('IIci', 0x1ce00): 'NMFILTER',
+    ('IIci', 0x1cea0): 'DEFBUTPROC',
+    ('IIci', 0x1cef0): 'FindItem',
+    ('IIci', 0x1cf40): 'GetAppleMenu',
+    ('IIci', 0x1cf80): 'CallMBarProc',
+    ('IIci', 0x1d000): 'SWAPITEMMARKS',
+    ('IIci', 0x1d040): 'ClearMarks',
+    ('IIci', 0x1d070): 'SWAPDAMARK',
+    ('IIci', 0x1d160): 'MarkItem',
+    ('IIci', 0x1d1b0): 'RotateIcon',
+    ('IIci', 0x1d1f0): 'DoSound',
+    ('IIci', 0x1d240): 'DoDialog',
+    ('IIci', 0x1d420): 'DoRespProc',
+    ('IIci', 0x1d470): 'NMGNEFILTER',
+    ('IIci', 0x1d520): 'NMTASK',
+    ('IIci', 0x1d720): '__NMINSTALL',
+    ('IIci', 0x1d730): '__NMREMOVE',
+    ('IIci', 0x1d740): 'NMInstall',
+    ('IIci', 0x1d750): 'NMRemove',
+    ('IIci', 0x1d760): 'NewSPtr',
+    ('IIci', 0x1d770): 'NewCPtr',
+    ('IIci', 0x1d780): 'NewSCPtr',
+    ('IIci', 0x1d790): 'NewSHandle',
+    ('IIci', 0x1d7a0): 'NewCHandle',
+    ('IIci', 0x1d7b0): 'NewSCHandle',
+    ('IIci', 0x1d7c0): 'EQUALSTRING',
+    ('IIci', 0x1d810): 'NGETTRAPADDRESS',
+    ('IIci', 0x1d830): 'DisposPtr',
+    ('IIci', 0x1d840): 'DisposHandle',
+    ('IIci', 0x1d850): 'HLock',
+    ('IIci', 0x1d860): 'HUnlock',
+    ('IIci', 0x1d870): 'SetHandleSize',
+    ('IIci', 0x1d880): 'GetHandleSize',
+    ('IIci', 0x1d890): 'BlockMove',
+    ('IIci', 0x1d8b0): 'HGetState',
+    ('IIci', 0x1d8c0): 'HSetState',
+    ('IIci', 0x1d8d0): 'StripAddress',
+    ('IIci', 0x1d8e0): 'Enqueue',
+    ('IIci', 0x1d8f0): 'Dequeue',
+    ('IIci', 0x1d900): 'Delay',
+    ('IIci', 0x1d912): 'PATCHSTART',
+    ('IIci', 0x1d920): 'ROMANPRINT',
+    ('IIci', 0x1d922): 'ROMANNAME',
+    ('IIci', 0x1d928): 'ROMANSCRIPT',
+    ('IIci', 0x1d94c): 'ROMANDISPTABLE',
+    ('IIci', 0x1d96e): 'CHARBYTE',
+    ('IIci', 0x1d97a): 'CHARTYPE',
+    ('IIci', 0x1d9de): 'PIXEL2CHAR',
+    ('IIci', 0x1da8e): 'CHAR2PIXEL',
+    ('IIci', 0x1dad0): 'TRANSLIT',
+    ('IIci', 0x1dba4): 'FINDWORD',
+    ('IIci', 0x1dcec): 'HILITETEXT',
+    ('IIci', 0x1dd1e): 'DRAWJUST',
+    ('IIci', 0x1dd48): 'MEASUREJUST',
+    ('IIci', 0x1dd74): 'PARSETABLE',
+    ('IIci', 0x1dd94): 'FIXSPEXTRA',
+    ('IIci', 0x1de40): 'XVISIBLELENGTH',
+    ('IIci', 0x1de90): 'PRINTACTION',
+    ('IIci', 0x1deca): 'SWAPICON',
+    ('IIci', 0x1ded4): 'XSWAPICON',
+    ('IIci', 0x1df84): 'SWAPKYBD',
+    ('IIci', 0x1df8e): 'XSWAPKYBD',
+    ('IIci', 0x1e090): 'FIXSMGRWORLD',
+    ('IIci', 0x1e09a): 'XFIXSMGRWORLD',
+    ('IIci', 0x1e1c2): 'SMGRCALCRECT',
+    ('IIci', 0x1e21c): 'SMGRINITFONTS',
+    ('IIci', 0x1e298): 'SMGRPOSTMUNGING',
+    ('IIci', 0x1e310): 'STDUNLINK',
+    ('IIci', 0x1e312): 'STDEXIT',
+    ('IIci', 0x1e318): 'XSCRIPTUTIL',
+    ('IIci', 0x1e350): 'UTILTABLEBASE',
+    ('IIci', 0x1e36c): 'UTILTABLE',
+    ('IIci', 0x1e3bc): 'BITBUCKET',
+    ('IIci', 0x1e3c0): 'BITBUCKETREG',
+    ('IIci', 0x1e750): 'MONTHSTARTS',
+    ('IIci', 0x1e76a): 'LEAPSTARTS',
+    ('IIci', 0x1e786): 'SECSINDAYX',
+    ('IIci', 0x1e792): 'MAXOLDDATE',
+    ('IIci', 0x1e79c): 'MAXVAL',
+    ('IIci', 0x1e7b0): 'VALIDDATE',
+    ('IIci', 0x1e850): 'TOGGLEDATE',
+    ('IIci', 0x1eb60): 'LONGDATE2SECS',
+    ('IIci', 0x1ecc0): 'LONGSECS2DATE',
+    ('IIci', 0x1ee60): 'VALIDLONG',
+    ('IIci', 0x1eea0): 'BLOCK2STRING',
+    ('IIci', 0x1ef00): 'COMPARE',
+    ('IIci', 0x1ef20): 'MATCHSTRING',
+    ('IIci', 0x1ef80): 'INITDATECACHE',
+    ('IIci', 0x1f190): 'STRING2DATE',
+    ('IIci', 0x1f578): 'STRING2TIME',
+    ('IIci', 0x1f730): 'STYLEDLINEBREAK',
+    ('IIci', 0x1f8d0): 'FINDCARRIAGE',
+    ('IIci', 0x1f8f0): 'FORMATORDER',
+    ('IIci', 0x1f9a0): 'INTLTOKENIZE',
+    ('IIci', 0x20090): 'CHARCOMP',
+    ('IIci', 0x200c0): 'NEXTFORMATCLASS',
+    ('IIci', 0x200d0): 'GETSANECLASS',
+    ('IIci', 0x200f0): 'SENDBYTE',
+    ('IIci', 0x20110): 'SENDCHARREV0',
+    ('IIci', 0x20112): 'SENDCHAR0',
+    ('IIci', 0x20120): 'SENDCHARREV',
+    ('IIci', 0x2012e): 'SENDCHAR',
+    ('IIci', 0x201c0): 'CHECKEXP',
+    ('IIci', 0x20200): 'CHECKPARTSINTEGRITY',
+    ('IIci', 0x202b0): 'ISSUBSTRING',
+    ('IIci', 0x20330): 'MAKEEXP',
+    ('IIci', 0x203b0): 'PROCESSLEAD',
+    ('IIci', 0x203f0): 'GETC',
+    ('IIci', 0x20410): 'XSTR2FORM',
+    ('IIci', 0x207f0): 'TACKONEXP',
+    ('IIci', 0x20840): 'TRANSLATETOTEXT',
+    ('IIci', 0x209a0): 'CHECKFORM',
+    ('IIci', 0x20a80): 'XFORM2STR',
+    ('IIci', 0x20b30): 'MATCHINGSUBSTRING',
+    ('IIci', 0x20ba0): 'MATCHINGBLOCKS',
+    ('IIci', 0x20c00): 'CHECKFORDIGITS',
+    ('IIci', 0x20cb0): 'COND',
+    ('IIci', 0x20d10): 'EXPMATCHING',
+    ('IIci', 0x20d60): 'XFORMSTR2X',
+    ('IIci', 0x212b0): 'NUM2DEC',
+    ('IIci', 0x212d0): 'INT2STRING',
+    ('IIci', 0x21300): 'CONVERTTOSTRING',
+    ('IIci', 0x21440): 'EXPHANDLING',
+    ('IIci', 0x214a0): 'APPENDSYMBOL',
+    ('IIci', 0x21610): 'XFORMX2STR',
+    ('IIci', 0x21a00): 'SMGRINITIALIZE',
+    ('IIci', 0x21bb0): 'SMGRTABLE',
+    ('IIci', 0x21c00): 'PATCHTABLE',
+    ('IIci', 0x21c10): 'ROMANTABLE',
+    ('IIci', 0x21c20): 'disable',
+    ('IIci', 0x21c30): 'spl',
+    ('IIci', 0x21c6a): 'GETCURSOR',
+    ('IIci', 0x21c78): 'GETSTRING',
+    ('IIci', 0x21c80): 'GETICON',
+    ('IIci', 0x21c88): 'GETPICTURE',
+    ('IIci', 0x21c90): 'GETNEWCWINDOW',
+    ('IIci', 0x21c9c): 'GETNEWWINDOW',
+    ('IIci', 0x21cb8): 'FromGetNewWind', #leak
+    ('IIci', 0x21d44): 'GETNEWCONTROL',
+    ('IIci', 0x21dc6): 'GETMENU',
+    ('IIci', 0x21e80): 'GETNEWMBAR',
+    ('IIci', 0x21ede): 'GETMGREND',
+    ('IIci', 0x21ee0): 'TEXTEDIT',
+    ('IIci', 0x21f6e): 'TEGLOBALINIT',
+    ('IIci', 0x21f92): 'TEINIT',
+    ('IIci', 0x2200c): 'EndTEInit', #leak
+    ('IIci', 0x22038): 'TEGETTEXT',
+    ('IIci', 0x2203c): 'inTEGetText', #leak
+    ('IIci', 0x22044): 'TEDISPOSE',
+    ('IIci', 0x22052): 'inTEDispose', #leak
+    ('IIci', 0x220a2): 'TEXTBOX',
+    ('IIci', 0x220c2): 'RONInTextBox', #leak
+    ('IIci', 0x22104): 'AfterGetFInfoInTextBox', #leak
+    ('IIci', 0x22116): 'AfterMoveToInTextBox', #leak
+    ('IIci', 0x2217c): 'Go14Exit', #leak
+    ('IIci', 0x22182): 'TESETTEXT',
+    ('IIci', 0x22186): 'inTESetText', #leak
+    ('IIci', 0x22206): 'GetDefStyle', #leak
+    ('IIci', 0x2226a): 'GetSize', #leak
+    ('IIci', 0x22272): 'AfterGetFInfoInGetSize', #leak
+    ('IIci', 0x2229a): 'TECALTEXT',
+    ('IIci', 0x2229e): 'inTECalText', #leak
+    ('IIci', 0x222a0): 'Epilog4', #leak
+    ('IIci', 0x222a2): 'StdExit', #leak
+    ('IIci', 0x222a8): 'StdExit2', #leak
+    ('IIci', 0x222fe): 'TESETSELECT',
+    ('IIci', 0x22302): 'inTESetSelect', #leak
+    ('IIci', 0x22334): 'NoSynchInSetSelect', #leak
+    ('IIci', 0x22344): 'TENEW',
+    ('IIci', 0x223bc): 'inTENew', #leak
+    ('IIci', 0x223d0): 'ClearRsrved', #leak
+    ('IIci', 0x2241c): 'TESTYLNEW',
+    ('IIci', 0x224d4): 'inTEStylNew', #leak
+    ('IIci', 0x22510): 'MyNewHandle', #leak
+    ('IIci', 0x22536): 'TEUPDATE',
+    ('IIci', 0x22544): 'ClickExpand', #leak
+    ('IIci', 0x22552): 'HiLite', #leak
+    ('IIci', 0x22564): 'TECLICK',
+    ('IIci', 0x22568): 'inTEClick', #leak
+    ('IIci', 0x225ac): 'NoSynchInTEClick', #leak
+    ('IIci', 0x22668): 'DOFIND',
+    ('IIci', 0x22670): 'inDoFind', #leak
+    ('IIci', 0x22690): 'Pixel2Char', #leak
+    ('IIci', 0x22696): 'VPIXEL2CHAR',
+    ('IIci', 0x226fe): 'DOSEARCH',
+    ('IIci', 0x2275a): 'EndDoSearch', #leak
+    ('IIci', 0x2277a): 'getStyleOld', #leak
+    ('IIci', 0x227b0): 'DoMeasure', #leak
+    ('IIci', 0x227e4): 'NoMoreStyles', #leak
+    ('IIci', 0x227f6): 'BailToLeft', #leak
+    ('IIci', 0x2280e): 'HitIt', #leak
+    ('IIci', 0x2281a): 'after@HitIt', #leak
+    ('IIci', 0x2283a): 'findDone', #leak
+    ('IIci', 0x22850): 'TEEOLHook', #leak
+    ('IIci', 0x2285a): 'XEOLHook', #leak
+    ('IIci', 0x2286c): 'TEHitTestHook', #leak
+    ('IIci', 0x22878): 'TEDrawHook', #leak
+    ('IIci', 0x22884): 'XDRAWHook', #leak
+    ('IIci', 0x2288e): 'DODRAW',
+    ('IIci', 0x228b2): 'LROrientation', #leak
+    ('IIci', 0x229ac): 'DoErase', #leak
+    ('IIci', 0x229b6): 'XDOERASE',
+    ('IIci', 0x22a04): 'ZeroWidth', #leak
+    ('IIci', 0x22a08): 'GoErase', #leak
+    ('IIci', 0x22a18): 'PREPLINE',
+    ('IIci', 0x22a2c): 'Preamble', #leak
+    ('IIci', 0x22a5a): 'GetLine', #leak
+    ('IIci', 0x22a6a): 'DOTEXT',
+    ('IIci', 0x22a70): 'XDoText', #leak
+    ('IIci', 0x22a86): 'DOCARET',
+    ('IIci', 0x22af6): 'XCARETDISPLAY',
+    ('IIci', 0x22bca): 'SetEnds', #leak
+    ('IIci', 0x22bf6): 'finis', #leak
+    ('IIci', 0x22c12): 'done', #leak
+    ('IIci', 0x22c1a): 'GetLRPosition', #leak
+    ('IIci', 0x22c6a): 'GetRLPosition', #leak
+    ('IIci', 0x22c74): 'XGETRLPOSITION',
+    ('IIci', 0x22cba): 'inGetRLPosn', #leak
+    ('IIci', 0x22cc0): 'GotCursorStyle', #leak
+    ('IIci', 0x22d26): 'LineEnd', #leak
+    ('IIci', 0x22d2a): 'InRLMiddle', #leak
+    ('IIci', 0x22d2e): 'RLDone', #leak
+    ('IIci', 0x22d46): 'inSetUp2Rectangles', #leak
+    ('IIci', 0x22e7e): 'UseStyleStart', #leak
+    ('IIci', 0x22e84): 'beyond@UseStyleStart', #leak
+    ('IIci', 0x22eea): 'OneCursor', #leak
+    ('IIci', 0x22f16): 'SetDirection', #leak
+    ('IIci', 0x22f50): 'GetDirection', #leak
+    ('IIci', 0x22f82): 'GetFormatOrdering', #leak
+    ('IIci', 0x22fda): 'EndGetStylesInOrder', #leak
+    ('IIci', 0x22fe2): 'teGetFormatOrder', #leak
+    ('IIci', 0x22fec): 'XTEGETFORMATORDER',
+    ('IIci', 0x22ff6): 'EndTEFmtOrder', #leak
+    ('IIci', 0x230fe): 'FreeFmtOrderArray', #leak
+    ('IIci', 0x23114): 'DOHILITE',
+    ('IIci', 0x23118): 'inDoHilite', #leak
+    ('IIci', 0x231c2): 'XONSAMELINE',
+    ('IIci', 0x232b2): 'OldStyle', #leak
+    ('IIci', 0x232c8): 'HiliteMore', #leak
+    ('IIci', 0x232d6): 'testEnds', #leak
+    ('IIci', 0x2333a): 'MeasureWidth', #leak
+    ('IIci', 0x2338a): 'hiliteIt', #leak
+    ('IIci', 0x2338e): 'dontQuit', #leak
+    ('IIci', 0x2339a): 'inBetween', #leak
+    ('IIci', 0x233ba): 'hiliteRun', #leak
+    ('IIci', 0x233e6): 'HiliteOffsetRun', #leak
+    ('IIci', 0x233f2): 'justMeasure', #leak
+    ('IIci', 0x233fe): 'exit', #leak
+    ('IIci', 0x23404): 'MeasureWholeRun', #leak
+    ('IIci', 0x23498): 'HiliteLineEnds', #leak
+    ('IIci', 0x234d8): 'teHiliteText', #leak
+    ('IIci', 0x23536): 'AfterHiliteText', #leak
+    ('IIci', 0x235be): 'PixelWidths', #leak
+    ('IIci', 0x23638): 'CHKBOUNDS',
+    ('IIci', 0x23654): 'OneStyleTest', #leak
+    ('IIci', 0x23662): 'BackToChkBounds', #leak
+    ('IIci', 0x23674): 'OneStyle', #leak
+    ('IIci', 0x236a8): 'NextLineRect', #leak
+    ('IIci', 0x236c6): 'PtrToLine', #leak
+    ('IIci', 0x236d2): 'LINERECT',
+    ('IIci', 0x23736): 'GetLineHites', #leak
+    ('IIci', 0x23776): 'GetHite', #leak
+    ('IIci', 0x237b0): 'XTRIMMEASURE',
+    ('IIci', 0x237b6): 'RomanTrim', #leak
+    ('IIci', 0x237d6): 'MEASUREIT',
+    ('IIci', 0x237da): 'InMeasureIt', #leak
+    ('IIci', 0x2382c): 'GetWidth', #leak
+    ('IIci', 0x23836): 'XGETWIDTH',
+    ('IIci', 0x2386e): 'FullStyleRun', #leak
+    ('IIci', 0x2387c): 'UseChar2Pixel', #leak
+    ('IIci', 0x23896): 'Char2Pixel', #leak
+    ('IIci', 0x2389c): 'VCHAR2PIXEL',
+    ('IIci', 0x238f2): 'Use4HitTest', #leak
+    ('IIci', 0x23922): 'fixStack', #leak
+    ('IIci', 0x23928): 'UseC2P', #leak
+    ('IIci', 0x23944): 'RANGERECT',
+    ('IIci', 0x23994): 'DOMEASURE',
+    ('IIci', 0x239c8): 'BackToDoMeasure', #leak
+    ('IIci', 0x23a40): 'PlainMeasure', #leak
+    ('IIci', 0x23a4e): 'MeasureDone', #leak
+    ('IIci', 0x23a5a): 'PinDisplay', #leak
+    ('IIci', 0x23a84): 'inPinDisplay', #leak
+    ('IIci', 0x23aa8): 'PtToLine', #leak
+    ('IIci', 0x23ab6): 'inPtToLine', #leak
+    ('IIci', 0x23af6): 'InvertHook', #leak
+    ('IIci', 0x23b1a): 'StdEntry', #leak
+    ('IIci', 0x23bce): 'CleanUpSel', #leak
+    ('IIci', 0x23c00): 'TEDISPATCH',
+    ('IIci', 0x23c06): 'inTEDispatch', #leak
+    ('IIci', 0x23c08): 'SelSort', #leak
+    ('IIci', 0x23c18): 'TECOPY',
+    ('IIci', 0x23c1c): 'inTECopy', #leak
+    ('IIci', 0x23cf0): 'TECUT',
+    ('IIci', 0x23cf4): 'inTECut', #leak
+    ('IIci', 0x23d00): 'TEDELETE',
+    ('IIci', 0x23d0a): 'EndDelGuts', #leak
+    ('IIci', 0x23d8a): 'DeleteStyle', #leak
+    ('IIci', 0x23e18): 'RecalDraw', #leak
+    ('IIci', 0x23f34): 'FindWord', #leak
+    ('IIci', 0x23f3a): 'XFINDWORD',
+    ('IIci', 0x23f5c): 'TESMgrFWord', #leak
+    ('IIci', 0x23f82): 'GetSelWrap', #leak
+    ('IIci', 0x24062): 'ForceOldFW', #leak
+    ('IIci', 0x24066): 'WBOverid', #leak
+    ('IIci', 0x240b4): 'DefWordBrk', #leak
+    ('IIci', 0x2413c): 'SetUpP2C', #leak
+    ('IIci', 0x24144): 'FindLine', #leak
+    ('IIci', 0x2414a): 'XFINDLINE',
+    ('IIci', 0x241d0): 'inFindLine', #leak
+    ('IIci', 0x2428c): 'SetUp', #leak
+    ('IIci', 0x2430e): 'FindLineFinis', #leak
+    ('IIci', 0x24316): 'RomanFindLine', #leak
+    ('IIci', 0x243b8): 'XRECALLINES',
+    ('IIci', 0x2442e): 'stage2y', #leak
+    ('IIci', 0x2443c): 'stage2A', #leak
+    ('IIci', 0x24442): 'ClrLineSts', #leak
+    ('IIci', 0x24690): 'ShowCaret', #leak
+    ('IIci', 0x246a8): 'DrawCaret', #leak
+    ('IIci', 0x246b4): 'HIDECARET',
+    ('IIci', 0x246c8): 'DrawIt', #leak
+    ('IIci', 0x2471e): 'TEACTIVATE',
+    ('IIci', 0x24740): 'TEDEACTIVATE',
+    ('IIci', 0x24758): 'TEIDLE',
+    ('IIci', 0x24770): 'inTEIdle', #leak
+    ('IIci', 0x24792): 'goHome', #leak
+    ('IIci', 0x24796): 'TEPASTE',
+    ('IIci', 0x2479a): 'inTEPaste', #leak
+    ('IIci', 0x24838): 'PasteGuts', #leak
+    ('IIci', 0x248ee): 'PstStylGuts', #leak
+    ('IIci', 0x24a94): 'MungeSetup', #leak
+    ('IIci', 0x24aaa): 'InsRsrved', #leak
+    ('IIci', 0x24b14): 'TEINSERT',
+    ('IIci', 0x24b18): 'inTEInsert', #leak
+    ('IIci', 0x24b28): 'AfterInsert', #leak
+    ('IIci', 0x24b42): 'TEKEY',
+    ('IIci', 0x24b6c): 'NormalChar', #leak
+    ('IIci', 0x24bb0): 'RightArrow', #leak
+    ('IIci', 0x24bb8): 'LeftArrow', #leak
+    ('IIci', 0x24bd6): 'leftRight', #leak
+    ('IIci', 0x24c02): 'inPasteChar', #leak
+    ('IIci', 0x24c12): 'backspace', #leak
+    ('IIci', 0x24c46): 'XTEBUFFERTEXT',
+    ('IIci', 0x24c72): 'MoreRoom', #leak
+    ('IIci', 0x24c7e): 'GetHandle', #leak
+    ('IIci', 0x24c80): 'inGetHandle', #leak
+    ('IIci', 0x24c9a): 'XDUMPBUFFER',
+    ('IIci', 0x24d1e): 'XCURSORMOVEMENT',
+    ('IIci', 0x24d2e): 'EndCursorMovement', #leak
+    ('IIci', 0x24e36): 'NewFmtIndex', #leak
+    ('IIci', 0x24e3e): 'InMiddle', #leak
+    ('IIci', 0x24e78): 'TakeRightBranch', #leak
+    ('IIci', 0x24e9c): 'OneCharacterTest', #leak
+    ('IIci', 0x24ed8): 'CSubDelta', #leak
+    ('IIci', 0x24ede): 'CursorMoveDone', #leak
+    ('IIci', 0x24ee6): 'TestLineEnds', #leak
+    ('IIci', 0x24f04): 'SetRun', #leak
+    ('IIci', 0x24f2a): 'BackToTestRunDirection', #leak
+    ('IIci', 0x24f40): 'GetStyleEnd', #leak
+    ('IIci', 0x24f52): 'FixFormatEnd', #leak
+    ('IIci', 0x24fd2): 'DoubleByte', #leak
+    ('IIci', 0x25036): 'XSETFONT2KEYBOARD',
+    ('IIci', 0x250b2): 'SetKeyboard2Font', #leak
+    ('IIci', 0x250bc): 'XSETKEYBOARD2FONT',
+    ('IIci', 0x250ca): 'inSetKeyboard2Font', #leak
+    ('IIci', 0x250dc): 'DoneInKeybd2Font', #leak
+    ('IIci', 0x250e0): 'FindLineHite', #leak
+    ('IIci', 0x250f8): 'TESETJUST',
+    ('IIci', 0x250fc): 'inTESetJust', #leak
+    ('IIci', 0x25104): 'Refresh', #leak
+    ('IIci', 0x2510c): 'inRefresh', #leak
+    ('IIci', 0x25120): 'TESCROLL',
+    ('IIci', 0x25124): 'inTEScroll', #leak
+    ('IIci', 0x2512c): 'Epilog8', #leak
+    ('IIci', 0x25176): 'TEPINSCROLL',
+    ('IIci', 0x2517a): 'inTEPinScroll', #leak
+    ('IIci', 0x251fe): 'TESELVIEW',
+    ('IIci', 0x25202): 'inTESelView', #leak
+    ('IIci', 0x25208): 'SelView', #leak
+    ('IIci', 0x25288): 'TEAUTOVIEW',
+    ('IIci', 0x2528c): 'inTEAutoView', #leak
+    ('IIci', 0x252ac): 'ITEFEATUREFLAG',
+    ('IIci', 0x252d6): 'DefClikProc', #leak
+    ('IIci', 0x2534a): 'GetCurStyle', #leak
+    ('IIci', 0x25398): 'GetNumStyles', #leak
+    ('IIci', 0x253be): 'GetStyle', #leak
+    ('IIci', 0x253e8): 'SetRsrved', #leak
+    ('IIci', 0x253f4): 'AltSetRsrved', #leak
+    ('IIci', 0x254ee): 'ITESETSTYLE',
+    ('IIci', 0x25504): 'KeybdOK', #leak
+    ('IIci', 0x25710): 'AnyNullStyle', #leak
+    ('IIci', 0x257ae): 'SetStyle', #leak
+    ('IIci', 0x257f2): 'ConcatStyles', #leak
+    ('IIci', 0x2584c): 'ConcatRuns', #leak
+    ('IIci', 0x2594e): 'TEGETOFFSET',
+    ('IIci', 0x25952): 'inTEGetOffset', #leak
+    ('IIci', 0x25990): 'TEGetPoint', #leak
+    ('IIci', 0x259e6): 'inTEGetPoint', #leak
+    ('IIci', 0x259fc): 'DoEndOfLine', #leak
+    ('IIci', 0x25a04): 'DoTheJustThing', #leak
+    ('IIci', 0x25a60): 'SetStylScrap', #leak
+    ('IIci', 0x25b20): 'TEStylInsert', #leak
+    ('IIci', 0x25dca): 'UNLOADSCRAP',
+    ('IIci', 0x25e00): 'LOADSCRAP',
+    ('IIci', 0x25e34): 'ZEROSCRAP',
+    ('IIci', 0x25e80): 'GETSCRAP',
+    ('IIci', 0x25ef0): 'PUTSCRAP',
+    ('IIci', 0x25f16): 'PutScrapExit', #leak
+    ('IIci', 0x25f26): 'DoPutAppendMem', #leak
+    ('IIci', 0x25f34): 'DoPutAppendFile', #leak
+    ('IIci', 0x25f40): 'PRGLUE',
+    ('IIci', 0x261e2): 'INITALLPACKS',
+    ('IIci', 0x26206): 'PACK4',
+    ('IIci', 0x26228): 'PACK5',
+    ('IIci', 0x262a6): 'PACK0',
+    ('IIci', 0x262a8): 'PACK1',
+    ('IIci', 0x262aa): 'PACK2',
+    ('IIci', 0x262ac): 'PACK3',
+    ('IIci', 0x262b2): 'PACK6',
+    ('IIci', 0x262b4): 'PACK7',
+    ('IIci', 0x262b6): 'PACK8',
+    ('IIci', 0x262b8): 'PACK9',
+    ('IIci', 0x262ba): 'PACK10',
+    ('IIci', 0x262bc): 'PACK11',
+    ('IIci', 0x262be): 'PACK12',
+    ('IIci', 0x262c0): 'PACK13',
+    ('IIci', 0x262c2): 'PACK14',
+    ('IIci', 0x262c4): 'PACK15',
+    ('IIci', 0x262c6): 'PACKMGREND',
+    ('IIci', 0x26348): 'DATE2SECS',
+    ('IIci', 0x26514): 'FMSWAPFONT',
+    ('IIci', 0x2742a): 'FPOINTONE',
+    ('IIci', 0x27498): 'GETFONTNAME',
+    ('IIci', 0x27506): 'REALFONT',
+    ('IIci', 0x27570): 'GETFNUM',
+    ('IIci', 0x275b4): 'SETFONTLOCK',
+    ('IIci', 0x275dc): 'SETFSCALEDISABLE',
+    ('IIci', 0x275ea): 'SETFRACTENABLE',
+    ('IIci', 0x275f2): 'FONTMETRICS',
+    ('IIci', 0x277da): 'FMGREND',
+    ('IIci', 0x27880): 'DISPOSGDEVICE',
+    ('IIci', 0x2788c): 'DISPOSGDHANDLES',
+    ('IIci', 0x278d0): 'INITGDEVICE',
+    ('IIci', 0x27a30): 'GETDEVPIXMAP',
+    ('IIci', 0x27ba0): 'CHECKDEVICES',
+    ('IIci', 0x27f90): 'GETGDEVICE',
+    ('IIci', 0x27fa0): 'SETGDEVICE',
+    ('IIci', 0x27fb0): 'GETDEVICELIST',
+    ('IIci', 0x27fc0): 'GETMAINDEVICE',
+    ('IIci', 0x27fd0): 'GETNEXTDEVICE',
+    ('IIci', 0x27fe0): 'TESTDEVICEATTRIBUTE',
+    ('IIci', 0x28000): 'SETDEVICEATTRIBUTE',
+    ('IIci', 0x28020): 'GETMAXDEVICE',
+    ('IIci', 0x28080): 'GETDEVPIX',
+    ('IIci', 0x28090): 'ALLOCCURSOR',
+    ('IIci', 0x280a0): 'INITCURSOR',
+    ('IIci', 0x280c0): 'SETCURSOR',
+    ('IIci', 0x280e0): 'SETCCURSOR',
+    ('IIci', 0x280f0): 'HIDECURSOR',
+    ('IIci', 0x28100): 'SHOWCURSOR',
+    ('IIci', 0x28110): 'SHIELDCURSOR',
+    ('IIci', 0x28140): 'OBSCURECURSOR',
+    ('IIci', 0x28150): 'DRTEXT',
+    ('IIci', 0x28e40): 'STDTEXT',
+    ('IIci', 0x29110): 'CALLTEXT',
+    ('IIci', 0x29130): 'TEXTFACE',
+    ('IIci', 0x2913c): 'DRAWCHAR',
+    ('IIci', 0x2914a): 'CHARWIDTH',
+    ('IIci', 0x29170): 'TEXTFONT',
+    ('IIci', 0x29174): 'TEXTMODE',
+    ('IIci', 0x29178): 'TEXTSIZE',
+    ('IIci', 0x29190): 'SPACEEXTRA',
+    ('IIci', 0x2919c): 'DRAWSTRING',
+    ('IIci', 0x291ae): 'DRAWTEXT',
+    ('IIci', 0x291d0): 'STRINGWIDTH',
+    ('IIci', 0x291e0): 'TEXTWIDTH',
+    ('IIci', 0x29250): 'STDTXMEAS',
+    ('IIci', 0x29320): 'MEASURETEXT',
+    ('IIci', 0x29420): 'GETFONTINFO',
+    ('IIci', 0x294d0): 'CALCCHAREXTRA',
+    ('IIci', 0x29530): 'CHAREXTRA',
+    ('IIci', 0x29580): 'STDLINE',
+    ('IIci', 0x29670): 'LINETO',
+    ('IIci', 0x29690): 'LINE',
+    ('IIci', 0x296b0): 'MOVETO',
+    ('IIci', 0x296ba): 'COMMONMOVEEND',
+    ('IIci', 0x296f0): 'DOLINE',
+    ('IIci', 0x29780): 'HIDEPEN',
+    ('IIci', 0x29784): 'SHOWPEN',
+    ('IIci', 0x29790): 'GETPENSTATE',
+    ('IIci', 0x297cc): 'SETPENSTATE',
+    ('IIci', 0x29810): 'GETPEN',
+    ('IIci', 0x29820): 'PENSIZE',
+    ('IIci', 0x29830): 'PENMODE',
+    ('IIci', 0x29840): 'PENPAT',
+    ('IIci', 0x29868): 'PENNORMAL',
+    ('IIci', 0x29890): 'PUTLINE',
+    ('IIci', 0x299a0): 'DRAWLINE',
+    ('IIci', 0x29ea0): 'FASTLINE',
+    ('IIci', 0x2a018): 'STEEPBLITTAB',
+    ('IIci', 0x2a048): 'SHALLOWBLITTAB',
+    ('IIci', 0x2a080): 'FASTSLANT',
+    ('IIci', 0x2a6e0): 'RGNBLT',
+    ('IIci', 0x2ac5c): 'RARITH16TAB',
+    ('IIci', 0x2ac80): 'RARITH32TAB',
+    ('IIci', 0x2aca4): 'RHILITETAB',
+    ('IIci', 0x2acc0): 'RMASK0',
+    ('IIci', 0x2ae5a): 'RMASK1',
+    ('IIci', 0x2aeba): 'RMASK2',
+    ('IIci', 0x2af1a): 'RMASK3',
+    ('IIci', 0x2af60): 'RCMASK0',
+    ('IIci', 0x2b00a): 'RCMASK1',
+    ('IIci', 0x2b07a): 'RCMASK3',
+    ('IIci', 0x2b0ec): 'RMASK8',
+    ('IIci', 0x2b16e): 'RMASK9',
+    ('IIci', 0x2b1dc): 'RMASK10',
+    ('IIci', 0x2b22e): 'RMASK11',
+    ('IIci', 0x2b260): 'RXMASK8',
+    ('IIci', 0x2b2d2): 'RXMASK9',
+    ('IIci', 0x2b350): 'RXMASK10',
+    ('IIci', 0x2b390): 'RXMASK11',
+    ('IIci', 0x2b3a0): 'RADDOVER',
+    ('IIci', 0x2b4c0): 'RADDPIN',
+    ('IIci', 0x2b660): 'RSUBOVER',
+    ('IIci', 0x2b790): 'RSUBPIN',
+    ('IIci', 0x2b930): 'RMAX',
+    ('IIci', 0x2ba70): 'RMIN',
+    ('IIci', 0x2bbb0): 'RAVG',
+    ('IIci', 0x2be90): 'RHILITE',
+    ('IIci', 0x2bfd0): 'RSLOWHILITE',
+    ('IIci', 0x2c060): 'RTRANSPARENT',
+    ('IIci', 0x2c150): 'STDRECT',
+    ('IIci', 0x2c1e0): 'STDDEVLOOP',
+    ('IIci', 0x2c3f0): 'PINIT',
+    ('IIci', 0x2c410): 'PUSHVERB',
+    ('IIci', 0x2c470): 'FILLRECT',
+    ('IIci', 0x2c474): 'FILLCRECT',
+    ('IIci', 0x2c488): 'FRAMERECT',
+    ('IIci', 0x2c48c): 'PAINTRECT',
+    ('IIci', 0x2c490): 'ERASERECT',
+    ('IIci', 0x2c494): 'INVERTRECT',
+    ('IIci', 0x2c496): 'CALLRECT',
+    ('IIci', 0x2c4c0): 'DRAWRECT',
+    ('IIci', 0x2c510): 'FRMRECT',
+    ('IIci', 0x2c620): 'SETRECT',
+    ('IIci', 0x2c630): 'EQUALRECT',
+    ('IIci', 0x2c650): 'EMPTYRECT',
+    ('IIci', 0x2c670): 'OFFSETRECT',
+    ('IIci', 0x2c690): 'INSETRECT',
+    ('IIci', 0x2c6b0): 'SECTRECT',
+    ('IIci', 0x2c6d4): 'RSECT',
+    ('IIci', 0x2c750): 'UNIONRECT',
+    ('IIci', 0x2c78e): 'PT2RECT',
+    ('IIci', 0x2c7d0): 'PTINRECT',
+    ('IIci', 0x2c800): 'PUTRECT',
+    ('IIci', 0x2c870): 'BITBLT',
+    ('IIci', 0x2cce0): 'BARITH16TAB',
+    ('IIci', 0x2cd04): 'BARITH32TAB',
+    ('IIci', 0x2cd28): 'BHILITETAB',
+    ('IIci', 0x2cd40): 'BLEFT0',
+    ('IIci', 0x2cd90): 'BSETUP0',
+    ('IIci', 0x2ce10): 'BEND0',
+    ('IIci', 0x2ce12): 'BMAIN0',
+    ('IIci', 0x2ce40): 'BEND1',
+    ('IIci', 0x2ce42): 'BMAIN1',
+    ('IIci', 0x2ce60): 'BEND2',
+    ('IIci', 0x2ce62): 'BMAIN2',
+    ('IIci', 0x2ce80): 'BEND3',
+    ('IIci', 0x2ce82): 'BMAIN3',
+    ('IIci', 0x2cea0): 'BCEND0',
+    ('IIci', 0x2cea2): 'BCMAIN0',
+    ('IIci', 0x2ced0): 'BCEND1',
+    ('IIci', 0x2ced2): 'BCMAIN1',
+    ('IIci', 0x2cf00): 'BCEND3',
+    ('IIci', 0x2cf02): 'BCMAIN3',
+    ('IIci', 0x2cf30): 'BLONG8',
+    ('IIci', 0x2cfc0): 'BSETUP8',
+    ('IIci', 0x2d060): 'BEND9',
+    ('IIci', 0x2d062): 'BMAIN9',
+    ('IIci', 0x2d080): 'BEND10',
+    ('IIci', 0x2d0b0): 'BSETUP10',
+    ('IIci', 0x2d130): 'BEND11',
+    ('IIci', 0x2d132): 'BMAIN11',
+    ('IIci', 0x2d150): 'BXLONG8',
+    ('IIci', 0x2d1b0): 'BXMAIN8',
+    ('IIci', 0x2d200): 'BXEND9',
+    ('IIci', 0x2d202): 'BXMAIN9',
+    ('IIci', 0x2d230): 'BXEND10',
+    ('IIci', 0x2d262): 'BXMAIN10',
+    ('IIci', 0x2d280): 'BXEND11',
+    ('IIci', 0x2d282): 'BXMAIN11',
+    ('IIci', 0x2d2b0): 'BARITH32SETUP',
+    ('IIci', 0x2d2f0): 'BARITH16SETUP',
+    ('IIci', 0x2d340): 'BADDOVER',
+    ('IIci', 0x2d450): 'BADDPIN',
+    ('IIci', 0x2d5d0): 'BSUBOVER',
+    ('IIci', 0x2d6e0): 'BSUBPIN',
+    ('IIci', 0x2d870): 'BMAX',
+    ('IIci', 0x2d9a0): 'BMIN',
+    ('IIci', 0x2dad0): 'BAVG',
+    ('IIci', 0x2dd40): 'BHILITE',
+    ('IIci', 0x2de10): 'BSLOHILITE',
+    ('IIci', 0x2de80): 'BTRANSPARENT',
+    ('IIci', 0x2df94): 'CRSRVBLTASK',
+    ('IIci', 0x2e200): 'PINRECT',
+    ('IIci', 0x2e212): 'CURSORSECT',
+    ('IIci', 0x2e27a): 'ERASECURSOR',
+    ('IIci', 0x2e2bc): 'DRAWCURSOR',
+    ('IIci', 0x2e484): 'GETMAINCRSR',
+    ('IIci', 0x2e510): 'SETCRSRDATA',
+    ('IIci', 0x2e570): 'ALLOCCRSR',
+    ('IIci', 0x2e6e0): 'BLITCURSOR',
+    ('IIci', 0x2e9e0): 'UNBLITCURSOR',
+    ('IIci', 0x2ea40): 'SCRNADDRESS',
+    ('IIci', 0x2ea50): 'SCRNSIZE',
+    ('IIci', 0x2ea80): 'SCRNBITMAP',
+    ('IIci', 0x2eab0): 'BITNOT',
+    ('IIci', 0x2eac0): 'BITAND',
+    ('IIci', 0x2eac8): 'BITXOR',
+    ('IIci', 0x2ead2): 'BITOR',
+    ('IIci', 0x2eada): 'BITSHIFT',
+    ('IIci', 0x2eaf0): 'BITTST',
+    ('IIci', 0x2eafe): 'BITSET',
+    ('IIci', 0x2eb08): 'BITCLR',
+    ('IIci', 0x2eb20): 'RANDOM',
+    ('IIci', 0x2eb80): 'FORECOLOR',
+    ('IIci', 0x2ebcc): 'BACKCOLOR',
+    ('IIci', 0x2ebd0): 'PORTLONG',
+    ('IIci', 0x2ebdc): 'COLORBIT',
+    ('IIci', 0x2ebde): 'PORTWORD',
+    ('IIci', 0x2ebf0): 'GETMASKTAB',
+    ('IIci', 0x2ebf6): 'LEFTMASK',
+    ('IIci', 0x2ec02): 'RIGHTMASK',
+    ('IIci', 0x2ec0e): 'BITMASK',
+    ('IIci', 0x2ec1a): 'MASKTAB',
+    ('IIci', 0x2ec80): 'ARITHMODE',
+    ('IIci', 0x2ec90): 'COLORMAP',
+    ('IIci', 0x2ef70): 'GETCPIXEL',
+    ('IIci', 0x2ef7c): 'GETPIXEL',
+    ('IIci', 0x2f018): 'ciMMUModeOK', #leak
+    ('IIci', 0x2f070): 'ciGetPixelDone', #leak
+    ('IIci', 0x2f090): 'TRANSLATE24TO32',
+    ('IIci', 0x2f0d0): 'STUFFHEX',
+    ('IIci', 0x2f110): 'XORSLAB',
+    ('IIci', 0x2f160): 'DRAWSLAB',
+    ('IIci', 0x2f1c4): 'SLMASK8',
+    ('IIci', 0x2f1e6): 'SLMASK9',
+    ('IIci', 0x2f1fc): 'SLMASK10',
+    ('IIci', 0x2f226): 'SLMASK11',
+    ('IIci', 0x2f230): 'SLXMASK8',
+    ('IIci', 0x2f270): 'SLXMASK9',
+    ('IIci', 0x2f2b0): 'SLXMASK10',
+    ('IIci', 0x2f2f0): 'SLXMASK11',
+    ('IIci', 0x2f330): 'SLADDOVER',
+    ('IIci', 0x2f3e0): 'SLADDPIN',
+    ('IIci', 0x2f470): 'SLSUBOVER',
+    ('IIci', 0x2f4e0): 'SLSUBPIN',
+    ('IIci', 0x2f570): 'SLMAX',
+    ('IIci', 0x2f5f0): 'SLMIN',
+    ('IIci', 0x2f670): 'SLAVG',
+    ('IIci', 0x2f720): 'SLHILITE',
+    ('IIci', 0x2f790): 'SLTRANSPARENT',
+    ('IIci', 0x2fee0): 'SLABMODE',
+    ('IIci', 0x2ff70): 'SLARITH16TAB',
+    ('IIci', 0x2ff94): 'SLARITH32TAB',
+    ('IIci', 0x30040): 'FASTSLABMODE',
+    ('IIci', 0x30060): 'COPYHANDLE',
+    ('IIci', 0x300a0): 'ONEBITCTABLE',
+    ('IIci', 0x300ac): 'FILLONEBIT',
+    ('IIci', 0x300d0): 'PORTTOMAP',
+    ('IIci', 0x300d2): 'BITSTOMAP',
+    ('IIci', 0x300f0): 'OPENCPORT',
+    ('IIci', 0x30126): 'INITCPORT',
+    ('IIci', 0x30160): 'INITCOLORSTUFF',
+    ('IIci', 0x301e8): 'ciClosePortEntry', #leak
+    ('IIci', 0x30260): 'SETCPORTPIX',
+    ('IIci', 0x30280): 'NEWCTAB',
+    ('IIci', 0x30290): 'DISPOSCTABLE',
+    ('IIci', 0x302a0): 'GETCTSEED',
+    ('IIci', 0x302d0): 'OPENPIXMAP',
+    ('IIci', 0x302f0): 'NEWPIXMAP',
+    ('IIci', 0x30300): 'DISPOSPIXMAP',
+    ('IIci', 0x30330): 'INITPIXMAP',
+    ('IIci', 0x30360): 'COPYPIXMAP',
+    ('IIci', 0x30390): 'BITSTOPIX',
+    ('IIci', 0x3045a): 'COPYPMAP',
+    ('IIci', 0x30484): 'ONEBITDATA',
+    ('IIci', 0x304b6): 'SHFTTBL',
+    ('IIci', 0x304e0): 'SETCPIXEL',
+    ('IIci', 0x30540): 'HILITECOLOR',
+    ('IIci', 0x30550): 'OPCOLOR',
+    ('IIci', 0x30552): 'SETGRAFVARSCOMMON',
+    ('IIci', 0x30570): 'GETCCURSOR',
+    ('IIci', 0x30580): 'GETPIXPAT',
+    ('IIci', 0x3058c): 'PATSHARE',
+    ('IIci', 0x30690): 'NEWPIXPAT',
+    ('IIci', 0x30780): 'SETFILLPAT',
+    ('IIci', 0x307c0): 'PENPIXPAT',
+    ('IIci', 0x307c6): 'PHILPIXPAT',
+    ('IIci', 0x307cc): 'BACKPIXPAT',
+    ('IIci', 0x30840): 'COPYPIXPAT',
+    ('IIci', 0x30890): 'OLDPATTONEW',
+    ('IIci', 0x30920): 'PATEXPAND',
+    ('IIci', 0x30972): 'ciGotCopy', #leak
+    ('IIci', 0x30a96): 'ciNEWDONE', #leak
+    ('IIci', 0x30a9e): 'ciNOTOLD', #leak
+    ('IIci', 0x30c20): 'PATCONVERT',
+    ('IIci', 0x30e50): 'MAKESCALETBL',
+    ('IIci', 0x30fb0): 'PATDITHER',
+    ('IIci', 0x31120): 'MAKERGBPAT',
+    ('IIci', 0x311e0): 'GETCICON',
+    ('IIci', 0x312a0): 'PLOTCICON',
+    ('IIci', 0x31400): 'DISPOSCICON',
+    ('IIci', 0x31420): 'NEWHANDLE',
+    ('IIci', 0x3143a): 'JACKSONPOLLOCK',
+    ('IIci', 0x3143c): 'RNEWHANDLE',
+    ('IIci', 0x31442): 'SETHSIZE',
+    ('IIci', 0x31450): 'RSETHSIZE',
+    ('IIci', 0x31460): 'NEWTEMPHANDLE',
+    ('IIci', 0x314a0): 'NEWTEMPBUFFER',
+    ('IIci', 0x31510): 'DISPOSETEMPBUFFER',
+    ('IIci', 0x31530): 'INITGRAF',
+    ('IIci', 0x316c0): 'NEWPORT',
+    ('IIci', 0x316e0): 'OPENPORT',
+    ('IIci', 0x316ee): 'INITPORT',
+    ('IIci', 0x31740): 'INITSHARED',
+    ('IIci', 0x317a0): 'SETSTDPROCS',
+    ('IIci', 0x317e0): 'SETSTDCPROCS',
+    ('IIci', 0x31800): 'LOCALTOGLOBAL',
+    ('IIci', 0x31808): 'GLOBALTOLOCAL',
+    ('IIci', 0x3183a): 'ADDPT',
+    ('IIci', 0x31842): 'SUBPT',
+    ('IIci', 0x31860): 'SETPORT',
+    ('IIci', 0x31868): 'GETPORT',
+    ('IIci', 0x31880): 'GRAFDEVICE',
+    ('IIci', 0x31890): 'SETPORTBITS',
+    ('IIci', 0x318ae): 'BACKPAT',
+    ('IIci', 0x318e0): 'PORTSIZE',
+    ('IIci', 0x31900): 'MOVEPORTTO',
+    ('IIci', 0x31930): 'SETORIGIN',
+    ('IIci', 0x31970): 'CLIPRECT',
+    ('IIci', 0x31990): 'SETCLIP',
+    ('IIci', 0x3199c): 'GETCLIP',
+    ('IIci', 0x319b0): 'SETPT',
+    ('IIci', 0x319c0): 'EQUALPT',
+    ('IIci', 0x319d0): 'INSPORTLIST',
+    ('IIci', 0x31a00): 'DELPORTLIST',
+    ('IIci', 0x31a30): 'STDCOMMENT',
+    ('IIci', 0x31a90): 'STDGETPIC',
+    ('IIci', 0x31ab0): 'STDPUTPIC',
+    ('IIci', 0x31b30): 'STDOPCODEPROC',
+    ('IIci', 0x31b80): 'PICCOMMENT',
+    ('IIci', 0x31ba0): 'OPENCPICTURE',
+    ('IIci', 0x31bb0): 'OPENPICTURE',
+    ('IIci', 0x31bba): 'OPSHARE',
+    ('IIci', 0x31d20): 'CLOSEPICTURE',
+    ('IIci', 0x31d4c): 'ciClosePictureEntry', #leak
+    ('IIci', 0x31d74): 'cinopp', #leak
+    ('IIci', 0x31d82): 'ciClosePictureGoHome', #leak
+    ('IIci', 0x31d90): 'KILLPICTURE',
+    ('IIci', 0x31da0): 'DRAWPICTURE',
+    ('IIci', 0x31f60): 'PICITEM1',
+    ('IIci', 0x32b60): 'GETUBYTE',
+    ('IIci', 0x32b80): 'GETWORD',
+    ('IIci', 0x32b90): 'GETLONG',
+    ('IIci', 0x32ba0): 'GETPICDATA',
+    ('IIci', 0x32bd0): 'PUTPICDATA',
+    ('IIci', 0x32bf0): 'DPUTPICBYTE',
+    ('IIci', 0x32bf6): 'PUTPICBYTE',
+    ('IIci', 0x32c10): 'PUTPICWORD',
+    ('IIci', 0x32c30): 'PUTPICLONG',
+    ('IIci', 0x32c40): 'PUTPICRECT',
+    ('IIci', 0x32c90): 'DPUTPICOP',
+    ('IIci', 0x32c96): 'PUTPICOP',
+    ('IIci', 0x32c9a): 'PUTPICOP2',
+    ('IIci', 0x32cd0): 'PUTPICRGN',
+    ('IIci', 0x32cf0): 'PUTPICPAD',
+    ('IIci', 0x32d20): 'PUTPICPAT',
+    ('IIci', 0x32d30): 'PUTPICVERB',
+    ('IIci', 0x32e20): 'UPDATEPAT',
+    ('IIci', 0x32ed0): 'EQUALPAT',
+    ('IIci', 0x32f70): 'GETPICTABLE',
+    ('IIci', 0x32fc0): 'PUTPICTABLE',
+    ('IIci', 0x32ff0): 'GETPICPIXMAP',
+    ('IIci', 0x33030): 'PUTPICPIXMAP',
+    ('IIci', 0x33060): 'GETPICPIXPAT',
+    ('IIci', 0x3309a): 'PUTGRAY',
+    ('IIci', 0x331b0): 'PUTPICPIXPAT',
+    ('IIci', 0x33224): 'FromPutPicPixPat', #leak
+    ('IIci', 0x33240): 'GETDIRECTPMDATA',
+    ('IIci', 0x3332e): 'AfterUnPackBitsInGetDirectPMData', #leak
+    ('IIci', 0x333f0): 'PUTDIRECTPMDATA',
+    ('IIci', 0x33590): 'GETBIGPICDATA',
+    ('IIci', 0x335d0): 'PUTBIGPICDATA',
+    ('IIci', 0x33610): 'GETPMDATA',
+    ('IIci', 0x336a0): 'AfterUnPackBitsInGetPMData', #leak
+    ('IIci', 0x336d0): 'PUTPMDATA',
+    ('IIci', 0x3372c): 'FromPutPMData', #leak
+    ('IIci', 0x33780): 'CHECKPIC',
+    ('IIci', 0x339a0): 'SCALEPT',
+    ('IIci', 0x33a00): 'MAPPT',
+    ('IIci', 0x33a60): 'MAPFIXPT',
+    ('IIci', 0x33ac0): 'MAPRECT',
+    ('IIci', 0x33ae0): 'MAPRATIO',
+    ('IIci', 0x33b30): 'STDPOLY',
+    ('IIci', 0x33bf0): 'FRAMEPOLY',
+    ('IIci', 0x33bf4): 'PAINTPOLY',
+    ('IIci', 0x33bf8): 'ERASEPOLY',
+    ('IIci', 0x33bfc): 'INVERTPOLY',
+    ('IIci', 0x33c00): 'FILLPOLY',
+    ('IIci', 0x33c04): 'FILLCPOLY',
+    ('IIci', 0x33c16): 'CALLPOLY',
+    ('IIci', 0x33c40): 'OPENPOLY',
+    ('IIci', 0x33c80): 'CLOSEPOLY',
+    ('IIci', 0x33cf0): 'KILLPOLY',
+    ('IIci', 0x33d00): 'OFFSETPOLY',
+    ('IIci', 0x33d20): 'MAPPOLY',
+    ('IIci', 0x33d80): 'FRPOLY',
+    ('IIci', 0x33e80): 'PAINTVECTOR',
+    ('IIci', 0x34410): 'DRAWPOLY',
+    ('IIci', 0x34570): 'STDRRECT',
+    ('IIci', 0x34630): 'FRAMEROUNDRECT',
+    ('IIci', 0x34634): 'PAINTROUNDRECT',
+    ('IIci', 0x34638): 'ERASEROUNDRECT',
+    ('IIci', 0x3463c): 'INVERTROUNDRECT',
+    ('IIci', 0x34640): 'FILLROUNDRECT',
+    ('IIci', 0x34644): 'FILLCROUNDRECT',
+    ('IIci', 0x34656): 'CALLRRECT',
+    ('IIci', 0x34680): 'DRAWARC',
+    ('IIci', 0x34856): 'FromDrawArc', #leak
+    ('IIci', 0x34d90): 'INITOVAL',
+    ('IIci', 0x34e40): 'BUMPOVAL',
+    ('IIci', 0x34e90): 'STDBITS',
+    ('IIci', 0x35200): 'BITSDEVLOOP',
+    ('IIci', 0x356c0): 'COPYBITS',
+    ('IIci', 0x356dc): 'AfterGetScreenBaseInCopyBits', #leak
+    ('IIci', 0x3586a): 'AfterCopyBitsCallsItselfToFlatten', #leak
+    ('IIci', 0x358e0): 'GODEVLOOP',
+    ('IIci', 0x35910): 'COPYCICON',
+    ('IIci', 0x35912): 'COPYMASK',
+    ('IIci', 0x35990): 'CMDEVLOOP',
+    ('IIci', 0x359c0): 'SEEDFILL',
+    ('IIci', 0x359c8): 'CALCMASK',
+    ('IIci', 0x35a4c): 'ciSeedFill', #leak
+    ('IIci', 0x35b0a): 'ciGoHome', #leak
+    ('IIci', 0x35b20): 'SCROLLRECT',
+    ('IIci', 0x35c60): 'PACKBITS',
+    ('IIci', 0x35d14): 'UNPACKBITS',
+    ('IIci', 0x35d60): 'PACKWORDS',
+    ('IIci', 0x35e22): 'UNPACKWORDS',
+    ('IIci', 0x35e70): 'STDRGN',
+    ('IIci', 0x35f10): 'FRAMERGN',
+    ('IIci', 0x35f14): 'PAINTRGN',
+    ('IIci', 0x35f18): 'ERASERGN',
+    ('IIci', 0x35f1c): 'INVERTRGN',
+    ('IIci', 0x35f20): 'FILLRGN',
+    ('IIci', 0x35f24): 'FILLCRGN',
+    ('IIci', 0x35f36): 'CALLRGN',
+    ('IIci', 0x35f60): 'DRAWRGN',
+    ('IIci', 0x35fc0): 'FRRGN',
+    ('IIci', 0x36040): 'NEWRGN',
+    ('IIci', 0x36060): 'DISPOSERGN',
+    ('IIci', 0x36070): 'OPENRGN',
+    ('IIci', 0x360a0): 'CLOSERGN',
+    ('IIci', 0x36110): 'COPYRGN',
+    ('IIci', 0x36160): 'SETEMPTYRGN',
+    ('IIci', 0x36170): 'SETRECTRGN',
+    ('IIci', 0x361d0): 'RECTRGN',
+    ('IIci', 0x361e0): 'OFFSETRGN',
+    ('IIci', 0x36220): 'INSETRGN',
+    ('IIci', 0x362d0): 'EMPTYRGN',
+    ('IIci', 0x362f0): 'EQUALRGN',
+    ('IIci', 0x36330): 'SECTRGN',
+    ('IIci', 0x36334): 'UNIONRGN',
+    ('IIci', 0x36338): 'DIFFRGN',
+    ('IIci', 0x3633c): 'XORRGN',
+    ('IIci', 0x3633e): 'DORGNOP',
+    ('IIci', 0x36430): 'PTINRGN',
+    ('IIci', 0x36490): 'RECTINRGN',
+    ('IIci', 0x36520): 'TRIMRECT',
+    ('IIci', 0x36630): 'MAPRGN',
+    ('IIci', 0x366f0): 'BITMAPRGN',
+    ('IIci', 0x369c0): 'INITRGN',
+    ('IIci', 0x36a10): 'SEEKRGN',
+    ('IIci', 0x36a5e): 'SEEKDOWN',
+    ('IIci', 0x36a9a): 'SEEKUP',
+    ('IIci', 0x36b60): 'STRETCHBITS',
+    ('IIci', 0x36d24): 'BLITCASE',
+    ('IIci', 0x37030): 'STCOLORTAB',
+    ('IIci', 0x37050): 'STGRAYTAB',
+    ('IIci', 0x37070): 'STSEARCHTAB',
+    ('IIci', 0x37170): 'ONEBITPROC',
+    ('IIci', 0x374d0): 'STSCANLOOP',
+    ('IIci', 0x37934): 'DONESTRETCH',
+    ('IIci', 0x37980): 'STNOSTACK',
+    ('IIci', 0x379f0): 'STMASK0',
+    ('IIci', 0x37a20): 'STMASK1',
+    ('IIci', 0x37a40): 'STMASK2',
+    ('IIci', 0x37a60): 'STMASK3',
+    ('IIci', 0x37a80): 'STADDOVER',
+    ('IIci', 0x37ad0): 'STADDPIN',
+    ('IIci', 0x37b40): 'STSUBOVER',
+    ('IIci', 0x37b90): 'STSUBPIN',
+    ('IIci', 0x37c00): 'STMAX',
+    ('IIci', 0x37c60): 'STMIN',
+    ('IIci', 0x37cc0): 'STAVG',
+    ('IIci', 0x37d20): 'STTRANSPARENT',
+    ('IIci', 0x37d60): 'STHILITE',
+    ('IIci', 0x383f4): 'STARITH16TAB',
+    ('IIci', 0x38418): 'STARITH32TAB',
+    ('IIci', 0x38440): 'SETUPSTRETCH',
+    ('IIci', 0x3852c): 'EXTBL',
+    ('IIci', 0x3854c): 'PATEXTBL',
+    ('IIci', 0x38846): 'TABLE2',
+    ('IIci', 0x38ae8): 'TABLE4',
+    ('IIci', 0x38ff4): 'TABLE8',
+    ('IIci', 0x39380): 'SCALEINDEXEDTOINDEXED',
+    ('IIci', 0x393c0): 'DITHER32TOINDEXED',
+    ('IIci', 0x394d0): 'DITHER16TOINDEXED',
+    ('IIci', 0x395e0): 'DITHER32TOGRAY',
+    ('IIci', 0x396c0): 'DITHER16TOGRAY',
+    ('IIci', 0x397c0): 'SCALE32TOINDEXED',
+    ('IIci', 0x39820): 'SCALE32TOGRAY',
+    ('IIci', 0x39880): 'SCALE32TOBITMAP',
+    ('IIci', 0x398d0): 'SCALE16TOGRAY',
+    ('IIci', 0x39940): 'SCALE16TOBITMAP',
+    ('IIci', 0x399b0): 'SEARCH32TOINDEXED',
+    ('IIci', 0x39a60): 'SCALE32TO16',
+    ('IIci', 0x39a90): 'SEARCH32TO16',
+    ('IIci', 0x39b30): 'SCALE16TOINDEXED',
+    ('IIci', 0x39ba0): 'SEARCH16TOINDEXED',
+    ('IIci', 0x39c80): 'SCALE16TO32',
+    ('IIci', 0x39d20): 'SEARCH16TO32',
+    ('IIci', 0x39dd0): 'SCALEBLT',
+    ('IIci', 0x3a554): 'SCDIRTAB1',
+    ('IIci', 0x3a574): 'SCDIRTAB2',
+    ('IIci', 0x3a594): 'SCDIRTAB4',
+    ('IIci', 0x3a5b4): 'SCDIRTAB8',
+    ('IIci', 0x3a5d4): 'SCDIRTAB16',
+    ('IIci', 0x3a5f4): 'SCDIRTAB32',
+    ('IIci', 0x3a614): 'SCINDTAB1',
+    ('IIci', 0x3a624): 'SCINDTAB2',
+    ('IIci', 0x3a634): 'SCINDTAB4',
+    ('IIci', 0x3a644): 'SCINDTAB8',
+    ('IIci', 0x3a654): 'SCINDTAB16',
+    ('IIci', 0x3a664): 'SCINDTAB32',
+    ('IIci', 0x3a8e0): 'CB8TO8CLIP',
+    ('IIci', 0x3ac6e): 'CB8TO1CLIP',
+    ('IIci', 0x3af00): 'XGETSEEK',
+    ('IIci', 0x3af0a): 'ALLOCRUNBUF',
+    ('IIci', 0x3af40): 'GETSEEK',
+    ('IIci', 0x3b084): 'GSRUNTBL',
+    ('IIci', 0x3b09c): 'GSEXPTBL',
+    ('IIci', 0x3b0b4): 'GSSEEKTBL',
+    ('IIci', 0x3ba20): 'STDOVAL',
+    ('IIci', 0x3bae0): 'FRAMEOVAL',
+    ('IIci', 0x3bae4): 'PAINTOVAL',
+    ('IIci', 0x3bae8): 'ERASEOVAL',
+    ('IIci', 0x3baec): 'INVERTOVAL',
+    ('IIci', 0x3baf0): 'FILLOVAL',
+    ('IIci', 0x3baf4): 'FILLCOVAL',
+    ('IIci', 0x3bb06): 'CALLOVAL',
+    ('IIci', 0x3bb30): 'STDARC',
+    ('IIci', 0x3bbe0): 'FRAMEARC',
+    ('IIci', 0x3bbe4): 'PAINTARC',
+    ('IIci', 0x3bbe8): 'ERASEARC',
+    ('IIci', 0x3bbec): 'INVERTARC',
+    ('IIci', 0x3bbf0): 'FILLARC',
+    ('IIci', 0x3bbf4): 'FILLCARC',
+    ('IIci', 0x3bc06): 'CALLARC',
+    ('IIci', 0x3bc30): 'SORTPOINTS',
+    ('IIci', 0x3bcc0): 'CULLPOINTS',
+    ('IIci', 0x3bd10): 'PUTRGN',
+    ('IIci', 0x3bdb0): 'UPDATEPIXMAP',
+    ('IIci', 0x3bdc0): 'MAKEITABLE',
+    ('IIci', 0x3c144): 'MAKEGRAYITAB',
+    ('IIci', 0x3c250): 'ITABMATCH',
+    ('IIci', 0x3c3a0): 'COLORTHING2INDEX',
+    ('IIci', 0x3c3c8): 'COLOR2INDEX',
+    ('IIci', 0x3c460): 'INDEX2COLOR',
+    ('IIci', 0x3c500): 'INVERTCOLOR',
+    ('IIci', 0x3c550): 'RGBFORECOLOR',
+    ('IIci', 0x3c5ba): 'RGB2OLD',
+    ('IIci', 0x3c5e6): 'RGBBACKCOLOR',
+    ('IIci', 0x3c5f0): 'GETFORECOLOR',
+    ('IIci', 0x3c632): 'GETBACKCOLOR',
+    ('IIci', 0x3c640): 'REALCOLOR',
+    ('IIci', 0x3c6c0): 'SETENTRIES',
+    ('IIci', 0x3c800): 'RESTOREENTRIES',
+    ('IIci', 0x3c920): 'SAVEENTRIES',
+    ('IIci', 0x3c9c0): 'PROTECTENTRY',
+    ('IIci', 0x3ca12): 'RESERVEENTRY',
+    ('IIci', 0x3ca40): 'SETCLIENTID',
+    ('IIci', 0x3ca50): 'ADDSEARCH',
+    ('IIci', 0x3ca8a): 'ADDCOMP',
+    ('IIci', 0x3cac0): 'DELSEARCH',
+    ('IIci', 0x3caf0): 'DELCOMP',
+    ('IIci', 0x3cb20): 'GETSUBTABLE',
+    ('IIci', 0x3cbe0): 'QDERROR',
+    ('IIci', 0x3cbf0): 'DELTARGB',
+    ('IIci', 0x3cd86): 'GETCTABLE',
+    ('IIci', 0x3ce20): 'ANGLEFROMSLOPE',
+    ('IIci', 0x3ce5e): 'SLOPEFROMANGLE',
+    ('IIci', 0x3cf90): 'PTTOANGLE',
+    ('IIci', 0x3d030): 'PUTOVAL',
+    ('IIci', 0x3d180): 'PACKRGN',
+    ('IIci', 0x3d250): 'RGNOP',
+    ('IIci', 0x3d490): 'SECTSCAN',
+    ('IIci', 0x3d496): 'DIFFSCAN',
+    ('IIci', 0x3d49a): 'UNIONSCAN',
+    ('IIci', 0x3d4e0): 'INSETSCAN',
+    ('IIci', 0x3d52a): 'XORSCAN',
+    ('IIci', 0x3d540): 'SEEDCFILL',
+    ('IIci', 0x3d55a): 'CALCCMASK',
+    ('IIci', 0x3d730): 'GETTEMPDEVICE',
+    ('IIci', 0x3d798): 'SYSCOLOREND',
+    ('IIci', 0x3d7a0): 'UPDATEPALETTE',
+    ('IIci', 0x3d7b8): 'ACTIVATEPALETTE',
+    ('IIci', 0x3d9a0): 'ALLOCATE',
+    ('IIci', 0x3da40): 'CHECKALLDEVICECLUTS',
+    ('IIci', 0x3da80): 'CHECKFORJUGGLER',
+    ('IIci', 0x3daa0): 'PMGREXIT',
+    ('IIci', 0x3dad0): 'INSTALLMYEXITTOSHELL',
+    ('IIci', 0x3daf0): 'MYEXITTOSHELL',
+    ('IIci', 0x3db00): 'RECORDPALETTE',
+    ('IIci', 0x3dbd0): 'NEWPALETTE',
+    ('IIci', 0x3dc80): 'GETNEWPALETTE',
+    ('IIci', 0x3dce0): 'CLAIMINDEX',
+    ('IIci', 0x3dd80): 'CLEARPALETTE',
+    ('IIci', 0x3de10): 'CLEARSTRAND',
+    ('IIci', 0x3de50): 'ERASEPALETTE',
+    ('IIci', 0x3dee0): 'CORRELATE',
+    ('IIci', 0x3e040): 'DISPOSEAPPPALETTES',
+    ('IIci', 0x3e0a0): 'DEVSETENTRIES',
+    ('IIci', 0x3e0e0): 'DISPOSEPALETTE',
+    ('IIci', 0x3e120): 'GETCLUT',
+    ('IIci', 0x3e1f0): 'INITPALETTES',
+    ('IIci', 0x3e3e0): 'CHECKDEVICECOLORS',
+    ('IIci', 0x3e460): 'FINDLINK',
+    ('IIci', 0x3e4c0): 'ANALYZEDEV',
+    ('IIci', 0x3e5e0): 'PILLAGE',
+    ('IIci', 0x3e610): 'GIMMEINDEX',
+    ('IIci', 0x3e630): 'MARKDEVUBIT',
+    ('IIci', 0x3e650): 'REDRAWDESKTOP',
+    ('IIci', 0x3e680): 'DIRTYSEEDS',
+    ('IIci', 0x3e6b0): 'SETPALETTE',
+    ('IIci', 0x3e7a0): 'GETPALETTE',
+    ('IIci', 0x3e830): 'FINDINDEX',
+    ('IIci', 0x3e8c0): 'ENTRY2INDEX',
+    ('IIci', 0x3e9a0): 'INDEX2ENTRIES',
+    ('IIci', 0x3ea20): 'PMFORECOLOR',
+    ('IIci', 0x3ea24): 'PMBACKCOLOR',
+    ('IIci', 0x3ea90): 'ANIMATEENTRY',
+    ('IIci', 0x3ebc0): 'ANIMATEPALETTE',
+    ('IIci', 0x3ed60): 'GETENTRYCOLOR',
+    ('IIci', 0x3eda0): 'SCATTERDEVICES',
+    ('IIci', 0x3ee68): 'SETDEV',
+    ('IIci', 0x3ef70): 'SETENTRYCOLOR',
+    ('IIci', 0x3efc0): 'GETENTRYUSAGE',
+    ('IIci', 0x3f000): 'SETENTRYUSAGE',
+    ('IIci', 0x3f0a0): 'CTAB2PALETTE',
+    ('IIci', 0x3f140): 'PALETTE2CTAB',
+    ('IIci', 0x3f1b0): 'CLEARONE',
+    ('IIci', 0x3f210): 'COPYPALETTE',
+    ('IIci', 0x3f310): 'UPDATEDEVICE',
+    ('IIci', 0x3f480): 'UPDATEDEVICES',
+    ('IIci', 0x3f4d0): 'WHATPAL',
+    ('IIci', 0x3f500): 'CALCDEVS',
+    ('IIci', 0x3f5d0): 'UNHOOKDEVICE',
+    ('IIci', 0x3f650): 'UNRESERVEDEVICES',
+    ('IIci', 0x3f6c0): 'ZAPLINKS',
+    ('IIci', 0x3f810): 'RESIZEPALETTE',
+    ('IIci', 0x3f8a0): 'RESTOREDEVICECLUT',
+    ('IIci', 0x3f8d0): 'NEWHILITECOLOR',
+    ('IIci', 0x3f910): 'SAVEFORE',
+    ('IIci', 0x3f914): 'SAVEBACK',
+    ('IIci', 0x3f970): 'RESTOREFORE',
+    ('IIci', 0x3f98e): 'RESTOREBACK',
+    ('IIci', 0x3f9b0): 'REINSTANTIATECOLORS',
+    ('IIci', 0x3f9c0): 'RELEASELIST',
+    ('IIci', 0x3fa36): 'PMGRDISPATCH',
+    ('IIci', 0x3fa60): 'QDEXTDISPATCHER',
+    ('IIci', 0x3fae0): 'NEWGWORLD',
+    ('IIci', 0x3fb88): 'FromNewGWorld', #leak
+    ('IIci', 0x3fe3e): 'AfterOpenCPortInNewGWorld', #leak
+    ('IIci', 0x3fee6): 'newGWorldParamError', #leak
+    ('IIci', 0x3ff3a): 'SHIFTTABLE',
+    ('IIci', 0x3ff60): 'FINDINVERSETABLE',
+    ('IIci', 0x3ff90): 'GETGWORLD',
+    ('IIci', 0x3ffb0): 'SETGWORLD',
+    ('IIci', 0x3fff0): 'DISPOSEGWORLD',
+    ('IIci', 0x40060): 'GETGWORLDDEVICE',
+    ('IIci', 0x40090): 'UPDATEGWORLD',
+    ('IIci', 0x40ae0): 'QDDONE',
+    ('IIci', 0x40af0): 'LOCKPIXELS',
+    ('IIci', 0x40b30): 'UNLOCKPIXELS',
+    ('IIci', 0x40b60): 'PORTCHANGED',
+    ('IIci', 0x40b70): 'PIXPATCHANGED',
+    ('IIci', 0x40b80): 'CTABCHANGED',
+    ('IIci', 0x40ba0): 'GDEVICECHANGED',
+    ('IIci', 0x40bb0): 'ALLOWPURGEPIXELS',
+    ('IIci', 0x40bd0): 'NOPURGEPIXELS',
+    ('IIci', 0x40bf0): 'GETPIXELSSTATE',
+    ('IIci', 0x40c20): 'SETPIXELSSTATE',
+    ('IIci', 0x40c80): 'GETPIXBASEADDR',
+    ('IIci', 0x40cd0): 'NEWSCREENBUFFER',
+    ('IIci', 0x40cd4): 'NEWTEMPSCREENBUFFER',
+    ('IIci', 0x40d0e): 'FromNewTempScreenBuffer', #leak
+    ('IIci', 0x40e88): 'newTempScreenBufferParamError', #leak
+    ('IIci', 0x40ea4): 'AfterFirstDisposeD0', #leak
+    ('IIci', 0x40eaa): 'AfterSecondDisposeD0', #leak
+    ('IIci', 0x40eb0): 'DISPOSESCREENBUFFER',
+    ('IIci', 0x40ee0): 'OFFSCREENVERSION',
+    ('IIci', 0x41118): 'U_STARTTEST1',
+    ('IIci', 0x4114a): 'STARTTEST1',
+    ('IIci', 0x4132e): 'SETUPUSP',
+    ('IIci', 0x4136a): 'SETUPUSP',
+    ('IIci', 0x41400): 'SETVECTORTABLE',
+    ('IIci', 0x4142c): 'JGETHARDWAREINFO',
+    ('IIci', 0x41470): 'SETVECTORTABLE',
+    ('IIci', 0x4149c): 'JGETHARDWAREINFO',
+    ('IIci', 0x4156c): 'OPTREVMOD3TEST',
+    ('IIci', 0x41608): 'REVMOD3TEST',
+    ('IIci', 0x41612): 'INITMMU',
+    ('IIci', 0x41656): 'OPTROMTEST',
+    ('IIci', 0x4168e): 'INITMMU',
+    ('IIci', 0x4170e): 'ROMTEST',
+    ('IIci', 0x41778): 'STARTUPROMTEST',
+    ('IIci', 0x4177c): 'INITMMU',
+    ('IIci', 0x417a4): 'EXTRAMTEST',
+    ('IIci', 0x417ca): 'STARTREADPRAM',
+    ('IIci', 0x417d8): 'U_SCCLOOPTEST',
+    ('IIci', 0x417f6): 'ADDRLINETEST',
+    ('IIci', 0x41836): 'STARTREADPRAM',
+    ('IIci', 0x4186a): 'U_SCCREGTEST',
+    ('IIci', 0x41890): 'DATABUSTEST',
+    ('IIci', 0x418da): 'U_SCCTIMERTEST',
+    ('IIci', 0x4192a): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x41930): 'STARTREADPRAM',
+    ('IIci', 0x419c4): 'U_VIATEST',
+    ('IIci', 0x419d6): 'NOTEST',
+    ('IIci', 0x419e4): 'SETSCCIOPBYPASS',
+    ('IIci', 0x41b08): 'SCCLOOPTEST',
+    ('IIci', 0x41b74): 'U_TESTSCSI',
+    ('IIci', 0x41b9a): 'SCCREGTEST',
+    ('IIci', 0x41c5c): 'U_TESTASC',
+    ('IIci', 0x41c7e): 'SCCTIMERTEST',
+    ('IIci', 0x41d7e): 'VIATEST',
+    ('IIci', 0x41da2): 'U_PRAMTEST',
+    ('IIci', 0x41e2c): 'U_TESTRBV',
+    ('IIci', 0x41e72): 'GETRBVSIZE',
+    ('IIci', 0x41f32): 'TESTSCSI',
+    ('IIci', 0x41f86): 'U_TESTSWIM',
+    ('IIci', 0x41fa2): 'GETRBVSIZE',
+    ('IIci', 0x41fec): 'GETRBVSIZE',
+    ('IIci', 0x4201a): 'TESTASC',
+    ('IIci', 0x42130): 'MYGETRESOURCE',
+    ('IIci', 0x42160): 'PRAMTEST',
+    ('IIci', 0x421b0): 'IsAscMac',
+    ('IIci', 0x421e0): 'INITGLOBALS',
+    ('IIci', 0x421ea): 'TESTRBV',
+    ('IIci', 0x42274): 'U_TESTPGC',
+    ('IIci', 0x422fa): 'U_ERROR1HANDLER',
+    ('IIci', 0x42344): 'U_ERROR2HANDLER',
+    ('IIci', 0x42378): 'U_ERROR3HANDLER',
+    ('IIci', 0x423a2): 'U_ERROR4HANDLER',
+    ('IIci', 0x423cc): 'U_NCERRORHANDLER',
+    ('IIci', 0x423f0): 'SetDivTable',
+    ('IIci', 0x42470): 'insertInQueue',
+    ('IIci', 0x424f0): 'nextFromQueue',
+    ('IIci', 0x42550): 'ChannelModifier',
+    ('IIci', 0x42632): 'FLOAT_TEST',
+    ('IIci', 0x427c0): 'processCommandFrom',
+    ('IIci', 0x42830): 'processCommand',
+    ('IIci', 0x42860): 'processNextCommand',
+    ('IIci', 0x428a0): 'sendEmptyCommand',
+    ('IIci', 0x428f0): 'tickleModifier',
+    ('IIci', 0x42920): 'findModifier',
+    ('IIci', 0x42922): 'U_TMRESTART',
+    ('IIci', 0x4295a): 'U_TMENTRY0',
+    ('IIci', 0x4295e): 'U_TMENTRY1',
+    ('IIci', 0x42980): 'disposChannel',
+    ('IIci', 0x42ae0): 'checkChannel',
+    ('IIci', 0x42b00): 'MyHoldMemory',
+    ('IIci', 0x42b40): 'MyUnholdMemory',
+    ('IIci', 0x42b80): 'pumpResource',
+    ('IIci', 0x42c20): 'OnHowOften',
+    ('IIci', 0x42c90): 'OnWait',
+    ('IIci', 0x42d10): 'SNDAPPDEAD',
+    ('IIci', 0x42d60): 'ASYNCHCALLBACK',
+    ('IIci', 0x42d90): 'SNDDOCOMMAND',
+    ('IIci', 0x42dc8): 'TESTPGC',
+    ('IIci', 0x42e34): 'FMCREGTEST',
+    ('IIci', 0x42e40): 'SNDDOIMMEDIATE',
+    ('IIci', 0x42e48): 'SETUPBASES',
+    ('IIci', 0x42eb0): 'SNDNEWCHANNEL',
+    ('IIci', 0x42eb2): 'FMCCACHETEST',
+    ('IIci', 0x42f24): 'U_STARTTIMER',
+    ('IIci', 0x42fc4): 'OSSREGTEST',
+    ('IIci', 0x4306e): 'OSSINTTEST',
+    ('IIci', 0x43070): 'SNDDISPOSECHANNEL',
+    ('IIci', 0x430d2): 'U_SENDTOCLK',
+    ('IIci', 0x430dc): 'RPUTEST',
+    ('IIci', 0x43100): 'SNDPLAY',
+    ('IIci', 0x43112): 'U_WRXBYTE',
+    ('IIci', 0x43148): 'U_RDXBYTE',
+    ('IIci', 0x4315a): 'ERROR1HANDLER',
+    ('IIci', 0x4317e): 'U_CLKWPOFF',
+    ('IIci', 0x431b4): 'ERROR2HANDLER',
+    ('IIci', 0x431c0): 'SIZEMEMORY',
+    ('IIci', 0x431ea): 'ERROR3HANDLER',
+    ('IIci', 0x43214): 'ERROR4HANDLER',
+    ('IIci', 0x4323e): 'NCERRORHANDLER',
+    ('IIci', 0x433b0): 'SNDCONTROL',
+    ('IIci', 0x434d0): 'SNDADDMODIFIER',
+    ('IIci', 0x434e4): 'STARTTEST1',
+    ('IIci', 0x435aa): 'ROMCHK',
+    ('IIci', 0x43606): 'SIGNBYTES',
+    ('IIci', 0x438de): 'TJUMP',
+    ('IIci', 0x438ee): 'MAXTEST',
+    ('IIci', 0x438f0): 'NJUMP',
+    ('IIci', 0x4390e): 'MAXNTST',
+    ('IIci', 0x43918): 'GetTMRecordPtr',
+    ('IIci', 0x4391a): 'ERROR1HANDLER',
+    ('IIci', 0x4391c): 'CancelDriftOfTimer',
+    ('IIci', 0x4392a): 'SetNextInterrupt',
+    ('IIci', 0x4394a): 'TMRESTART',
+    ('IIci', 0x43958): 'TMENTRY0',
+    ('IIci', 0x4395c): 'TMENTRY1',
+    ('IIci', 0x43964): 'RemoveXTimer',
+    ('IIci', 0x43970): 'NewPtr',
+    ('IIci', 0x43972): 'ERROR2HANDLER',
+    ('IIci', 0x43980): 'NewSysPtr',
+    ('IIci', 0x43990): 'NewSysHandle',
+    ('IIci', 0x439a0): 'ERROR3HANDLER',
+    ('IIci', 0x439b0): 'HLock',
+    ('IIci', 0x439c0): 'HUnlock',
+    ('IIci', 0x439c4): 'ERROR4HANDLER',
+    ('IIci', 0x439d0): 'MoveHHi',
+    ('IIci', 0x439e0): 'HGetState',
+    ('IIci', 0x439e8): 'NCERRORHANDLER',
+    ('IIci', 0x439f0): 'HSetState',
+    ('IIci', 0x43a00): 'GetHandleSize',
+    ('IIci', 0x43a10): 'BLOCKMOVE',
+    ('IIci', 0x43a20): 'SetHandleSize',
+    ('IIci', 0x43a30): 'MemError',
+    ('IIci', 0x43a40): 'StripAddress',
+    ('IIci', 0x43a50): 'RecoverHandle',
+    ('IIci', 0x43a5a): 'SLODMULTIPLIERS',
+    ('IIci', 0x43a80): 'CALCULATESLOD',
+    ('IIci', 0x43aa0): 'WaitBit',
+    ('IIci', 0x43ab0): 'inAppHeap',
+    ('IIci', 0x43ae0): 'SndAllOff',
+    ('IIci', 0x43af0): 'BlockInts',
+    ('IIci', 0x43b00): 'UnBlockInts',
+    ('IIci', 0x43b10): 'GestaltCall',
+    ('IIci', 0x43b40): 'INSTALLSOUNDINTHANDLER',
+    ('IIci', 0x43b4a): 'V8SNDINTPATCH1RTN',
+    ('IIci', 0x43cd0): 'SMGlobalLoc',
+    ('IIci', 0x43ce0): 'IsVMPresent',
+    ('IIci', 0x43d00): 'NewVMPtr',
+    ('IIci', 0x43d30): 'DisposVMPtr',
+    ('IIci', 0x43d60): 'SMGlobalLoc',
+    ('IIci', 0x43d70): 'IsVMPresent',
+    ('IIci', 0x43d80): 'HOLDMEMORY',
+    ('IIci', 0x43d90): 'UNHOLDMEMORY',
+    ('IIci', 0x43d98): 'TMENTRY1',
+    ('IIci', 0x43da0): 'LOCKMEMORY',
+    ('IIci', 0x43db0): 'LOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x43dc0): 'UNLOCKMEMORY',
+    ('IIci', 0x43dd0): 'GETPHYSICAL',
+    ('IIci', 0x43df0): 'RangeCommon',
+    ('IIci', 0x43e00): 'GETPAGESTATE',
+    ('IIci', 0x43e10): 'PAGEFAULTFATAL',
+    ('IIci', 0x43e20): 'UNHOLDMEMORY',
+    ('IIci', 0x43e30): 'LOCKMEMORY',
+    ('IIci', 0x43e40): 'LOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x43e50): 'UNLOCKMEMORY',
+    ('IIci', 0x43e60): 'GETPHYSICAL',
+    ('IIci', 0x43e68): 'SETUPBASES',
+    ('IIci', 0x43e80): 'DEFERUSERFN',
+    ('IIci', 0x43e90): 'GETPAGESTATE',
+    ('IIci', 0x43e9e): 'SOUNDDISPATCHER',
+    ('IIci', 0x43ea0): 'PAGEFAULTFATAL',
+    ('IIci', 0x43eb0): 'DEBUGGERLOCKMEMORY',
+    ('IIci', 0x43ec0): 'DEBUGGERUNLOCKMEMORY',
+    ('IIci', 0x43ed0): 'ENTERSUPERVISORMODE',
+    ('IIci', 0x43ee0): 'UnimplFunction',
+    ('IIci', 0x43ef0): 'DispVersion',
+    ('IIci', 0x43f2e): 'SOUNDDISPATCHER',
+    ('IIci', 0x43f30): 'DispAddTool',
+    ('IIci', 0x43f44): 'STARTTIMER',
+    ('IIci', 0x43f70): 'UnimplFunction',
+    ('IIci', 0x43f80): 'DispVersion',
+    ('IIci', 0x43fa0): 'DispToolAddr',
+    ('IIci', 0x43fc0): 'DispAddTool',
+    ('IIci', 0x43fd0): 'INITMACEDISPATCH',
+    ('IIci', 0x44000): 'DispRemTool',
+    ('IIci', 0x44030): 'DispToolAddr',
+    ('IIci', 0x44060): 'INITMACEDISPATCH',
+    ('IIci', 0x44090): 'Comp3to1',
+    ('IIci', 0x44092): 'SENDTOCLK',
+    ('IIci', 0x440d2): 'WRXBYTE',
+    ('IIci', 0x44108): 'RDXBYTE',
+    ('IIci', 0x4413e): 'CLKWPOFF',
+    ('IIci', 0x44180): 'SIZEMEMORY',
+    ('IIci', 0x44280): 'Exp1to3',
+    ('IIci', 0x442a4): 'SEPARITYPATCH',
+    ('IIci', 0x44310): 'Exp1to3',
+    ('IIci', 0x44480): 'STARTTIMER',
+    ('IIci', 0x44510): 'Comp6to1',
+    ('IIci', 0x44530): 'SENDTOCLK',
+    ('IIci', 0x4457e): 'WRXBYTE',
+    ('IIci', 0x445dc): 'RDXBYTE',
+    ('IIci', 0x4462a): 'CLKWPOFF',
+    ('IIci', 0x4466e): 'DATABUSTEST',
+    ('IIci', 0x44690): 'STARTUPROMTEST',
+    ('IIci', 0x446bc): 'MOD3TEST',
+    ('IIci', 0x447d8): 'REVMOD3TEST',
+    ('IIci', 0x44870): 'Exp1to6',
+    ('IIci', 0x448e2): 'ROMTEST',
+    ('IIci', 0x44900): 'Exp1to6',
+    ('IIci', 0x4496e): 'EXTRAMTEST',
+    ('IIci', 0x449c0): 'ADDRLINETEST',
+    ('IIci', 0x44a5a): 'NOTEST',
+    ('IIci', 0x44ad6): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x44bc0): 'MIN2_TABLE',
+    ('IIci', 0x44bd0): 'IQUADEL2_TABLE',
+    ('IIci', 0x44c50): 'MIN2_TABLE',
+    ('IIci', 0x44c58): 'SCCLOOPTEST',
+    ('IIci', 0x44c60): 'IQUADEL2_TABLE',
+    ('IIci', 0x44ce0): 'SCCREGTEST',
+    ('IIci', 0x44d18): 'SCCTIMERTEST',
+    ('IIci', 0x44e22): 'VIATEST',
+    ('IIci', 0x44fc0): 'TESTSCSI',
+    ('IIci', 0x450a4): 'TESTASC',
+    ('IIci', 0x451dc): 'PRAMTEST',
+    ('IIci', 0x45264): 'TESTRBV',
+    ('IIci', 0x453b4): 'TESTSWIM',
+    ('IIci', 0x453d0): 'MIN3_TABLE',
+    ('IIci', 0x453e0): 'IQUADEL3_TABLE',
+    ('IIci', 0x45460): 'MIN3_TABLE',
+    ('IIci', 0x45470): 'IQUADEL3_TABLE',
+    ('IIci', 0x4569c): 'FLOAT_TEST',
+    ('IIci', 0x45be0): 'SNDSOUNDMANAGERVERSION',
+    ('IIci', 0x45bf0): 'MACEVERSION',
+    ('IIci', 0x45c0a): 'BOOTBEEP6',
+    ('IIci', 0x45c1c): 'ERRORBEEP1',
+    ('IIci', 0x45c2e): 'ERRORBEEP2',
+    ('IIci', 0x45c40): 'ERRORBEEP3',
+    ('IIci', 0x45c52): 'ERRORBEEP4',
+    ('IIci', 0x45c64): 'DOBEEP',
+    ('IIci', 0x45c70): 'SNDSOUNDMANAGERVERSION',
+    ('IIci', 0x45c7c): 'BATMANCHECK1RETURN',
+    ('IIci', 0x45c80): 'MACEVERSION',
+    ('IIci', 0x45c9a): 'BOOTBEEP6',
+    ('IIci', 0x45cac): 'ERRORBEEP1',
+    ('IIci', 0x45cae): 'BATMANCHECK2RETURN',
+    ('IIci', 0x45cbe): 'ERRORBEEP2',
+    ('IIci', 0x45cd0): 'ERRORBEEP3',
+    ('IIci', 0x45ce2): 'ERRORBEEP4',
+    ('IIci', 0x45d36): 'BATMANCHECK3RETURN',
+    ('IIci', 0x45e0e): 'BATMANCHECK4RETURN',
+    ('IIci', 0x45e18): 'SPINEMPTYPATCHRETURN',
+    ('IIci', 0x45e1e): 'ISNTBATMAN2',
+    ('IIci', 0x45e2c): 'BATMANCHECK5RETURN',
+    ('IIci', 0x45e32): 'TESTPGC',
+    ('IIci', 0x45e44): 'SPINBEEPPATCHRETURN',
+    ('IIci', 0x45e46): 'SPINBEEPRETURN',
+    ('IIci', 0x45eac): 'BEEPERLOOP',
+    ('IIci', 0x45f36): 'BEEPMIXERPATCHRETURN',
+    ('IIci', 0x45f3a): 'BEEPMIXERDONE',
+    ('IIci', 0x46040): 'USTTESTS',
+    ('IIci', 0x460a2): 'USTSUBTESTS',
+    ('IIci', 0x460c6): 'USTSUBTESTS',
+    ('IIci', 0x46140): 'TMVECTORS',
+    ('IIci', 0x461ac): 'SIGNBYTES',
+    ('IIci', 0x461b0): 'PGC_TEST',
+    ('IIci', 0x461d0): 'TMVECTORS',
+    ('IIci', 0x461e0): 'PGC_NMI_Handler',
+    ('IIci', 0x46220): 'InstallExceptionVector',
+    ('IIci', 0x46240): 'PGC_ControlLines',
+    ('IIci', 0x46390): 'PGC_DataBus',
+    ('IIci', 0x4639a): 'STARTTEST1',
+    ('IIci', 0x4642a): 'STARTTEST1',
+    ('IIci', 0x464d0): 'OVERPATCH',
+    ('IIci', 0x4663c): 'USTCPULIST',
+    ('IIci', 0x4665c): 'SETUPUSP',
+    ('IIci', 0x4666c): 'SETUPUSP',
+    ('IIci', 0x46674): 'SETUPUSP',
+    ('IIci', 0x466e2): 'USTCPULIST',
+    ('IIci', 0x4670a): 'USTCPULIST',
+    ('IIci', 0x46762): 'SETVECTORTABLE',
+    ('IIci', 0x4676c): 'MACIISITESTS',
+    ('IIci', 0x46772): 'SETVECTORTABLE',
+    ('IIci', 0x4677a): 'SETVECTORTABLE',
+    ('IIci', 0x46784): 'MACIISITESTS',
+    ('IIci', 0x46788): 'SETUPUSP',
+    ('IIci', 0x4678e): 'JGETHARDWAREINFO',
+    ('IIci', 0x4679e): 'JGETHARDWAREINFO',
+    ('IIci', 0x467a2): 'MACIISITESTS',
+    ('IIci', 0x467a6): 'JGETHARDWAREINFO',
+    ('IIci', 0x467ac): 'SIZEV8VRAM',
+    ('IIci', 0x467b4): 'SIZEV8VRAM',
+    ('IIci', 0x46800): 'MACIISITESTS',
+    ('IIci', 0x4688e): 'SETVECTORTABLE',
+    ('IIci', 0x468ba): 'JGETHARDWAREINFO',
+    ('IIci', 0x468c8): 'SIZEV8VRAM',
+    ('IIci', 0x468f8): 'REVMOD3TEST',
+    ('IIci', 0x46968): 'REVMOD3TEST',
+    ('IIci', 0x46980): 'TMVECTORS',
+    ('IIci', 0x46988): 'MACLCTESTS',
+    ('IIci', 0x469a0): 'MACLCTESTS',
+    ('IIci', 0x469be): 'MACLCTESTS',
+    ('IIci', 0x469fe): 'ROMTEST',
+    ('IIci', 0x46a1c): 'MACLCTESTS',
+    ('IIci', 0x46a1e): 'DBLITETESTS',
+    ('IIci', 0x46a36): 'DBLITETESTS',
+    ('IIci', 0x46a54): 'DBLITETESTS',
+    ('IIci', 0x46a68): 'REVMOD3TEST',
+    ('IIci', 0x46a6a): 'STARTUPROMTEST',
+    ('IIci', 0x46a6e): 'ROMTEST',
+    ('IIci', 0x46a82): 'CARNATIONTESTS',
+    ('IIci', 0x46a96): 'EXTRAMTEST',
+    ('IIci', 0x46aae): 'CARNATIONTESTS',
+    ('IIci', 0x46ab2): 'DBLITETESTS',
+    ('IIci', 0x46ab8): 'CARNATIONTESTS',
+    ('IIci', 0x46acc): 'CARNATIONTESTS',
+    ('IIci', 0x46ada): 'STARTUPROMTEST',
+    ('IIci', 0x46aea): 'ADDRLINETEST',
+    ('IIci', 0x46b06): 'EXTRAMTEST',
+    ('IIci', 0x46b0e): 'VAILTESTS',
+    ('IIci', 0x46b2a): 'ESCHERTESTS',
+    ('IIci', 0x46b3a): 'VAILTESTS',
+    ('IIci', 0x46b44): 'VAILTESTS',
+    ('IIci', 0x46b52): 'DATABUSTEST',
+    ('IIci', 0x46b58): 'VAILTESTS',
+    ('IIci', 0x46b5a): 'ADDRLINETEST',
+    ('IIci', 0x46b6e): 'ROMTEST',
+    ('IIci', 0x46b98): 'CARNATIONTESTS',
+    ('IIci', 0x46ba4): 'WOMBATTESTS',
+    ('IIci', 0x46bc2): 'DATABUSTEST',
+    ('IIci', 0x46bd0): 'WOMBATTESTS',
+    ('IIci', 0x46bda): 'WOMBATTESTS',
+    ('IIci', 0x46bec): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x46bee): 'WOMBATTESTS',
+    ('IIci', 0x46bfc): 'EXTRAMTEST',
+    ('IIci', 0x46c06): 'STARTTEST1',
+    ('IIci', 0x46c1c): 'UNKNOWNTESTS',
+    ('IIci', 0x46c24): 'VAILTESTS',
+    ('IIci', 0x46c48): 'DARTTESTS',
+    ('IIci', 0x46c4e): 'ELSIETMVECTORS',
+    ('IIci', 0x46c50): 'ADDRLINETEST',
+    ('IIci', 0x46c52): 'DARTTESTS',
+    ('IIci', 0x46c5c): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x46c66): 'DARTTESTS',
+    ('IIci', 0x46c98): 'MOVINVTEST',
+    ('IIci', 0x46cb6): 'UNKNOWNTESTS',
+    ('IIci', 0x46cb8): 'DATABUSTEST',
+    ('IIci', 0x46cba): 'WOMBATTESTS',
+    ('IIci', 0x46cc0): 'UNKNOWNTESTS',
+    ('IIci', 0x46cca): 'UNKNOWNTESTS',
+    ('IIci', 0x46cd4): 'UNKNOWNTESTS',
+    ('IIci', 0x46ce8): 'ELSIETMVECTORS',
+    ('IIci', 0x46cf2): 'ELSIETMVECTORS',
+    ('IIci', 0x46cfc): 'ELSIETMVECTORS',
+    ('IIci', 0x46d06): 'ELSIETMVECTORS',
+    ('IIci', 0x46d08): 'MOVINVTEST',
+    ('IIci', 0x46d24): 'NOTEST',
+    ('IIci', 0x46d34): 'SETSCCIOPBYPASS',
+    ('IIci', 0x46d46): 'PRIMALTESTS',
+    ('IIci', 0x46d4e): 'TMVECTORS',
+    ('IIci', 0x46d52): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x46d94): 'NOTEST',
+    ('IIci', 0x46da4): 'SETSCCIOPBYPASS',
+    ('IIci', 0x46db4): 'DARTTESTS',
+    ('IIci', 0x46de8): 'TMVECTORS',
+    ('IIci', 0x46df2): 'TMVECTORS',
+    ('IIci', 0x46dfc): 'TMVECTORS',
+    ('IIci', 0x46dfe): 'MOVINVTEST',
+    ('IIci', 0x46e06): 'TMVECTORS',
+    ('IIci', 0x46e22): 'UNKNOWNTESTS',
+    ('IIci', 0x46e54): 'ELSIETMVECTORS',
+    ('IIci', 0x46e58): 'SCCLOOPTEST',
+    ('IIci', 0x46e8a): 'NOTEST',
+    ('IIci', 0x46e94): 'SETSCCIOPBYPASS',
+    ('IIci', 0x46ec8): 'SCCLOOPTEST',
+    ('IIci', 0x46eea): 'SCCREGTEST',
+    ('IIci', 0x46f54): 'TMVECTORS',
+    ('IIci', 0x46f5a): 'SCCREGTEST',
+    ('IIci', 0x46f68): 'SCCREGTEST',
+    ('IIci', 0x46fb8): 'SCCLOOPTEST',
+    ('IIci', 0x46fce): 'SCCTIMERTEST',
+    ('IIci', 0x46fd4): 'STARTTEST1',
+    ('IIci', 0x4703e): 'SCCTIMERTEST',
+    ('IIci', 0x4704a): 'SCCREGTEST',
+    ('IIci', 0x4704c): 'SCCTIMERTEST',
+    ('IIci', 0x4706e): 'STARTTEST1',
+    ('IIci', 0x47078): 'STARTTEST1',
+    ('IIci', 0x47082): 'STARTTEST1',
+    ('IIci', 0x4708c): 'STARTTEST1',
+    ('IIci', 0x4708e): 'SETVECTORTABLE',
+    ('IIci', 0x470ba): 'JGETHARDWAREINFO',
+    ('IIci', 0x470c8): 'SIZEV8VRAM',
+    ('IIci', 0x470ce): 'VIATEST',
+    ('IIci', 0x4711a): 'USTINIT',
+    ('IIci', 0x4712e): 'SCCTIMERTEST',
+    ('IIci', 0x4713e): 'VIATEST',
+    ('IIci', 0x4714c): 'VIATEST',
+    ('IIci', 0x4718a): 'USTGETSUBTEST',
+    ('IIci', 0x471c6): 'USTPMGRTURNON',
+    ('IIci', 0x471da): 'STARTTEST1',
+    ('IIci', 0x4721c): 'READPRAMSIG',
+    ('IIci', 0x4722e): 'VIATEST',
+    ('IIci', 0x4723a): 'USTPMGRSENDBYTE',
+    ('IIci', 0x4729c): 'TESTSCSI',
+    ('IIci', 0x4730c): 'TESTSCSI',
+    ('IIci', 0x4731a): 'TESTSCSI',
+    ('IIci', 0x47384): 'TESTASC',
+    ('IIci', 0x47398): 'REVMOD3TEST',
+    ('IIci', 0x473f4): 'TESTASC',
+    ('IIci', 0x473fc): 'TESTSCSI',
+    ('IIci', 0x47402): 'TESTASC',
+    ('IIci', 0x4749a): 'JGETHARDWAREINFO',
+    ('IIci', 0x4749e): 'ROMTEST',
+    ('IIci', 0x474a8): 'SIZEV8VRAM',
+    ('IIci', 0x474d0): 'INITOVERPATCH',
+    ('IIci', 0x474e4): 'TESTASC',
+    ('IIci', 0x474ee): 'USTINIT',
+    ('IIci', 0x47500): 'STARTUPROMTEST',
+    ('IIci', 0x4752c): 'EXTRAMTEST',
+    ('IIci', 0x47542): 'JGETHARDWAREINFO',
+    ('IIci', 0x47550): 'SIZEV8VRAM',
+    ('IIci', 0x47554): 'JGETHARDWAREINFO',
+    ('IIci', 0x4755e): 'JGETHARDWAREINFO',
+    ('IIci', 0x47562): 'SIZEV8VRAM',
+    ('IIci', 0x47564): 'USTPMGRTURNON',
+    ('IIci', 0x47568): 'JGETHARDWAREINFO',
+    ('IIci', 0x4756c): 'SIZEV8VRAM',
+    ('IIci', 0x47576): 'SIZEV8VRAM',
+    ('IIci', 0x4757e): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x47580): 'ADDRLINETEST',
+    ('IIci', 0x47596): 'USTINIT',
+    ('IIci', 0x475b4): 'USTINIT',
+    ('IIci', 0x475be): 'USTINIT',
+    ('IIci', 0x475c8): 'USTINIT',
+    ('IIci', 0x475e2): 'READPRAMSIG',
+    ('IIci', 0x475e8): 'DATABUSTEST',
+    ('IIci', 0x47600): 'USTPMGRSENDBYTE',
+    ('IIci', 0x4760c): 'USTPMGRTURNON',
+    ('IIci', 0x47626): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x4762a): 'USTPMGRTURNON',
+    ('IIci', 0x47634): 'USTPMGRTURNON',
+    ('IIci', 0x4763e): 'USTPMGRTURNON',
+    ('IIci', 0x47644): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x4764e): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x47658): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x47666): 'USTPMGRRECVBYTE',
+    ('IIci', 0x47682): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47686): 'PRAMTEST',
+    ('IIci', 0x4768a): 'READPRAMSIG',
+    ('IIci', 0x4769a): 'JGETHARDWAREINFO',
+    ('IIci', 0x4769e): 'JGETHARDWAREINFO',
+    ('IIci', 0x476a8): 'USTPMGRSENDBYTE',
+    ('IIci', 0x476ac): 'SIZEV8VRAM',
+    ('IIci', 0x476b2): 'READPRAMSIG',
+    ('IIci', 0x476bc): 'READPRAMSIG',
+    ('IIci', 0x476c6): 'USTPMGRSENDBYTE',
+    ('IIci', 0x476d0): 'USTPMGRSENDBYTE',
+    ('IIci', 0x476da): 'USTPMGRSENDBYTE',
+    ('IIci', 0x476f6): 'PRAMTEST',
+    ('IIci', 0x476f8): 'USTINIT',
+    ('IIci', 0x476fc): 'USTINIT',
+    ('IIci', 0x47704): 'PRAMTEST',
+    ('IIci', 0x4770e): 'USTPMGRRECVBYTE',
+    ('IIci', 0x4772c): 'USTPMGRRECVBYTE',
+    ('IIci', 0x4772e): 'MOVINVTEST',
+    ('IIci', 0x47736): 'USTPMGRRECVBYTE',
+    ('IIci', 0x47740): 'USTPMGRRECVBYTE',
+    ('IIci', 0x47762): 'TESTRBV',
+    ('IIci', 0x4776e): 'USTPMGRTURNON',
+    ('IIci', 0x47772): 'USTPMGRTURNON',
+    ('IIci', 0x47788): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x4778c): 'USTPMGRSENDCOMMAND',
+    ('IIci', 0x477a4): 'MOD3TEST',
+    ('IIci', 0x477ba): 'NOTEST',
+    ('IIci', 0x477c4): 'SETSCCIOPBYPASS',
+    ('IIci', 0x477cc): 'MOD3TEST',
+    ('IIci', 0x477d2): 'TESTRBV',
+    ('IIci', 0x477d8): 'MOD3TEST',
+    ('IIci', 0x477e0): 'TESTRBV',
+    ('IIci', 0x477ec): 'READPRAMSIG',
+    ('IIci', 0x477f0): 'READPRAMSIG',
+    ('IIci', 0x477f8): 'PRAMTEST',
+    ('IIci', 0x4780a): 'USTPMGRSENDBYTE',
+    ('IIci', 0x4780e): 'USTPMGRSENDBYTE',
+    ('IIci', 0x47814): 'REVMOD3TEST',
+    ('IIci', 0x47870): 'USTPMGRRECVBYTE',
+    ('IIci', 0x47874): 'USTPMGRRECVBYTE',
+    ('IIci', 0x478bc): 'REVMOD3TEST',
+    ('IIci', 0x478d2): 'TESTSWIM',
+    ('IIci', 0x478d4): 'TESTRBV',
+    ('IIci', 0x478dc): 'REVMOD3TEST',
+    ('IIci', 0x478e4): 'REVMOD3TEST',
+    ('IIci', 0x478e8): 'SCCLOOPTEST',
+    ('IIci', 0x478f0): 'REVMOD3TEST',
+    ('IIci', 0x47908): 'MOD3TEST',
+    ('IIci', 0x4790c): 'MOD3TEST',
+    ('IIci', 0x4791a): 'ROMTEST',
+    ('IIci', 0x47942): 'TESTSWIM',
+    ('IIci', 0x47970): 'TESTSWIM',
+    ('IIci', 0x4797c): 'STARTUPROMTEST',
+    ('IIci', 0x4799c): 'SCCREGTEST',
+    ('IIci', 0x479a8): 'EXTRAMTEST',
+    ('IIci', 0x479c2): 'ROMTEST',
+    ('IIci', 0x479e2): 'ROMTEST',
+    ('IIci', 0x479ea): 'ROMTEST',
+    ('IIci', 0x479f6): 'ROMTEST',
+    ('IIci', 0x479fc): 'ADDRLINETEST',
+    ('IIci', 0x47a20): 'REVMOD3TEST',
+    ('IIci', 0x47a24): 'STARTUPROMTEST',
+    ('IIci', 0x47a44): 'TESTSWIM',
+    ('IIci', 0x47a4c): 'STARTUPROMTEST',
+    ('IIci', 0x47a50): 'EXTRAMTEST',
+    ('IIci', 0x47a58): 'STARTUPROMTEST',
+    ('IIci', 0x47a70): 'EXTRAMTEST',
+    ('IIci', 0x47a78): 'EXTRAMTEST',
+    ('IIci', 0x47a7a): 'SCCTIMERTEST',
+    ('IIci', 0x47a84): 'EXTRAMTEST',
+    ('IIci', 0x47aa4): 'ADDRLINETEST',
+    ('IIci', 0x47ac4): 'ADDRLINETEST',
+    ('IIci', 0x47acc): 'ADDRLINETEST',
+    ('IIci', 0x47ad8): 'ADDRLINETEST',
+    ('IIci', 0x47af2): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47b00): 'DATABUSTEST',
+    ('IIci', 0x47b20): 'DATABUSTEST',
+    ('IIci', 0x47b26): 'ROMTEST',
+    ('IIci', 0x47b28): 'DATABUSTEST',
+    ('IIci', 0x47b2a): 'ROMTEST',
+    ('IIci', 0x47b34): 'DATABUSTEST',
+    ('IIci', 0x47b78): 'VIATEST',
+    ('IIci', 0x47b88): 'STARTUPROMTEST',
+    ('IIci', 0x47b8c): 'STARTUPROMTEST',
+    ('IIci', 0x47b9a): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47b9e): 'MOVINVTEST',
+    ('IIci', 0x47bb4): 'EXTRAMTEST',
+    ('IIci', 0x47bb8): 'EXTRAMTEST',
+    ('IIci', 0x47bba): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47bc0): 'FLOAT_TEST',
+    ('IIci', 0x47bc2): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47bce): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47c08): 'ADDRLINETEST',
+    ('IIci', 0x47c0c): 'ADDRLINETEST',
+    ('IIci', 0x47c2a): 'NOTEST',
+    ('IIci', 0x47c30): 'FLOAT_TEST',
+    ('IIci', 0x47c32): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47c46): 'MOVINVTEST',
+    ('IIci', 0x47c5e): 'FLOAT_TEST',
+    ('IIci', 0x47c64): 'DATABUSTEST',
+    ('IIci', 0x47c66): 'MOVINVTEST',
+    ('IIci', 0x47c68): 'DATABUSTEST',
+    ('IIci', 0x47c6e): 'MOVINVTEST',
+    ('IIci', 0x47c7a): 'MOVINVTEST',
+    ('IIci', 0x47cd2): 'NOTEST',
+    ('IIci', 0x47cda): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47cf2): 'NOTEST',
+    ('IIci', 0x47cfa): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47cfe): 'DYNAMIC_BUSSIZE_TEST',
+    ('IIci', 0x47d02): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47d06): 'NOTEST',
+    ('IIci', 0x47d0e): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47d32): 'FLOAT_TEST',
+    ('IIci', 0x47d46): 'TESTSCSI',
+    ('IIci', 0x47d56): 'SCCLOOPTEST',
+    ('IIci', 0x47daa): 'MOVINVTEST',
+    ('IIci', 0x47dae): 'MOVINVTEST',
+    ('IIci', 0x47dfe): 'SCCLOOPTEST',
+    ('IIci', 0x47e0a): 'SCCREGTEST',
+    ('IIci', 0x47e1e): 'SCCLOOPTEST',
+    ('IIci', 0x47e26): 'SCCLOOPTEST',
+    ('IIci', 0x47e2e): 'TESTASC',
+    ('IIci', 0x47e32): 'SCCLOOPTEST',
+    ('IIci', 0x47e36): 'NOTEST',
+    ('IIci', 0x47e3a): 'NOTEST',
+    ('IIci', 0x47e3e): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47e42): 'SETSCCIOPBYPASS',
+    ('IIci', 0x47eb2): 'SCCREGTEST',
+    ('IIci', 0x47ed2): 'SCCREGTEST',
+    ('IIci', 0x47eda): 'SCCREGTEST',
+    ('IIci', 0x47ee6): 'SCCREGTEST',
+    ('IIci', 0x47ef0): 'SCCTIMERTEST',
+    ('IIci', 0x47f62): 'SCCLOOPTEST',
+    ('IIci', 0x47f66): 'SCCLOOPTEST',
+    ('IIci', 0x47f98): 'SCCTIMERTEST',
+    ('IIci', 0x47fb8): 'SCCTIMERTEST',
+    ('IIci', 0x47fcc): 'SCCTIMERTEST',
+    ('IIci', 0x47fee): 'VIATEST',
+    ('IIci', 0x48016): 'SCCREGTEST',
+    ('IIci', 0x4801a): 'SCCREGTEST',
+    ('IIci', 0x48096): 'VIATEST',
+    ('IIci', 0x480b6): 'VIATEST',
+    ('IIci', 0x480ca): 'VIATEST',
+    ('IIci', 0x480fc): 'SCCTIMERTEST',
+    ('IIci', 0x48100): 'SCCTIMERTEST',
+    ('IIci', 0x48130): 'PRAMTEST',
+    ('IIci', 0x481bc): 'TESTSCSI',
+    ('IIci', 0x481fa): 'VIATEST',
+    ('IIci', 0x481fe): 'VIATEST',
+    ('IIci', 0x4820c): 'TESTRBV',
+    ('IIci', 0x48264): 'TESTSCSI',
+    ('IIci', 0x48284): 'TESTSCSI',
+    ('IIci', 0x48298): 'TESTSCSI',
+    ('IIci', 0x482a4): 'TESTASC',
+    ('IIci', 0x4834c): 'TESTASC',
+    ('IIci', 0x4836c): 'TESTASC',
+    ('IIci', 0x48372): 'TESTPGC',
+    ('IIci', 0x4837c): 'TESTSWIM',
+    ('IIci', 0x48380): 'TESTASC',
+    ('IIci', 0x483c8): 'TESTSCSI',
+    ('IIci', 0x483cc): 'TESTSCSI',
+    ('IIci', 0x483de): 'FMCREGTEST',
+    ('IIci', 0x483fc): 'TESTPGC',
+    ('IIci', 0x4842a): 'TESTPGC',
+    ('IIci', 0x4845c): 'FMCCACHETEST',
+    ('IIci', 0x48468): 'FMCREGTEST',
+    ('IIci', 0x48496): 'FMCREGTEST',
+    ('IIci', 0x484b0): 'TESTASC',
+    ('IIci', 0x484b4): 'TESTASC',
+    ('IIci', 0x484e6): 'FMCCACHETEST',
+    ('IIci', 0x48500): 'TESTPGC',
+    ('IIci', 0x48514): 'FMCCACHETEST',
+    ('IIci', 0x48564): 'OSSREGTEST',
+    ('IIci', 0x4856c): 'FMCREGTEST',
+    ('IIci', 0x485ea): 'FMCCACHETEST',
+    ('IIci', 0x485ee): 'OSSREGTEST',
+    ('IIci', 0x485fa): 'PRAMTEST',
+    ('IIci', 0x4860e): 'OSSINTTEST',
+    ('IIci', 0x4861c): 'OSSREGTEST',
+    ('IIci', 0x48672): 'FLOAT_TEST',
+    ('IIci', 0x4867c): 'RPUTEST',
+    ('IIci', 0x48698): 'OSSINTTEST',
+    ('IIci', 0x486a2): 'PRAMTEST',
+    ('IIci', 0x486c2): 'PRAMTEST',
+    ('IIci', 0x486c6): 'OSSINTTEST',
+    ('IIci', 0x486d6): 'TESTRBV',
+    ('IIci', 0x486e6): 'EGRETTEST',
+    ('IIci', 0x486f2): 'OSSREGTEST',
+    ('IIci', 0x48706): 'RPUTEST',
+    ('IIci', 0x48734): 'RPUTEST',
+    ('IIci', 0x48770): 'EGRETTEST',
+    ('IIci', 0x4877e): 'TESTRBV',
+    ('IIci', 0x4879c): 'OSSINTTEST',
+    ('IIci', 0x4879e): 'TESTRBV',
+    ('IIci', 0x487b2): 'TESTRBV',
+    ('IIci', 0x48806): 'PRAMTEST',
+    ('IIci', 0x4880a): 'RPUTEST',
+    ('IIci', 0x48810): 'TESTSNDINTS',
+    ('IIci', 0x48858): 'TESTSWIM',
+    ('IIci', 0x48874): 'EGRETTEST',
+    ('IIci', 0x4889a): 'TESTSNDINTS',
+    ('IIci', 0x488c8): 'TESTSNDINTS',
+    ('IIci', 0x488e2): 'TESTRBV',
+    ('IIci', 0x488e6): 'TESTRBV',
+    ('IIci', 0x48900): 'TESTSWIM',
+    ('IIci', 0x48920): 'TESTSWIM',
+    ('IIci', 0x48934): 'TESTSWIM',
+    ('IIci', 0x4899e): 'TESTSNDINTS',
+    ('IIci', 0x48a64): 'TESTSWIM',
+    ('IIci', 0x48a68): 'TESTSWIM',
+    ('IIci', 0x48b1a): 'ERROR1HANDLER',
+    ('IIci', 0x48b9a): 'TESTCLUT',
+    ('IIci', 0x48ba0): 'ERROR2HANDLER',
+    ('IIci', 0x48bc8): 'TESTCLUT',
+    ('IIci', 0x48bd6): 'ERROR3HANDLER',
+    ('IIci', 0x48c00): 'ERROR4HANDLER',
+    ('IIci', 0x48c2a): 'NCERRORHANDLER',
+    ('IIci', 0x48c74): 'TESTV8VRAM',
+    ('IIci', 0x48c9e): 'TESTCLUT',
+    ('IIci', 0x48ca2): 'TESTV8VRAM',
+    ('IIci', 0x48cda): 'FLOAT_TEST',
+    ('IIci', 0x48cf6): 'TESTPWM',
+    ('IIci', 0x48d60): 'ERROR2HANDLER',
+    ('IIci', 0x48d7a): 'TIMESOUNDINTS',
+    ('IIci', 0x48d82): 'FLOAT_TEST',
+    ('IIci', 0x48d88): 'TESTV8VRAM',
+    ('IIci', 0x48d96): 'ERROR3HANDLER',
+    ('IIci', 0x48da2): 'FLOAT_TEST',
+    ('IIci', 0x48db6): 'FLOAT_TEST',
+    ('IIci', 0x48dc0): 'ERROR4HANDLER',
+    ('IIci', 0x48dea): 'NCERRORHANDLER',
+    ('IIci', 0x48e3e): 'TESTPGC',
+    ('IIci', 0x48e70): 'ERROR2HANDLER',
+    ('IIci', 0x48ea6): 'ERROR3HANDLER',
+    ('IIci', 0x48eb4): 'FMCREGTEST',
+    ('IIci', 0x48ed0): 'ERROR4HANDLER',
+    ('IIci', 0x48eda): 'ERROR1HANDLER',
+    ('IIci', 0x48ee6): 'FLOAT_TEST',
+    ('IIci', 0x48eea): 'FLOAT_TEST',
+    ('IIci', 0x48efa): 'NCERRORHANDLER',
+    ('IIci', 0x48f32): 'FMCCACHETEST',
+    ('IIci', 0x48f60): 'ERROR2HANDLER',
+    ('IIci', 0x48f96): 'ERROR3HANDLER',
+    ('IIci', 0x48fc0): 'ERROR4HANDLER',
+    ('IIci', 0x48fea): 'NCERRORHANDLER',
+    ('IIci', 0x4903a): 'OSSREGTEST',
+    ('IIci', 0x490e4): 'OSSINTTEST',
+    ('IIci', 0x49152): 'RPUTEST',
+    ('IIci', 0x491c6): 'EGRETTEST',
+    ('IIci', 0x49306): 'TESTSNDINTS',
+    ('IIci', 0x494b2): 'TESTPGC',
+    ('IIci', 0x49528): 'FMCREGTEST',
+    ('IIci', 0x4955c): 'TESTPGC',
+    ('IIci', 0x4957a): 'TESTPGC',
+    ('IIci', 0x4958e): 'TESTPGC',
+    ('IIci', 0x495a6): 'FMCCACHETEST',
+    ('IIci', 0x495d2): 'FMCREGTEST',
+    ('IIci', 0x495f0): 'FMCREGTEST',
+    ('IIci', 0x49604): 'FMCREGTEST',
+    ('IIci', 0x4962c): 'TESTCLUT',
+    ('IIci', 0x49650): 'FMCCACHETEST',
+    ('IIci', 0x49668): 'TMRESTART',
+    ('IIci', 0x4966e): 'FMCCACHETEST',
+    ('IIci', 0x4967a): 'TMENTRY1',
+    ('IIci', 0x49682): 'FMCCACHETEST',
+    ('IIci', 0x496ae): 'OSSREGTEST',
+    ('IIci', 0x496c6): 'TESTPGC',
+    ('IIci', 0x496ca): 'TESTPGC',
+    ('IIci', 0x49706): 'SIZEVRAM',
+    ('IIci', 0x4973c): 'FMCREGTEST',
+    ('IIci', 0x49740): 'FMCREGTEST',
+    ('IIci', 0x49758): 'OSSREGTEST',
+    ('IIci', 0x49776): 'OSSREGTEST',
+    ('IIci', 0x4978a): 'OSSREGTEST',
+    ('IIci', 0x497ba): 'FMCCACHETEST',
+    ('IIci', 0x497be): 'FMCCACHETEST',
+    ('IIci', 0x497c6): 'RPUTEST',
+    ('IIci', 0x49802): 'OSSINTTEST',
+    ('IIci', 0x49820): 'OSSINTTEST',
+    ('IIci', 0x49834): 'OSSINTTEST',
+    ('IIci', 0x4983a): 'EGRETTEST',
+    ('IIci', 0x49870): 'RPUTEST',
+    ('IIci', 0x4988e): 'TMRESTART',
+    ('IIci', 0x4989a): 'TMRESTART',
+    ('IIci', 0x498a0): 'TMENTRY1',
+    ('IIci', 0x498a2): 'RPUTEST',
+    ('IIci', 0x498ac): 'TMENTRY1',
+    ('IIci', 0x498c2): 'OSSREGTEST',
+    ('IIci', 0x498c6): 'OSSREGTEST',
+    ('IIci', 0x498d4): 'TESTVRAM',
+    ('IIci', 0x498e4): 'EGRETTEST',
+    ('IIci', 0x49902): 'EGRETTEST',
+    ('IIci', 0x49916): 'EGRETTEST',
+    ('IIci', 0x4994a): 'TESTC96',
+    ('IIci', 0x4996c): 'OSSINTTEST',
+    ('IIci', 0x49970): 'OSSINTTEST',
+    ('IIci', 0x499aa): 'TMRESTART',
+    ('IIci', 0x499bc): 'TMENTRY1',
+    ('IIci', 0x499da): 'RPUTEST',
+    ('IIci', 0x499de): 'RPUTEST',
+    ('IIci', 0x49a4e): 'EGRETTEST',
+    ('IIci', 0x49a52): 'EGRETTEST',
+    ('IIci', 0x49a60): 'TESTSNDINTS',
+    ('IIci', 0x49a74): 'TESTSNDINTS',
+    ('IIci', 0x49ac4): 'TESTSNDINTS',
+    ('IIci', 0x49afa): 'ERROR1HANDLER',
+    ('IIci', 0x49b0a): 'TMRESTART',
+    ('IIci', 0x49b1c): 'TMENTRY1',
+    ('IIci', 0x49b6e): 'TESTSNDINTS',
+    ('IIci', 0x49b9a): 'ERROR2HANDLER',
+    ('IIci', 0x49bd0): 'ERROR3HANDLER',
+    ('IIci', 0x49bfa): 'ERROR4HANDLER',
+    ('IIci', 0x49c24): 'NCERRORHANDLER',
+    ('IIci', 0x49c2a): 'SETUPBASES',
+    ('IIci', 0x49cd8): 'TESTSNDINTS',
+    ('IIci', 0x49cdc): 'TESTSNDINTS',
+    ('IIci', 0x49d3a): 'STARTTIMER',
+    ('IIci', 0x49d86): 'TESTCLUT',
+    ('IIci', 0x49dbc): 'TESTCLUT',
+    ('IIci', 0x49e0c): 'TESTCLUT',
+    ('IIci', 0x49e18): 'TESTCLUT',
+    ('IIci', 0x49e60): 'SIZEVRAM',
+    ('IIci', 0x49e68): 'SETUPBASES',
+    ('IIci', 0x49e74): 'SETUPBASES',
+    ('IIci', 0x49e88): 'SENDTOCLK',
+    ('IIci', 0x49eb6): 'TESTCLUT',
+    ('IIci', 0x49ec8): 'WRXBYTE',
+    ('IIci', 0x49f14): 'SIZEVRAM',
+    ('IIci', 0x49f4c): 'SIZEVRAM',
+    ('IIci', 0x49f78): 'STARTTIMER',
+    ('IIci', 0x49f84): 'STARTTIMER',
+    ('IIci', 0x49fa8): 'SIZEVRAM',
+    ('IIci', 0x4a046): 'RDXBYTE',
+    ('IIci', 0x4a07c): 'TESTCLUT',
+    ('IIci', 0x4a080): 'TESTCLUT',
+    ('IIci', 0x4a088): 'SIZEVRAM',
+    ('IIci', 0x4a094): 'STARTTIMER',
+    ('IIci', 0x4a0c6): 'SENDTOCLK',
+    ('IIci', 0x4a0d2): 'SENDTOCLK',
+    ('IIci', 0x4a0e4): 'SETUPBASES',
+    ('IIci', 0x4a0ee): 'COPYRAMTOPRAM',
+    ('IIci', 0x4a106): 'WRXBYTE',
+    ('IIci', 0x4a10a): 'TESTVRAM',
+    ('IIci', 0x4a112): 'WRXBYTE',
+    ('IIci', 0x4a11a): 'COPYPRAMTORAM',
+    ('IIci', 0x4a1a8): 'TESTC96',
+    ('IIci', 0x4a1b8): 'TM_SENDBYTE',
+    ('IIci', 0x4a1ca): 'TESTVRAM',
+    ('IIci', 0x4a1d8): 'TM_GETBYTE',
+    ('IIci', 0x4a1e2): 'SENDTOCLK',
+    ('IIci', 0x4a200): 'TM_WAIT',
+    ('IIci', 0x4a202): 'TESTVRAM',
+    ('IIci', 0x4a216): 'STARTTIMER',
+    ('IIci', 0x4a222): 'WRXBYTE',
+    ('IIci', 0x4a238): 'CLKWPOFF',
+    ('IIci', 0x4a24e): 'SIZEVRAM',
+    ('IIci', 0x4a252): 'SIZEVRAM',
+    ('IIci', 0x4a25e): 'TESTVRAM',
+    ('IIci', 0x4a284): 'RDXBYTE',
+    ('IIci', 0x4a290): 'SIZEMEMORY',
+    ('IIci', 0x4a2ce): 'TESTC96',
+    ('IIci', 0x4a306): 'TESTC96',
+    ('IIci', 0x4a33e): 'TESTVRAM',
+    ('IIci', 0x4a340): 'TESTGSCREGS',
+    ('IIci', 0x4a362): 'TESTC96',
+    ('IIci', 0x4a364): 'SENDTOCLK',
+    ('IIci', 0x4a3a0): 'RDXBYTE',
+    ('IIci', 0x4a3a4): 'WRXBYTE',
+    ('IIci', 0x4a3e4): 'SEPARITYPATCH',
+    ('IIci', 0x4a3f6): 'TM_SENDBYTE',
+    ('IIci', 0x4a402): 'TM_SENDBYTE',
+    ('IIci', 0x4a416): 'TM_GETBYTE',
+    ('IIci', 0x4a420): 'PGESELFTEST',
+    ('IIci', 0x4a422): 'TM_GETBYTE',
+    ('IIci', 0x4a43e): 'TM_WAIT',
+    ('IIci', 0x4a442): 'TESTC96',
+    ('IIci', 0x4a44a): 'TM_WAIT',
+    ('IIci', 0x4a450): 'ENABLEPARITYPATCH',
+    ('IIci', 0x4a45e): 'GOTM',
+    ('IIci', 0x4a466): 'TESTGSCREGS',
+    ('IIci', 0x4a468): 'ERROR1HANDLER',
+    ('IIci', 0x4a476): 'CLKWPOFF',
+    ('IIci', 0x4a482): 'CLKWPOFF',
+    ('IIci', 0x4a48a): 'DELSEARCHPATCH',
+    ('IIci', 0x4a49e): 'TESTGSCREGS',
+    ('IIci', 0x4a4a6): 'DELCOMPPATCH',
+    ('IIci', 0x4a4c2): 'OPENPATCH',
+    ('IIci', 0x4a4e8): 'SOUNDINITPATCH',
+    ('IIci', 0x4a4fa): 'TESTGSCREGS',
+    ('IIci', 0x4a4fc): 'DIAGROMENTRY',
+    ('IIci', 0x4a508): 'DIAGROMENTRY',
+    ('IIci', 0x4a512): 'TM_SENDBYTE',
+    ('IIci', 0x4a522): 'RDXBYTE',
+    ('IIci', 0x4a526): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4a532): 'TM_GETBYTE',
+    ('IIci', 0x4a542): 'TESTVRAM',
+    ('IIci', 0x4a546): 'TESTVRAM',
+    ('IIci', 0x4a54a): 'ERROR3HANDLER',
+    ('IIci', 0x4a55a): 'TM_WAIT',
+    ('IIci', 0x4a574): 'ERROR4HANDLER',
+    ('IIci', 0x4a578): 'GOTM',
+    ('IIci', 0x4a57e): 'PGESELFTEST',
+    ('IIci', 0x4a582): 'ERROR1HANDLER',
+    ('IIci', 0x4a590): 'SIZEMEMORY',
+    ('IIci', 0x4a592): 'CLKWPOFF',
+    ('IIci', 0x4a59e): 'NCERRORHANDLER',
+    ('IIci', 0x4a5a0): 'SIZEMEMORY',
+    ('IIci', 0x4a5b0): 'GOTM',
+    ('IIci', 0x4a5ba): 'ERROR1HANDLER',
+    ('IIci', 0x4a5c4): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4a5da): 'TESTGSCREGS',
+    ('IIci', 0x4a60c): 'GOTM',
+    ('IIci', 0x4a616): 'ERROR1HANDLER',
+    ('IIci', 0x4a618): 'DIAGROMENTRY',
+    ('IIci', 0x4a62c): 'ERROR2HANDLER',
+    ('IIci', 0x4a646): 'RBIMGR',
+    ('IIci', 0x4a664): 'ERROR3HANDLER',
+    ('IIci', 0x4a68e): 'ERROR4HANDLER',
+    ('IIci', 0x4a694): 'TM_SENDBYTE',
+    ('IIci', 0x4a69c): 'ERROR3HANDLER',
+    ('IIci', 0x4a6ae): 'TESTC96',
+    ('IIci', 0x4a6b0): 'SIZEMEMORY',
+    ('IIci', 0x4a6b2): 'TESTC96',
+    ('IIci', 0x4a6b4): 'TM_GETBYTE',
+    ('IIci', 0x4a6b8): 'NCERRORHANDLER',
+    ('IIci', 0x4a6ba): 'PGESELFTEST',
+    ('IIci', 0x4a6c0): 'ERROR2HANDLER',
+    ('IIci', 0x4a6c6): 'ERROR4HANDLER',
+    ('IIci', 0x4a6dc): 'TM_WAIT',
+    ('IIci', 0x4a6e4): 'SEPARITYPATCH',
+    ('IIci', 0x4a6ec): 'GOTM',
+    ('IIci', 0x4a6f0): 'NCERRORHANDLER',
+    ('IIci', 0x4a6f6): 'ERROR1HANDLER',
+    ('IIci', 0x4a6f8): 'ERROR3HANDLER',
+    ('IIci', 0x4a714): 'CLKWPOFF',
+    ('IIci', 0x4a722): 'ERROR4HANDLER',
+    ('IIci', 0x4a734): 'SEPARITYPATCH',
+    ('IIci', 0x4a74c): 'NCERRORHANDLER',
+    ('IIci', 0x4a750): 'ENABLEPARITYPATCH',
+    ('IIci', 0x4a760): 'RBIMGR',
+    ('IIci', 0x4a766): 'RSRCMGRPATCH',
+    ('IIci', 0x4a78a): 'DELSEARCHPATCH',
+    ('IIci', 0x4a798): 'RBIMGR',
+    ('IIci', 0x4a79a): 'DIAGROMENTRY',
+    ('IIci', 0x4a7a0): 'ERROR2HANDLER',
+    ('IIci', 0x4a7a6): 'DELCOMPPATCH',
+    ('IIci', 0x4a7b6): 'RSRCMGRPATCH',
+    ('IIci', 0x4a7c2): 'OPENPATCH',
+    ('IIci', 0x4a7d4): 'TMRESTART',
+    ('IIci', 0x4a7d8): 'ERROR3HANDLER',
+    ('IIci', 0x4a7da): 'DELSEARCHPATCH',
+    ('IIci', 0x4a7e4): 'SEPARITYPATCH',
+    ('IIci', 0x4a7e6): 'TMENTRY1',
+    ('IIci', 0x4a7e8): 'SOUNDINITPATCH',
+    ('IIci', 0x4a7f4): 'RBIMGR',
+    ('IIci', 0x4a7f6): 'DELCOMPPATCH',
+    ('IIci', 0x4a802): 'ERROR4HANDLER',
+    ('IIci', 0x4a812): 'OPENPATCH',
+    ('IIci', 0x4a826): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4a82c): 'NCERRORHANDLER',
+    ('IIci', 0x4a838): 'SOUNDINITPATCH',
+    ('IIci', 0x4a846): 'TESTGSCREGS',
+    ('IIci', 0x4a84a): 'TESTGSCREGS',
+    ('IIci', 0x4a850): 'ENABLEPARITYPATCH',
+    ('IIci', 0x4a866): 'RSRCMGRPATCH',
+    ('IIci', 0x4a876): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4a88a): 'DELSEARCHPATCH',
+    ('IIci', 0x4a8a6): 'DELCOMPPATCH',
+    ('IIci', 0x4a8c2): 'OPENPATCH',
+    ('IIci', 0x4a8c4): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4a8d4): 'RBIMGR',
+    ('IIci', 0x4a8e8): 'SOUNDINITPATCH',
+    ('IIci', 0x4a91a): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4a920): 'SIZEMEMORY',
+    ('IIci', 0x4a92a): 'PGESELFTEST',
+    ('IIci', 0x4a92e): 'PGESELFTEST',
+    ('IIci', 0x4a942): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4a95c): 'TESTCSCREGS',
+    ('IIci', 0x4a960): 'TESTCSCREGS',
+    ('IIci', 0x4a9e4): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4aa20): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4aa40): 'GOTM',
+    ('IIci', 0x4aa44): 'GOTM',
+    ('IIci', 0x4aa4a): 'ERROR1HANDLER',
+    ('IIci', 0x4aa4e): 'ERROR1HANDLER',
+    ('IIci', 0x4aa74): 'SEPARITYPATCH',
+    ('IIci', 0x4aa86): 'SLOTMGRPATCH1',
+    ('IIci', 0x4aaae): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4aac6): 'V8SNDINTPATCH1',
+    ('IIci', 0x4aae0): 'ENABLEPARITYPATCH',
+    ('IIci', 0x4aae2): 'ALLOCSLOTOVERPATCH1',
+    ('IIci', 0x4aaf4): 'ERROR2HANDLER',
+    ('IIci', 0x4aaf6): 'RSRCMGRPATCH',
+    ('IIci', 0x4aaf8): 'ERROR2HANDLER',
+    ('IIci', 0x4ab0a): 'BOOTMEBOXFLAGPATCH',
+    ('IIci', 0x4ab1a): 'DELSEARCHPATCH',
+    ('IIci', 0x4ab2c): 'ERROR3HANDLER',
+    ('IIci', 0x4ab30): 'ERROR3HANDLER',
+    ('IIci', 0x4ab36): 'DELCOMPPATCH',
+    ('IIci', 0x4ab52): 'SREADPATCH2',
+    ('IIci', 0x4ab56): 'ERROR4HANDLER',
+    ('IIci', 0x4ab5a): 'ERROR4HANDLER',
+    ('IIci', 0x4ab68): 'EARLYEXTCACHEDISABLEPATCH',
+    ('IIci', 0x4ab78): 'SOUNDINITPATCH',
+    ('IIci', 0x4ab7e): 'INITMEMDISPANDSHUTDOWNMGRS',
+    ('IIci', 0x4ab80): 'NCERRORHANDLER',
+    ('IIci', 0x4ab84): 'NCERRORHANDLER',
+    ('IIci', 0x4ab90): 'INITSCSIMGRPATCH',
+    ('IIci', 0x4abb6): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4abbc): 'COPYPRAMTORAM',
+    ('IIci', 0x4abc2): 'GETADDRMODEPATCH',
+    ('IIci', 0x4ac1e): 'INITOVERPATCH',
+    ('IIci', 0x4ac28): 'RBIMGR',
+    ('IIci', 0x4ac2c): 'RBIMGR',
+    ('IIci', 0x4ac54): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4acaa): 'COPYRAMTOPRAM',
+    ('IIci', 0x4acd6): 'COPYPRAMTORAM',
+    ('IIci', 0x4ace2): 'COPYRAMTOPRAM',
+    ('IIci', 0x4ad0e): 'COPYPRAMTORAM',
+    ('IIci', 0x4ad3e): 'COPYRAMTOPRAM',
+    ('IIci', 0x4ad6a): 'COPYPRAMTORAM',
+    ('IIci', 0x4ae1e): 'COPYRAMTOPRAM',
+    ('IIci', 0x4ae28): 'SETUPBASES',
+    ('IIci', 0x4ae4a): 'COPYPRAMTORAM',
+    ('IIci', 0x4aeb0): 'OUTCHAR',
+    ('IIci', 0x4aefe): 'WRXBYTE',
+    ('IIci', 0x4af10): 'RDXBYTE',
+    ('IIci', 0x4af22): 'CLKWPOFF',
+    ('IIci', 0x4af48): 'STARTTIMER',
+    ('IIci', 0x4af4a): 'STARTTIMER',
+    ('IIci', 0x4af9c): 'GETCHAR',
+    ('IIci', 0x4af9e): 'GETCHAR',
+    ('IIci', 0x4afcc): 'CVTASCII',
+    ('IIci', 0x4afce): 'CVTASCII',
+    ('IIci', 0x4b018): 'WRXBYTE',
+    ('IIci', 0x4b02a): 'RDXBYTE',
+    ('IIci', 0x4b03c): 'CLKWPOFF',
+    ('IIci', 0x4b050): 'WRXBYTE',
+    ('IIci', 0x4b062): 'RDXBYTE',
+    ('IIci', 0x4b074): 'CLKWPOFF',
+    ('IIci', 0x4b098): 'SENDTOCLK',
+    ('IIci', 0x4b09a): 'SENDTOCLK',
+    ('IIci', 0x4b0ac): 'WRXBYTE',
+    ('IIci', 0x4b0be): 'RDXBYTE',
+    ('IIci', 0x4b0d0): 'CLKWPOFF',
+    ('IIci', 0x4b0d8): 'WRXBYTE',
+    ('IIci', 0x4b0da): 'WRXBYTE',
+    ('IIci', 0x4b16e): 'COPYRAMTOPRAM',
+    ('IIci', 0x4b176): 'COPYRAMTOPRAM',
+    ('IIci', 0x4b18c): 'WRXBYTE',
+    ('IIci', 0x4b19a): 'COPYPRAMTORAM',
+    ('IIci', 0x4b19e): 'RDXBYTE',
+    ('IIci', 0x4b1a2): 'COPYPRAMTORAM',
+    ('IIci', 0x4b1b0): 'CLKWPOFF',
+    ('IIci', 0x4b256): 'RDXBYTE',
+    ('IIci', 0x4b258): 'RDXBYTE',
+    ('IIci', 0x4b3b0): 'RESTOP',
+    ('IIci', 0x4b3c8): 'TM_SENDBYTE',
+    ('IIci', 0x4b3ca): 'TM_SENDBYTE',
+    ('IIci', 0x4b3e8): 'TM_GETBYTE',
+    ('IIci', 0x4b3ea): 'TM_GETBYTE',
+    ('IIci', 0x4b410): 'TM_WAIT',
+    ('IIci', 0x4b412): 'TM_WAIT',
+    ('IIci', 0x4b448): 'CLKWPOFF',
+    ('IIci', 0x4b44a): 'CLKWPOFF',
+    ('IIci', 0x4b4d0): 'USTMAINTEST',
+    ('IIci', 0x4b4dc): 'WRXBYTE',
+    ('IIci', 0x4b4e0): 'USTMAINTEST',
+    ('IIci', 0x4b4e4): 'WRXBYTE',
+    ('IIci', 0x4b4ee): 'RDXBYTE',
+    ('IIci', 0x4b4f6): 'RDXBYTE',
+    ('IIci', 0x4b500): 'CLKWPOFF',
+    ('IIci', 0x4b508): 'CLKWPOFF',
+    ('IIci', 0x4b582): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4b59e): 'UTECMD',
+    ('IIci', 0x4b5ae): 'UTECMD',
+    ('IIci', 0x4b5e8): 'SLOTMGRPATCH1',
+    ('IIci', 0x4b610): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4b66c): 'INITOVERPATCH',
+    ('IIci', 0x4b6c6): 'UTEINSTROMTESTS',
+    ('IIci', 0x4b6d6): 'UTEINSTROMTESTS',
+    ('IIci', 0x4b976): 'USTGETANDINSTALL',
+    ('IIci', 0x4b986): 'USTGETANDINSTALL',
+    ('IIci', 0x4b9ba): 'DIAGROMENTRY',
+    ('IIci', 0x4b9ca): 'DIAGROMENTRY',
+    ('IIci', 0x4bac0): 'SIZEMEMORY',
+    ('IIci', 0x4bad0): 'SIZEMEMORY',
+    ('IIci', 0x4bf04): 'SEPARITYPATCH',
+    ('IIci', 0x4bf14): 'SEPARITYPATCH',
+    ('IIci', 0x4bf70): 'ENABLEPARITYPATCH',
+    ('IIci', 0x4bf80): 'ENABLEPARITYPATCH',
+    ('IIci', 0x4bf86): 'RSRCMGRPATCH',
+    ('IIci', 0x4bf96): 'RSRCMGRPATCH',
+    ('IIci', 0x4bfaa): 'DELSEARCHPATCH',
+    ('IIci', 0x4bfba): 'DELSEARCHPATCH',
+    ('IIci', 0x4bfbc): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4bfc6): 'DELCOMPPATCH',
+    ('IIci', 0x4bfd6): 'DELCOMPPATCH',
+    ('IIci', 0x4bfe2): 'OPENPATCH',
+    ('IIci', 0x4bff2): 'OPENPATCH',
+    ('IIci', 0x4c008): 'SOUNDINITPATCH',
+    ('IIci', 0x4c014): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4c018): 'SOUNDINITPATCH',
+    ('IIci', 0x4c022): 'SLOTMGRPATCH1',
+    ('IIci', 0x4c04a): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4c062): 'V8SNDINTPATCH1',
+    ('IIci', 0x4c07a): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4c086): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4c08a): 'VISACONFIGURERAMPATCH',
+    ('IIci', 0x4c0a2): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4c0ba): 'V8SNDINTPATCH1',
+    ('IIci', 0x4c0c2): 'INITOVERPATCH',
+    ('IIci', 0x4c0d6): 'ALLOCSLOTOVERPATCH1',
+    ('IIci', 0x4c0ec): 'ALLOCSLOTOVERPATCH2',
+    ('IIci', 0x4c118): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4c124): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4c128): 'ELSIETRANSLATE24TO32',
+    ('IIci', 0x4c142): 'INITOVERPATCH',
+    ('IIci', 0x4c148): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4c154): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4c158): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4c1ae): 'SLOTMGRPATCH1',
+    ('IIci', 0x4c1ba): 'SLOTMGRPATCH1',
+    ('IIci', 0x4c1be): 'SLOTMGRPATCH1',
+    ('IIci', 0x4c1d6): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4c1e2): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4c1e6): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4c1ee): 'ROMDISKPATCH1',
+    ('IIci', 0x4c1fa): 'ROMDISKPATCH1',
+    ('IIci', 0x4c1fe): 'LOADSEGPATCH',
+    ('IIci', 0x4c214): 'UNLOADSEGPATCH',
+    ('IIci', 0x4c224): 'UNLOADSEGPATCH',
+    ('IIci', 0x4c256): 'FINDROMDISK',
+    ('IIci', 0x4c262): 'FINDROMDISK',
+    ('IIci', 0x4c288): 'GETDEVPIXMAPPATCH',
+    ('IIci', 0x4c2c0): 'LOADSEGPATCH',
+    ('IIci', 0x4c2cc): 'LOADSEGPATCH',
+    ('IIci', 0x4c2d6): 'V8INIT',
+    ('IIci', 0x4c2e6): 'UNLOADSEGPATCH',
+    ('IIci', 0x4c2f2): 'UNLOADSEGPATCH',
+    ('IIci', 0x4c35a): 'GETDEVPIXMAPPATCH',
+    ('IIci', 0x4c6c0): 'SHUTRESTARTANNEX',
+    ('IIci', 0x4c726): 'SLOTMGRPATCH1',
+    ('IIci', 0x4c74e): 'SLOTBUSEXCPTNPTCH',
+    ('IIci', 0x4c766): 'V8SNDINTPATCH1',
+    ('IIci', 0x4c7a6): 'EAGLEDECODERTABLE',
+    ('IIci', 0x4c826): 'SETUPSCREEN',
+    ('IIci', 0x4c8f6): 'VIA1INITAPOLLO',
+    ('IIci', 0x4c8fc): 'ALLOCSLOTOVERPATCH1',
+    ('IIci', 0x4c912): 'ALLOCSLOTOVERPATCH2',
+    ('IIci', 0x4c968): 'INITOVERPATCH',
+    ('IIci', 0x4f130): 'INITOVERPATCH',
+    ('IIci', 0x4f140): 'INITOVERPATCH',
+    ('IIci', 0x4f420): 'RESTOP',
+    ('IIci', 0x4f430): 'RESTOP',
+    ('IIci', 0x51d60): 'MUSTBE513E0',
+    ('IIci', 0x6cc9c): 'SeekCk', #leak
+    ('IIci', 0x6e7ce): 'FmtTrkRet', #leak
+    ('IIci', 0x6ea60): 'EmptyPD', #leak
+    ('IIci', 0x6ea7c): 'SyncCallRtn', #leak
+    ('IIci', 0x6ec0c): 'FmtTrkRet2', #leak
+    ('IIci', 0x6ee9e): 'EmptyPD2', #leak
+    ('IIci', 0x6eeba): 'SyncCallRtn2', #leak
+    ('IIci', 0x80d54): 'INITMMU',
+    ('IIci', 0x811e8): 'INITMMU',
+    ('IIci', 0x81406): 'STARTREADPRAM',
+    ('IIci', 0x814b6): 'INITMMU',
+    ('IIci', 0x814e2): 'INITMMU',
+    ('IIci', 0x814f2): 'INITMMU',
+    ('IIci', 0x81790): 'INITMMU',
+    ('IIci', 0x8198a): 'TRANS',
+    ('IIci', 0x81cc8): 'GETRBVSIZE',
+    ('IIci', 0x821c0): 'TRANS',
+    ('IIci', 0x821e8): 'TRANS',
+    ('IIci', 0x821f8): 'TRANS',
+    ('IIci', 0x824ae): 'TRANS',
+    ('IIci', 0x84134): 'DOSCSIGET_DB',
+    ('IIci', 0x8417c): 'DOSCSISELECT_DC80',
+    ('IIci', 0x841ba): 'CLKNOMEMPATCH',
+    ('IIci', 0x84980): 'SNDPRIM',
+    ('IIci', 0x84982): 'BRAZILSNDCNTL',
+    ('IIci', 0x84c0a): 'READUPDATE',
+    ('IIci', 0x84c18): 'WRITEUPDATE',
+    ('IIci', 0x8500c): 'CACHEVECTORPATCH',
+    ('IIci', 0x8541a): 'CHECKPACKETPATCH',
+    ('IIci', 0x8542e): 'DELAY100PATCH',
+    ('IIci', 0x85444): 'SHIFTREGIRQPATCH',
+    ('IIci', 0x85482): 'SETTRANSFERPARMSPATCH',
+    ('IIci', 0x8548c): 'ADBCNTTABLE',
+    ('IIci', 0x854ac): 'ECLIPSEEGRETPATCHES',
+    ('IIci', 0x854d0): 'ECLIPSEPDMPATCH',
+    ('IIci', 0x85502): 'KEYSWITCHHANDLER',
+    ('IIci', 0x85580): 'GETREALPROC',
+    ('IIci', 0x85586): 'GETPAGEDESCPROC',
+    ('IIci', 0x85588): 'ECLIPSEDFACPATCH',
+    ('IIci', 0x855b4): 'REQUESTDONEPATCH',
+    ('IIci', 0x855e2): 'CUDAPDMPATCH',
+    ('IIci', 0x855e8): 'DEBUGUTILRUNKBDPATCH',
+    ('IIci', 0x855ee): 'GETMMUINFO',
+    ('IIci', 0x85614): 'KEYBDSWHANDLER',
+    ('IIci', 0x85662): 'ENABLECUDATMTASK',
+    ('IIci', 0x8566e): 'CHECKTTREGS',
+    ('IIci', 0x85698): 'ENABLEORDISABLEPDM',
+    ('IIci', 0x856ba): 'SENDCUDATICKLE',
+    ('IIci', 0x856dc): 'TICKLECUDA',
+    ('IIci', 0x85704): 'POWERSWITCHINTPATCH',
+    ('IIci', 0x85810): 'EDISKPROTECT',
+    ('IIci', 0x85958): 'ENABLEEXTCACHEPATCH',
+    ('IIci', 0x859a4): 'DISABLEEXTCACHEPATCH',
+    ('IIci', 0x859d0): 'WRITEPROTECTPROC',
+    ('IIci', 0x85a1a): 'UNWRITEPROTECTPROC',
+    ('IIci', 0x85a5c): 'NEWLOCKMEMORY',
+    ('IIci', 0x85a96): 'NEWUNLOCKMEMORY',
+    ('IIci', 0x85ae0): 'NEWLOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x85c1e): 'DSHOOKPATCH',
+    ('IIci', 0x85c9c): 'INITMEMORYDISPATCH',
+    ('IIci', 0x85d14): 'WAITFORSCSIDEVS',
+    ('IIci', 0x85d80): 'INSTALLPRIVTRAP',
+    ('IIci', 0x85da0): 'PRIVTRAP881',
+    ('IIci', 0x85e20): 'ALTBOOTBEEP',
+    ('IIci', 0x86458): 'getFPUTypePatch',
+    ('IIci', 0x864a0): 'getAddrModePatch',
+    ('IIci', 0x86c00): 'GETREALPROC',
+    ('IIci', 0x86c06): 'GETPAGEDESCPROC',
+    ('IIci', 0x86c6e): 'GETMMUINFO',
+    ('IIci', 0x86d32): 'CHECKTTREGS',
+    ('IIci', 0x86ef0): 'EDISKPROTECT',
+    ('IIci', 0x87042): 'FLUSHICACHEPATCH',
+    ('IIci', 0x8704c): 'SWAPDCACHEPATCH',
+    ('IIci', 0x8708c): 'FLUSHDCACHEPATCH',
+    ('IIci', 0x870aa): 'FLUSHCRANGEFORBM',
+    ('IIci', 0x870ae): 'FLUSHCRANGE',
+    ('IIci', 0x870fe): 'DISABLEEXTCACHEPATCH',
+    ('IIci', 0x87106): 'DISABLEEXTCACHEPATCH',
+    ('IIci', 0x87132): 'FLUSHEXTCACHEPATCH',
+    ('IIci', 0x87142): 'FLUSHEXTCACHEPATCH',
+    ('IIci', 0x8714e): 'WRITEPROTECTPROC',
+    ('IIci', 0x87162): 'FLUSHCRANGEFORBM',
+    ('IIci', 0x87166): 'FLUSHCRANGE',
+    ('IIci', 0x87170): 'FLUSHCRANGEFORBM',
+    ('IIci', 0x87174): 'FLUSHCRANGE',
+    ('IIci', 0x87198): 'UNWRITEPROTECTPROC',
+    ('IIci', 0x871da): 'NEWLOCKMEMORY',
+    ('IIci', 0x87206): 'WRITEPROTECTPROC',
+    ('IIci', 0x8720a): 'NEWUNLOCKMEMORY',
+    ('IIci', 0x87214): 'WRITEPROTECTPROC',
+    ('IIci', 0x8722c): 'NEWUNLOCKMEMORY',
+    ('IIci', 0x87250): 'UNWRITEPROTECTPROC',
+    ('IIci', 0x87254): 'NEWLOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x8725e): 'UNWRITEPROTECTPROC',
+    ('IIci', 0x87276): 'NEWLOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x87292): 'NEWLOCKMEMORY',
+    ('IIci', 0x872a0): 'NEWLOCKMEMORY',
+    ('IIci', 0x872c2): 'NEWUNLOCKMEMORY',
+    ('IIci', 0x872d0): 'NEWUNLOCKMEMORY',
+    ('IIci', 0x8730c): 'NEWLOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x8731a): 'NEWLOCKMEMORYCONTIGUOUS',
+    ('IIci', 0x873f0): 'INITMEMORYDISPATCH',
+    ('IIci', 0x87434): 'INITMEMORYDISPATCH',
+    ('IIci', 0x8747e): 'WAITFORSCSIDEVS',
+    ('IIci', 0x874a8): 'INITMEMORYDISPATCH',
+    ('IIci', 0x874b6): 'INITMEMORYDISPATCH',
+    ('IIci', 0x874c2): 'WAITFORSCSIDEVS',
+    ('IIci', 0x87536): 'WAITFORSCSIDEVS',
+    ('IIci', 0x87544): 'WAITFORSCSIDEVS',
+    ('IIci', 0x8780c): 'V32HLOCKPATCH',
+    ('IIci', 0x87830): 'ZONECHECKPATCH',
+    ('IIci', 0x87850): 'DEREFHANDLEPATCH',
+    ('IIci', 0x87882): 'A24MAXLIMITPATCH',
+    ('IIci', 0x878c0): 'A32MAXLIMITPATCH',
+    ('IIci', 0x878ee): 'A24ACTUALSPATCH',
+    ('IIci', 0x87926): 'A32ACTUALSPATCH',
+    ('IIci', 0x8795c): 'A24SETSIZEPATCH',
+    ('IIci', 0x87996): 'A32SETSIZEPATCH',
+    ('IIci', 0x879ce): 'SETAPPLBASEPATCH',
+    ('IIci', 0x879ea): 'INIT24ZONEALIGN',
+    ('IIci', 0x87a5e): 'INIT32ZONEALIGN',
+    ('IIci', 0x87ae2): 'ALIGN24TRAILER',
+    ('IIci', 0x87b04): 'ALIGN32TRAILER',
+    ('IIci', 0x87b20): 'V24CMGUTSPATCH',
+    ('IIci', 0x87b3c): 'V32CMGUTSPATCH',
+    ('IIci', 0x87b52): 'V24MAXMEMPATCH',
+    ('IIci', 0x87b6e): 'V32MAXMEMPATCH',
+    ('IIci', 0x87b84): 'V24PURGESPACEPATCH',
+    ('IIci', 0x87ba4): 'V32PURGESPACEPATCH',
+    ('IIci', 0x87bbe): 'V24MAXAPPLPATCH',
+    ('IIci', 0x87bdc): 'V32MAXAPPLPATCH',
+    ('IIci', 0x88018): 'OSEVENTAVAILPATCH',
+    ('IIci', 0x885d2): 'PMGRrecv', #leak
+    ('IIci', 0x885d4): 'PMGRsend', #leak
+    ('IIci', 0x885ec): 'PMGRINT',
+    ('IIci', 0x8864a): 'ENVINT',
+    ('IIci', 0x8864c): 'BATINT',
+    ('IIci', 0x88660): 'BatIntCont', #leak
+    ('IIci', 0x886c8): 'BATWATCH',
+    ('IIci', 0x8875c): 'RemoveMsg', #leak
+    ('IIci', 0x8877a): 'InstallMsg', #leak
+    ('IIci', 0x887b2): 'GETLEVEL',
+    ('IIci', 0x8886e): 'SNDWATCH',
+    ('IIci', 0x888d8): 'POWERDISPATCH',
+    ('IIci', 0x888ec): 'PMGROP',
+    ('IIci', 0x88946): 'IDLEMIND',
+    ('IIci', 0x88a9c): 'POWERCYCLE030',
+    ('IIci', 0x88b98): 'RESTORE030',
+    ('IIci', 0x890f4): 'GOTOSLEEP',
+    ('IIci', 0x8911c): 'DreamAway', #leak
+    ('IIci', 0x89194): 'didqueue', #leak
+    ('IIci', 0x892fc): 'WAKEUP',
+    ('IIci', 0x89474): 'SETSUPERVISORMODE',
+    ('IIci', 0x89488): 'CheckAppleTalk', #leak
+    ('IIci', 0x8957e): 'CloseAppleTalk', #leak
+    ('IIci', 0x8976c): 'SlpQInstall', #leak
+    ('IIci', 0x89784): 'SlpQRemove', #leak
+    ('IIci', 0x89d82): 'CMDCOUNTS',
+    ('IIci', 0x89e82): 'REPLYCOUNTS',
+    ('IIci', 0x8a07c): 'ENVINT',
+    ('IIci', 0x8a080): 'ENVINT',
+    ('IIci', 0x8a0ac): 'ENVINT',
+    ('IIci', 0x8a202): 'POWERMGRDISPATCH',
+    ('IIci', 0x8acbe): 'BACKLIGHTPATCH',
+    ('IIci', 0x8accc): 'BKLIGHTINSTALL',
+    ('IIci', 0x8ad26): 'BACKLIGHTPATCH',
+    ('IIci', 0x8ad34): 'BKLIGHTINSTALL',
+    ('IIci', 0x8ad70): 'PMGRPOWEROFFPATCH',
+    ('IIci', 0x8adbe): 'DEBUGPWRMGRADBPATCH1',
+    ('IIci', 0x8add8): 'PMGRPOWEROFFPATCH',
+    ('IIci', 0x8adf2): 'DEBUGPWRMGRADBPATCH2',
+    ('IIci', 0x8ae0a): 'BACKLIGHTPATCH',
+    ('IIci', 0x8ae0e): 'STARTREQPMGR',
+    ('IIci', 0x8ae18): 'BKLIGHTINSTALL',
+    ('IIci', 0x8ae1a): 'BACKLIGHTPATCH',
+    ('IIci', 0x8ae28): 'DARTSPI',
+    ('IIci', 0x8ae5e): 'REQDONEPMGR',
+    ('IIci', 0x8aeb2): 'BACKLIGHTPATCH',
+    ('IIci', 0x8aeb6): 'INITADBPATCHPWRMGR',
+    ('IIci', 0x8aeba): 'BACKLIGHTPATCH',
+    ('IIci', 0x8aebc): 'PMGRPOWEROFFPATCH',
+    ('IIci', 0x8aec0): 'BKLIGHTINSTALL',
+    ('IIci', 0x8aec8): 'BKLIGHTINSTALL',
+    ('IIci', 0x8aecc): 'PMGRPOWEROFFPATCH',
+    ('IIci', 0x8af0c): 'DARTMODEMCMDS',
+    ('IIci', 0x8af16): 'DARTSPI',
+    ('IIci', 0x8af1c): 'DARTMODEMCMDS',
+    ('IIci', 0x8af26): 'DARTSPI',
+    ('IIci', 0x8af64): 'PMGRPOWEROFFPATCH',
+    ('IIci', 0x8af6c): 'PMGRPOWEROFFPATCH',
+    ('IIci', 0x8afb4): 'DARTMODEMCMDS',
+    ('IIci', 0x8afbc): 'DARTMODEMCMDS',
+    ('IIci', 0x8afbe): 'DARTSPI',
+    ('IIci', 0x8afc6): 'DARTSPI',
+    ('IIci', 0x8b0e8): 'MOREPMGRINIT',
+    ('IIci', 0x8bc18): 'STATLOADPATCH',
+    ('IIci', 0x8bc22): 'INITSLOTINTSPATCH',
+    ('IIci', 0x8bc5a): 'INITJMPTBLPATCH',
+    ('IIci', 0x8bc96): 'INITJMPTBLPATCH',
+    ('IIci', 0x8bdb6): 'SLOTPRIMARYINITPATCH',
+    ('IIci', 0x8bdf2): 'SLOTPRIMARYINITPATCH',
+    ('IIci', 0x8be72): 'SLOTGETDRIVERPATCH',
+    ('IIci', 0x8be8c): 'ALLOCSLOTOVERPATCH1',
+    ('IIci', 0x8bea2): 'ALLOCSLOTOVERPATCH2',
+    ('IIci', 0x8beae): 'SLOTGETDRIVERPATCH',
+    ('IIci', 0x8bec8): 'ADDCARD',
+    ('IIci', 0x8bf3a): 'REMOVECARD',
+    ('IIci', 0x8bf5e): 'REMOVECARD',
+    ('IIci', 0x8bfca): 'CHECKSLOT',
+    ('IIci', 0x8bfee): 'CHECKSLOT',
+    ('IIci', 0x8c0d2): 'GETBOARDID',
+    ('IIci', 0x8c158): 'DOSECONDARYINIT',
+    ('IIci', 0x8c17c): 'DOSECONDARYINIT',
+    ('IIci', 0x8c1e8): 'VERIFYSLOTPATCH',
+    ('IIci', 0x8c20c): 'VERIFYSLOTPATCH',
+    ('IIci', 0x8c2c2): 'FINDDEVBASESLOT0',
+    ('IIci', 0x8c2e6): 'FINDDEVBASESLOT0',
+    ('IIci', 0x8c312): 'STARTSDECLMGRPATCH',
+    ('IIci', 0x8c400): 'SNDPRIM',
+    ('IIci', 0x8c402): 'SNDCNTLTIM',
+    ('IIci', 0x8c430): 'SNDCNTLECLIPSE',
+    ('IIci', 0x8c45e): 'SNDCNTLSPIKE',
+    ('IIci', 0x8c47c): 'TIMPLAYBACKVOL',
+    ('IIci', 0x8c48c): 'SNDCNTLAPOLLO',
+    ('IIci', 0x8c4ba): 'SNDCNTLDBLITE',
+    ('IIci', 0x8c50e): 'ECLIPSEINPUTSELECT',
+    ('IIci', 0x8c576): 'DARTINPUTSELECT',
+    ('IIci', 0x8c5ec): 'ECLIPSEINPUTSELECT',
+    ('IIci', 0x8c63a): 'PLAYTHRUVOL',
+    ('IIci', 0x8c68a): 'DARTDFACINIT',
+    ('IIci', 0x8c6d0): 'DARTDFACINIT',
+    ('IIci', 0x8c76c): 'ASCSETVOL',
+    ('IIci', 0x8c918): 'SONORADFACINIT',
+    ('IIci', 0x8c9da): 'SONORADFACINIT',
+    ('IIci', 0x8c9ee): 'SNDCNTLTIM',
+    ('IIci', 0x8ca12): 'SONORADFACINIT',
+    ('IIci', 0x8ca1c): 'SNDCNTLECLIPSE',
+    ('IIci', 0x8ca24): 'VAILSETVOL',
+    ('IIci', 0x8ca4a): 'SNDCNTLSPIKE',
+    ('IIci', 0x8ca76): 'DFAC2INIT',
+    ('IIci', 0x8ca96): 'SNDCNTLTIM',
+    ('IIci', 0x8caa6): 'SNDCNTLDBLITE',
+    ('IIci', 0x8cac4): 'SNDCNTLECLIPSE',
+    ('IIci', 0x8cad4): 'SNDCNTLSONORA',
+    ('IIci', 0x8caf2): 'SNDCNTLSPIKE',
+    ('IIci', 0x8cb02): 'SNDCNTLDARTANIAN',
+    ('IIci', 0x8cb24): 'BYPASSCONTROLDFAC2',
+    ('IIci', 0x8cb48): 'PLAYTHRUVOLDFAC2',
+    ('IIci', 0x8cb4e): 'SNDCNTLDBLITE',
+    ('IIci', 0x8cb5e): 'INPUTSELECTDFAC2',
+    ('IIci', 0x8cb7c): 'SNDCNTLSONORA',
+    ('IIci', 0x8cbaa): 'SNDCNTLDARTANIAN',
+    ('IIci', 0x8cbd8): 'SNDCNTLVAIL',
+    ('IIci', 0x8cc0e): 'SNDCNTLTIM',
+    ('IIci', 0x8cc3c): 'SNDCNTLECLIPSE',
+    ('IIci', 0x8cc6a): 'SNDCNTLSPIKE',
+    ('IIci', 0x8cc96): 'PLAYTHRUVOLDFAC2',
+    ('IIci', 0x8ccba): 'DFAC2INIT',
+    ('IIci', 0x8ccc6): 'SNDCNTLDBLITE',
+    ('IIci', 0x8ccf4): 'SNDCNTLSONORA',
+    ('IIci', 0x8cd22): 'SNDCNTLDARTANIAN',
+    ('IIci', 0x8cd50): 'SNDCNTLSLICE',
+    ('IIci', 0x8cd5e): 'SNDCNTLTIM',
+    ('IIci', 0x8cd8c): 'SNDCNTLECLIPSE',
+    ('IIci', 0x8cda2): 'INPUTSELECTDFAC2',
+    ('IIci', 0x8cdba): 'SNDCNTLSPIKE',
+    ('IIci', 0x8ce16): 'SNDCNTLDBLITE',
+    ('IIci', 0x8ce44): 'SNDCNTLSONORA',
+    ('IIci', 0x8ce72): 'SNDCNTLDARTANIAN',
+    ('IIci', 0x8cea0): 'SNDCNTLVAIL',
+    ('IIci', 0x8ceda): 'PLAYTHRUVOLDFAC2',
+    ('IIci', 0x8d020): 'INITWINDOWSRGNPATCH',
+    ('IIci', 0x8d03e): 'LCDSCREENCHK',
+    ('IIci', 0x8d200): 'INSTALLFPSP',
+    ('IIci', 0x8e104): 'GENEXCEPTPATCHRTN',
+    ('IIci', 0x8e10c): 'GENEXCEPTPATCHRTN',
+    ('IIci', 0x957b0): 'INSTALLPRIVTRAP',
+    ('IIci', 0x957d0): 'PRIVTRAP881',
+    ('IIci', 0x95850): 'PRIVTRAP040',
+    ('IIci', 0x95960): 'JMFBDRVR',
+    ('IIci', 0x97380): 'JMFBDRVRSIZE',
+    ('IIci', 0x97390): 'JMFBPRIMARYINIT',
+    ('IIci', 0x97b80): 'TFBDRVR',
+    ('IIci', 0x984ce): 'TFBDRVRSIZE',
+    ('IIci', 0x984e0): 'TFBPRIMARYINIT',
+    ('IIci', 0x9863a): 'INITSCSIHW',
+    ('IIci', 0x98678): 'INITHW_SCSI80',
+    ('IIci', 0x9868a): 'INSTALLSCSIINTHND96',
+    ('IIci', 0x986a2): 'SCSI96BUSERRPATCH',
+    ('IIci', 0x986b8): 'INITSCSIMGRPATCH1',
+    ('IIci', 0x986dc): 'INITSCSIMGRPATCH2',
+    ('IIci', 0x98748): 'SCSISETFLAGSPATCH',
+    ('IIci', 0x98778): 'SLEEPTASK',
+    ('IIci', 0x987a6): 'SCSIGETPATCH',
+    ('IIci', 0x987b4): 'SLEEPTASK',
+    ('IIci', 0x987e2): 'SCSIGETPATCH',
+    ('IIci', 0x987ee): 'SCSIDOCOMPLETEPATCH',
+    ('IIci', 0x9880e): 'SREADPATCH2',
+    ('IIci', 0x9882a): 'SCSIDOCOMPLETEPATCH',
+    ('IIci', 0x9884a): 'SREADPATCH2',
+    ('IIci', 0x98886): 'INIT96DREQPATCH',
+    ('IIci', 0x9889c): 'INIT96DREQPATCH',
+    ('IIci', 0x988a8): 'TESTC96DREQPATCH',
+    ('IIci', 0x988ce): 'INIT96DREQPATCH',
+    ('IIci', 0x988d6): 'TESTC96DREQPATCH',
+    ('IIci', 0x988f0): 'TESTC96DREQPATCH',
+    ('IIci', 0x98a6e): 'UNIMPLEMENTED_96',
+    ('IIci', 0x98a74): 'DOSCSISTAT_96',
+    ('IIci', 0x98aaa): 'DOSCSIRESET_96',
+    ('IIci', 0x98af0): 'DOSCSIGET_96',
+    ('IIci', 0x98be0): 'DOSCSICMD_96',
+    ('IIci', 0x98c08): 'NEWSCSIWBLIND_96',
+    ('IIci', 0x98c0c): 'NEWSCSIWRITE_96',
+    ('IIci', 0x98c10): 'NEWSCSIRBLIND_96',
+    ('IIci', 0x98c14): 'NEWSCSIREAD_96',
+    ('IIci', 0x98c90): 'DOSCSICOMPLETE_96',
+    ('IIci', 0x98d8e): 'DOSCSIMSGIN_96',
+    ('IIci', 0x98dac): 'DOSCSIMSGOUT_96',
+    ('IIci', 0x98fa6): 'CYCLEPHASE_96',
+    ('IIci', 0x990e2): 'SCSIPCTO32BIT',
+    ('IIci', 0x990ea): 'ERROR',
+    ('IIci', 0x990f2): 'SCSIERR_96',
+    ('IIci', 0x99184): 'INTHND_SCSI96',
+    ('IIci', 0x991c6): 'CLEARIRQ_96',
+    ('IIci', 0x991d2): 'TRANSFER_96',
+    ('IIci', 0x9921e): 'ONEBYTEREAD',
+    ('IIci', 0x9923c): 'ONEBYTEWRITE',
+    ('IIci', 0x99270): 'XFER1BYTE',
+    ('IIci', 0x9927c): 'SLOWREAD_96',
+    ('IIci', 0x993d4): 'SLOWWRITE_96',
+    ('IIci', 0x994ce): 'FASTWRITE_96',
+    ('IIci', 0x995d6): 'FASTREAD_96',
+    ('IIci', 0x996da): 'WTFORFIFODATA',
+    ('IIci', 0x996fc): 'RESETBUS_96',
+    ('IIci', 0x99704): 'WAITFORINTNOTIME',
+    ('IIci', 0x9972a): 'WAITFORSCSIINTRP',
+    ('IIci', 0x9976a): 'FASTCOMP_96',
+    ('IIci', 0x9981e): 'SLOWCOMP_96',
+    ('IIci', 0x9993a): 'BUSERRHANDLER_96',
+    ('IIci', 0x99b20): 'HMMMMMM',
+    ('IIci', 0xa0616): 'SIZESOUNDBUFFER',
+    ('IIci', 0xa0648): 'SIZESOUNDBUFFER',
+    ('IIci', 0xa067a): 'NEWREDOMAP',
+    ('IIci', 0xa075c): 'SIZESOUNDBUFFER',
+    ('IIci', 0xa077e): 'NEWCOUNTCOMBOS',
+    ('IIci', 0xa078e): 'NEWREDOMAP',
+    ('IIci', 0xa07b0): 'NEWCOUNTCOMBOS',
+    ('IIci', 0xa0862): 'GETPATCHROMRSRCSIZE',
+    ('IIci', 0xa088e): 'ISDUPLICATERSRC',
+    ('IIci', 0xa0894): 'GETPATCHROMRSRCSIZE',
+    ('IIci', 0xa08c0): 'ISDUPLICATERSRC',
+    ('IIci', 0xa08c4): 'NEWCOUNTCOMBOS',
+    ('IIci', 0xa08d0): 'OVERWRITEROMRSRC',
+    ('IIci', 0xa0902): 'OVERWRITEROMRSRC',
+    ('IIci', 0xa09a8): 'GETPATCHROMRSRCSIZE',
+    ('IIci', 0xa09d4): 'ISDUPLICATERSRC',
+    ('IIci', 0xa09ea): 'LOADPATCHROMRSRC',
+    ('IIci', 0xa0a16): 'OVERWRITEROMRSRC',
+    ('IIci', 0xa0a1c): 'LOADPATCHROMRSRC',
+    ('IIci', 0xa0a30): 'ADDPATCHROMSIZE',
+    ('IIci', 0xa0a5c): 'DOROMENTRYPATCH',
+    ('IIci', 0xa0a62): 'ADDPATCHROMSIZE',
+    ('IIci', 0xa0a8e): 'DOROMENTRYPATCH',
+    ('IIci', 0xa0b30): 'LOADPATCHROMRSRC',
+    ('IIci', 0xa0b60): 'PICTUREDATA',
+    ('IIci', 0xa0b76): 'ADDPATCHROMSIZE',
+    ('IIci', 0xa0ba2): 'DOROMENTRYPATCH',
+    ('IIci', 0xa0c74): 'PICTUREDATA',
+    ('IIci', 0xa6000): 'CHECKSLOT',
+    ('IIci', 0xa67c0): 'ETHERNETINIT',
+    ('IIci', 0xa6832): 'ETHERNETINITPATCH',
+    ('IIci', 0xa68f0): 'RESETSONIC',
+    ('IIci', 0xa69c0): 'IMMGINIT',
+    ('IIci', 0xa83e0): 'INFOPOWERBOOK180',
+    ('IIci', 0xa8494): 'MSCTABLE',
+    ('IIci', 0xa8538): 'SONORATABLE',
+    ('IIci', 0xa85dc): 'NIAGRATABLE',
+    ('IIci', 0xa8680): 'DJMEMCTABLE',
+    ('IIci', 0xa8724): 'ARDBEGTABLE',
+    ('IIci', 0xa8a3e): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xa8abe): 'INFOUNKNOWNUNKNOWN',
+    ('IIci', 0xa9b42): 'CUDACALLSHIFTREGIRQ',
+    ('IIci', 0xa9b56): 'CUDASHIFTREGIRQ',
+    ('IIci', 0xa9f48): 'CUDATICKHANDLER',
+    ('IIci', 0xa9f66): 'CUDAINIT',
+    ('IIci', 0xaa004): 'SENDCUDACMD',
+    ('IIci', 0xaa10e): 'REALABORT',
+    ('IIci', 0xaa126): 'IRQMISSED',
+    ('IIci', 0xaa1d6): 'BTNVARSINITPATCH',
+    ('IIci', 0xaa1f0): 'BTNVARSINITPATCH',
+    ('IIci', 0xaa276): 'BTNINT',
+    ('IIci', 0xaa2a2): 'BTNINT',
+    ('IIci', 0xaa3bc): 'DISABLEBTNINTS',
+    ('IIci', 0xaa3c8): 'ENABLEBTNINTS',
+    ('IIci', 0xaa3d6): 'BTNTABLE',
+    ('IIci', 0xaa3fe): 'DISABLEBTNINTS',
+    ('IIci', 0xaa40a): 'ENABLEBTNINTS',
+    ('IIci', 0xaa418): 'BTNTABLE',
+    ('IIci', 0xaa54e): 'DOSNDFEEDBACK',
+    ('IIci', 0xaa586): 'DOSNDFEEDBACK',
+    ('IIci', 0xaa598): 'REMOVENOTEREQ',
+    ('IIci', 0xaa5a2): 'INITSCREENVALUES',
+    ('IIci', 0xaa5d0): 'REMOVENOTEREQ',
+    ('IIci', 0xaa5da): 'INITSCREENVALUES',
+    ('IIci', 0xaa61e): 'DOSNDFEEDBACK',
+    ('IIci', 0xaa668): 'REMOVENOTEREQ',
+    ('IIci', 0xaa672): 'INITSCREENVALUES',
+    ('IIci', 0xaa9c0): 'WALLYWORLD',
+    ('IIci', 0xb29c4): 'INITWALLYWORLD',
+    ('IIci', 0xb2bd0): 'ADBPRIMITIVES',
+    ('IIci', 0xb2bd2): 'VIAADBTABLE',
+    ('IIci', 0xb2bec): 'PMGRADBTABLE',
+    ('IIci', 0xb2c06): 'EGRETADBTABLE',
+    ('IIci', 0xb2c20): 'IOPADBTABLE',
+    ('IIci', 0xb2c3a): 'QUADRAADBTABLE',
+    ('IIci', 0xb33d0): 'CLOCKPRAMPRIMITIVES',
+    ('IIci', 0xb33d2): 'RTCCLOCKPRAM',
+    ('IIci', 0xb33f8): 'PMGRCLOCKPRAM',
+    ('IIci', 0xb341e): 'EGRETCLOCKPRAM',
+    ('IIci', 0xb3444): 'CUDACLOCKPRAM',
+    ('IIci', 0xb39b2): 'CLKNOMEM',
+    ('IIci', 0xb39b6): 'CLKNOMEM',
+    ('IIci', 0xb39cc): 'CUDAWRXBYTE',
+    ('IIci', 0xb39d8): 'CUDAWRXBYTE',
+    ('IIci', 0xb3abc): 'CUDARDXBYTE',
+    ('IIci', 0xb3abe): 'CUDARDXBYTE',
+    ('IIci', 0xb3ac8): 'CUDARDXBYTE',
+    ('IIci', 0xb3bb6): 'CUDAWRITEBYTE',
+    ('IIci', 0xb3bbe): 'CUDAWRITEBYTE',
+    ('IIci', 0xb3bca): 'CUDAWRITEBYTE',
+    ('IIci', 0xb3bcc): 'CUDAREADBYTE',
+    ('IIci', 0xb3bde): 'CUDAREADBYTE',
+    ('IIci', 0xb3be6): 'CLKNOMEM',
+    ('IIci', 0xb3bea): 'CUDAREADBYTE',
+    ('IIci', 0xb3bf8): 'CLKNOMEM',
+    ('IIci', 0xb3c04): 'CLKNOMEM',
+    ('IIci', 0xb43d0): 'POWERMGRPRIMITIVES',
+    ('IIci', 0xb43d2): 'JAWSPMGRPRIMS',
+    ('IIci', 0xb44c6): 'MSCPMGRPRIMS',
+    ('IIci', 0xb450c): 'MSC2PMGRPRIMS',
+    ('IIci', 0xb47a6): 'NIAGRAPMGRPRIMS',
+    ('IIci', 0xb47aa): 'NIAGRAPMGRPRIMS',
+    ('IIci', 0xb47dc): 'NIAGRARUNIDLEROUTINESPROC',
+    ('IIci', 0xb50e8): 'POSTUSERNMMSG',
+    ('IIci', 0xb5168): 'POSTUSERNMMSG',
+    ('IIci', 0xb51a6): 'POSTUSERNMMSG',
+    ('IIci', 0xb5388): 'POSTUSERNMMSG',
+    ('IIci', 0xb55de): 'POSTUSERNMMSG',
+    ('IIci', 0xb5a88): 'CRSRDEVHANDLEVBL',
+    ('IIci', 0xb5da4): 'CRSRDEVREINIT',
+    ('IIci', 0xb5fac): 'INITCRSRDEV',
+    ('IIci', 0xb6006): 'SETCRSRDELAY',
+    ('IIci', 0xb6028): 'VDRAWCURSOR',
+    ('IIci', 0xb6050): 'VERASECURSOR',
+    ('IIci', 0xb6068): 'ADBPROCPATCH',
+    ('IIci', 0xb6476): 'INITDOCKING',
+    ('IIci', 0xb6534): 'SETUPDOCKBASES',
+    ('IIci', 0xb655e): 'DOCKINGSLEEP',
+    ('IIci', 0xb6580): 'DOCKINGWAKEUP',
+    ('IIci', 0xb69b4): 'DOCKINGSLEEPDENIED',
+    ('IIci', 0xb69e0): 'DOCKINGWAKEUPDENIED',
+    ('IIci', 0xb6a88): 'CRSRDEVHANDLEVBL',
+    ('IIci', 0xb6d62): 'CRSRDEVREINIT',
+    ('IIci', 0xb6d90): 'CRSRDEVREINIT',
+    ('IIci', 0xb6f6a): 'INITCRSRDEV',
+    ('IIci', 0xb6f98): 'INITCRSRDEV',
+    ('IIci', 0xb6fbe): 'SETCRSRDELAY',
+    ('IIci', 0xb6fe0): 'VDRAWCURSOR',
+    ('IIci', 0xb6fec): 'SETCRSRDELAY',
+    ('IIci', 0xb7008): 'VERASECURSOR',
+    ('IIci', 0xb700e): 'VDRAWCURSOR',
+    ('IIci', 0xb7020): 'ADBPROCPATCH',
+    ('IIci', 0xb7036): 'VERASECURSOR',
+    ('IIci', 0xb704e): 'ADBPROCPATCH',
+    ('IIci', 0xb73d0): 'SCSIDISKMODE',
+    ('IIci', 0xb7476): 'INITDOCKING',
+    ('IIci', 0xb748c): 'INITDOCKING',
+    ('IIci', 0xb7532): 'SETUPDOCKBASES',
+    ('IIci', 0xb7548): 'SETUPDOCKBASES',
+    ('IIci', 0xb7564): 'DOCKINGSLEEP',
+    ('IIci', 0xb7584): 'DOCKINGSLEEP',
+    ('IIci', 0xb7586): 'DOCKINGWAKEUP',
+    ('IIci', 0xb75a6): 'DOCKINGWAKEUP',
+    ('IIci', 0xb75b4): 'DOCKINGWAKEUP',
+    ('IIci', 0xb7704): 'TESTFORDISKMODE',
+    ('IIci', 0xb7716): 'DOCKINITSCC',
+    ('IIci', 0xb7724): 'DOCKINITSCC',
+    ('IIci', 0xb7a0a): 'DOCKINGSLEEPDENIED',
+    ('IIci', 0xb7a12): 'DOCKINGSLEEPDENIED',
+    ('IIci', 0xb7a30): 'DOCKINGWAKEUPDENIED',
+    ('IIci', 0xb7a38): 'DOCKINGWAKEUPDENIED',
+    ('IIci', 0xb7a44): 'DOCKINGSLEEPDENIED',
+    ('IIci', 0xb7a5a): 'DOCKINGSLEEPDENIED',
+    ('IIci', 0xb7a6a): 'DOCKINGWAKEUPDENIED',
+    ('IIci', 0xb7a74): 'DOCKINGSLEEPDENIED',
+    ('IIci', 0xb7a80): 'DOCKINGWAKEUPDENIED',
+    ('IIci', 0xb7a9a): 'DOCKINGWAKEUPDENIED',
+    ('IIci', 0xb7b66): 'GRACEFULSHUTDOWN',
+    ('IIci', 0xb7b7e): 'GRACEFULSHUTDOWN',
+    ('IIci', 0xb7bb0): 'GRACEFULSHUTDOWN',
+    ('IIci', 0xb7bc6): 'GRACEFULSHUTDOWN',
+    ('IIci', 0xb7be0): 'GRACEFULSHUTDOWN',
+    ('IIci', 0xb8088): 'TMRESTART',
+    ('IIci', 0xb809a): 'TMENTRY1',
+    ('IIci', 0xb83d0): 'SCSIDISKMODE',
+    ('IIci', 0xb8424): 'SCSIDISKWAKEALERT',
+    ('IIci', 0xb8722): 'SETUPBASES',
+    ('IIci', 0xb87c2): 'OUTCHAR',
+    ('IIci', 0xb8810): 'TESTFORDISKMODE',
+    ('IIci', 0xb8834): 'TESTFORDISKMODE',
+    ('IIci', 0xb8878): 'STARTTIMER',
+    ('IIci', 0xb88d2): 'GETCHAR',
+    ('IIci', 0xb8902): 'CVTASCII',
+    ('IIci', 0xb89ce): 'TM_SENDBYTE',
+    ('IIci', 0xb89ee): 'TM_GETBYTE',
+    ('IIci', 0xb8a16): 'TM_WAIT',
+    ('IIci', 0xb8ab6): 'SETVECTORTABLE',
+    ('IIci', 0xb8cce): 'USTMAINTEST',
+    ('IIci', 0xb8d60): 'UTECMD',
+    ('IIci', 0xb923a): 'DIAGROMENTRY',
+    ('IIci', 0xb95e8): 'SETUPFOREXECUTEDTM',
+    ('IIci', 0xb986c): 'TMRESTART',
+    ('IIci', 0xb9874): 'TMRESTART',
+    ('IIci', 0xb987e): 'TMENTRY1',
+    ('IIci', 0xb9886): 'TMENTRY1',
+    ('IIci', 0xb9888): 'TMRESTART',
+    ('IIci', 0xb989a): 'TMENTRY1',
+    ('IIci', 0xb98aa): 'TMRESTART',
+    ('IIci', 0xb98bc): 'TMENTRY1',
+    ('IIci', 0xb9efc): 'SETUPBASES',
+    ('IIci', 0xb9f04): 'SETUPBASES',
+    ('IIci', 0xb9f22): 'SETUPBASES',
+    ('IIci', 0xb9f46): 'SETUPBASES',
+    ('IIci', 0xb9f90): 'OUTCHAR',
+    ('IIci', 0xb9f98): 'OUTCHAR',
+    ('IIci', 0xb9fb6): 'OUTCHAR',
+    ('IIci', 0xb9fda): 'OUTCHAR',
+    ('IIci', 0xba046): 'STARTTIMER',
+    ('IIci', 0xba04e): 'STARTTIMER',
+    ('IIci', 0xba06c): 'STARTTIMER',
+    ('IIci', 0xba090): 'STARTTIMER',
+    ('IIci', 0xba0a0): 'GETCHAR',
+    ('IIci', 0xba0a8): 'GETCHAR',
+    ('IIci', 0xba0c6): 'GETCHAR',
+    ('IIci', 0xba0d0): 'CVTASCII',
+    ('IIci', 0xba0d8): 'CVTASCII',
+    ('IIci', 0xba0ea): 'GETCHAR',
+    ('IIci', 0xba0f6): 'CVTASCII',
+    ('IIci', 0xba11a): 'CVTASCII',
+    ('IIci', 0xba19c): 'TM_SENDBYTE',
+    ('IIci', 0xba1a4): 'TM_SENDBYTE',
+    ('IIci', 0xba1bc): 'TM_GETBYTE',
+    ('IIci', 0xba1c2): 'TM_SENDBYTE',
+    ('IIci', 0xba1c4): 'TM_GETBYTE',
+    ('IIci', 0xba1e2): 'TM_GETBYTE',
+    ('IIci', 0xba1e4): 'TM_WAIT',
+    ('IIci', 0xba1e6): 'TM_SENDBYTE',
+    ('IIci', 0xba1ec): 'TM_WAIT',
+    ('IIci', 0xba206): 'TM_GETBYTE',
+    ('IIci', 0xba20a): 'TM_WAIT',
+    ('IIci', 0xba22e): 'TM_WAIT',
+    ('IIci', 0xba280): 'SETVECTORTABLE',
+    ('IIci', 0xba288): 'SETVECTORTABLE',
+    ('IIci', 0xba2aa): 'SETVECTORTABLE',
+    ('IIci', 0xba2ce): 'SETVECTORTABLE',
+    ('IIci', 0xba498): 'USTMAINTEST',
+    ('IIci', 0xba4a0): 'USTMAINTEST',
+    ('IIci', 0xba4c2): 'USTMAINTEST',
+    ('IIci', 0xba4e6): 'USTMAINTEST',
+    ('IIci', 0xba52a): 'UTECMD',
+    ('IIci', 0xba532): 'UTECMD',
+    ('IIci', 0xba554): 'UTECMD',
+    ('IIci', 0xba578): 'UTECMD',
+    ('IIci', 0xbaa04): 'DIAGROMENTRY',
+    ('IIci', 0xbaa0c): 'DIAGROMENTRY',
+    ('IIci', 0xbaa2e): 'DIAGROMENTRY',
+    ('IIci', 0xbaa4e): 'DIAGROMENTRY',
+    ('IIci', 0xbaa52): 'DIAGROMENTRY',
+    ('IIci', 0xbad9c): 'SETUPFOREXECUTEDTM',
+    ('IIci', 0xbadba): 'SETUPFOREXECUTEDTM',
+    ('IIci', 0xbaddc): 'SETUPFOREXECUTEDTM',
+    ('IIci', 0xbadf8): 'SETUPFOREXECUTEDTM',
+    ('IIci', 0xbae00): 'SETUPFOREXECUTEDTM',
+    ('IIci', 0xbba50): 'BOOTBEEPPATCH',
+    ('IIci', 0xbbbec): 'BEEPMIXERPATCH',
+    ('IIci', 0xbbc1e): 'SPINBEEPPATCH',
+    ('IIci', 0xbbc3a): 'BATMANCHECK1',
+    ('IIci', 0xbbc4c): 'BATMANCHECK2',
+    ('IIci', 0xbbc5e): 'BATMANCHECK3',
+    ('IIci', 0xbbc70): 'BATMANCHECK4',
+    ('IIci', 0xbbc82): 'BATMANCHECK5',
+    ('IIci', 0xbbc94): 'SPINEMPTYPATCH',
+    ('IIci', 0xbd250): 'BOOTBEEPPATCH',
+    ('IIci', 0xbd2f0): 'BOOTSOUND',
+    ('IIci', 0xbd3ec): 'BEEPMIXERPATCH',
+    ('IIci', 0xbd3f6): 'BEEPMIXERPATCH',
+    ('IIci', 0xbd41e): 'SPINBEEPPATCH',
+    ('IIci', 0xbd426): 'SPINBEEPPATCH',
+    ('IIci', 0xbd43a): 'BATMANCHECK1',
+    ('IIci', 0xbd442): 'SPINEMPTYPATCH',
+    ('IIci', 0xbd44c): 'BATMANCHECK2',
+    ('IIci', 0xbd45e): 'BATMANCHECK3',
+    ('IIci', 0xbd470): 'THESECRETSOUND',
+    ('IIci', 0xbd482): 'BATMANCHECK5',
+    ('IIci', 0xbd494): 'SPINEMPTYPATCH',
+    ('IIci', 0xbe180): 'BOOTBEEPPATCH',
+    ('IIci', 0xbe210): 'BOOTSOUND',
+    ('IIci', 0xbe2f0): 'THESECRETSOUND',
+    ('IIci', 0xc26d0): 'THEBOOTSOUND',
+    ('IIci', 0xc3550): 'THEBOOTSOUND',
+    ('IIci', 0xc6770): 'NOCDXABOOTSOUND',
+    ('IIci', 0xc75f0): 'SetInterruptLevel',
+    ('IIci', 0xc7610): 'GetInterruptLevel',
+    ('IIci', 0xc7620): 'InstallExceptionVector',
+    ('IIci', 0xc7630): 'ExceptionHandlerStub',
+    ('IIci', 0xc7670): 'FakeExceptionCall',
+    ('IIci', 0xc7690): 'FindVectorEntry',
+    ('IIci', 0xc7694): 'CalcVectorEntry',
+    ('IIci', 0xc76a0): 'GetCTEGlobals',
+    ('IIci', 0xc76b0): 'BitWalk8',
+    ('IIci', 0xc77d0): 'BitWalk16',
+    ('IIci', 0xc78f0): 'BitWalk32',
+    ('IIci', 0xc7a00): 'InstallExceptionHandler',
+    ('IIci', 0xc7a70): 'RemoveExceptionHandler',
+    ('IIci', 0xc7ab0): 'GetExceptionInfoPtrTable',
+    ('IIci', 0xc7ac0): 'GI_InitInterface',
+    ('IIci', 0xc7b80): 'GI_GetVersion',
+    ('IIci', 0xc7b90): 'GI_InstallTest',
+    ('IIci', 0xc7bf0): 'GI_InstallSubtest',
+    ('IIci', 0xc7c60): 'GI_FindTest',
+    ('IIci', 0xc7c80): 'GI_FindFirstTest',
+    ('IIci', 0xc7ca0): 'GI_FindNextTest',
+    ('IIci', 0xc7cc0): 'GI_FindSubtest',
+    ('IIci', 0xc7ce0): 'GI_FindFirstSubtest',
+    ('IIci', 0xc7d00): 'GI_FindNextSubtest',
+    ('IIci', 0xc7d20): 'GI_ExecuteTest',
+    ('IIci', 0xc7d50): 'GI_AllocPermMem',
+    ('IIci', 0xc7d70): 'GI_AllocTempMem',
+    ('IIci', 0xc7d90): 'GI_FreeTempMem',
+    ('IIci', 0xc7db0): 'GI_GetLastTestID',
+    ('IIci', 0xc7dc0): 'GI_GetLastSubtestID',
+    ('IIci', 0xc7dd0): 'GI_GetLastTestModifier',
+    ('IIci', 0xc7de0): 'GI_GetLastSubtestParams',
+    ('IIci', 0xc7df0): 'GI_GetLastSubtestParamsSize',
+    ('IIci', 0xc7e00): 'GI_GetLastSubtestResults',
+    ('IIci', 0xc7e10): 'GI_GetLastSubtestResultsSize',
+    ('IIci', 0xc7e20): 'GI_GetTestAddress',
+    ('IIci', 0xc7e30): 'GI_GetTestSize',
+    ('IIci', 0xc7e40): 'GI_GetTestName',
+    ('IIci', 0xc7e50): 'GI_GetSubtestAddress',
+    ('IIci', 0xc7e60): 'GI_GetSubtestSize',
+    ('IIci', 0xc7e70): 'GI_GetSubtestParamsSize',
+    ('IIci', 0xc7e80): 'GI_GetSubtestResultsSize',
+    ('IIci', 0xc7e90): 'GI_GetSubtestName',
+    ('IIci', 0xc7ea0): 'InitHeap',
+    ('IIci', 0xc7ee0): 'AllocPermMem',
+    ('IIci', 0xc7f30): 'AllocTempMem',
+    ('IIci', 0xc7f90): 'FreeTempMem',
+    ('IIci', 0xc7fa0): 'InitNode',
+    ('IIci', 0xc7fc0): 'GetNodeContents',
+    ('IIci', 0xc7fd0): 'GetNodeKey',
+    ('IIci', 0xc7fe0): 'InitList',
+    ('IIci', 0xc8000): 'FindNextNode',
+    ('IIci', 0xc8030): 'FindPrevNode',
+    ('IIci', 0xc8060): 'FindFirstNode',
+    ('IIci', 0xc8090): 'FindLastNode',
+    ('IIci', 0xc80c0): 'FindKeyedNode',
+    ('IIci', 0xc8110): 'InsertNode',
+    ('IIci', 0xc8140): 'AppendNode',
+    ('IIci', 0xc8170): 'RemoveNode',
+    ('IIci', 0xc81a0): 'FindSubtest',
+    ('IIci', 0xc81c0): 'DoSubtest',
+    ('IIci', 0xc8230): 'FindTest',
+    ('IIci', 0xc8250): 'DoTest',
+    ('IIci', 0xc8360): 'BitWalk_a_No_By_Law_register',
+    ('IIci', 0xc83d0): 'BitWalk_a_bit0_equals_0_register',
+    ('IIci', 0xc8440): 'Read_and_Invert',
+    ('IIci', 0xc8450): 'BitWalk_data_inverted_register',
+    ('IIci', 0xc84d0): 'Read_and_shift_left_once',
+    ('IIci', 0xc84e0): 'Read_and_shift_left_twice',
+    ('IIci', 0xc84f0): 'BitWalk_data_shifted_register',
+    ('IIci', 0xc85b0): 'SONIC_BitMarch',
+    ('IIci', 0xc8a80): 'SONIC_CAMDMA',
+    ('IIci', 0xc8d00): 'SONIC_Loopback',
+    ('IIci', 0xc9620): 'SetInterruptLevel',
+    ('IIci', 0xc9640): 'GetInterruptLevel',
+    ('IIci', 0xc9650): 'InstallExceptionVector',
+    ('IIci', 0xc9660): 'ExceptionHandlerStub',
+    ('IIci', 0xc96a0): 'FakeExceptionCall',
+    ('IIci', 0xc96c0): 'FindVectorEntry',
+    ('IIci', 0xc96c4): 'CalcVectorEntry',
+    ('IIci', 0xc96d0): 'GetCTEGlobals',
+    ('IIci', 0xc96e0): 'BitWalk8',
+    ('IIci', 0xc97e0): 'SONIC_InterruptHandler',
+    ('IIci', 0xc9800): 'BitWalk16',
+    ('IIci', 0xc9920): 'BitWalk32',
+    ('IIci', 0xc99a0): 'Timeout',
+    ('IIci', 0xc99d0): 'SONIC_Init_CAMDMA_params',
+    ('IIci', 0xc9a30): 'InstallExceptionHandler',
+    ('IIci', 0xc9a60): 'SONIC_Init_Loopback_params',
+    ('IIci', 0xc9ab0): 'RemoveExceptionHandler',
+    ('IIci', 0xc9af0): 'ExecuteDTM',
+    ('IIci', 0xc9c00): 'AllocateBlock',
+    ('IIci', 0xc9c40): 'ExecuteSubtest',
+    ('IIci', 0xc9c50): 'SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xc9ca0): 'GI_InitInterface',
+    ('IIci', 0xc9d00): 'SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xc9d90): 'GI_ExecuteDTM',
+    ('IIci', 0xc9da0): 'SONIC_Test',
+    ('IIci', 0xc9dc0): 'GI_GetVersion',
+    ('IIci', 0xc9dd0): 'GI_AllocPermMem',
+    ('IIci', 0xc9df0): 'GI_AllocTempMem',
+    ('IIci', 0xc9e10): 'GI_FreeTempMem',
+    ('IIci', 0xc9e30): 'GI_GetCommentary',
+    ('IIci', 0xc9e40): 'GI_GetDefaultExecutionOptions',
+    ('IIci', 0xc9e80): 'InitHeap',
+    ('IIci', 0xc9ec0): 'AllocPermMem',
+    ('IIci', 0xc9f10): 'AllocTempMem',
+    ('IIci', 0xc9f70): 'FreeTempMem',
+    ('IIci', 0xc9f80): 'CTEDoIdle',
+    ('IIci', 0xc9fb0): 'USTUTEPADDING',
+    ('IIci', 0xca060): 'BitWalk_a_No_By_Law_register',
+    ('IIci', 0xca0d0): 'BitWalk_a_bit0_equals_0_register',
+    ('IIci', 0xca140): 'Read_and_Invert',
+    ('IIci', 0xca150): 'BitWalk_data_inverted_register',
+    ('IIci', 0xca1d0): 'Read_and_shift_left_once',
+    ('IIci', 0xca1e0): 'Read_and_shift_left_twice',
+    ('IIci', 0xca1f0): 'BitWalk_data_shifted_register',
+    ('IIci', 0xca290): 'SONIC_BitMarch',
+    ('IIci', 0xca760): 'SONIC_CAMDMA',
+    ('IIci', 0xca9e0): 'SONIC_Loopback',
+    ('IIci', 0xcb4b0): 'SONIC_InterruptHandler',
+    ('IIci', 0xcb670): 'Timeout',
+    ('IIci', 0xcb6a0): 'GetMyPhysicalAddress',
+    ('IIci', 0xcb700): 'SONIC_Init_CAMDMA_params',
+    ('IIci', 0xcb7b0): 'SONIC_Init_Loopback_params',
+    ('IIci', 0xcbac0): 'Eclipse_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xcbb80): 'ci_PDS_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xcbbc0): 'Eclipse_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xcbc70): 'ci_PDS_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xcbcb0): 'SONIC_Test',
+    ('IIci', 0xcca50): 'SetInterruptLevel',
+    ('IIci', 0xcca70): 'GetInterruptLevel',
+    ('IIci', 0xcca80): 'InstallExceptionVector',
+    ('IIci', 0xcca90): 'ExceptionHandlerStub',
+    ('IIci', 0xccad0): 'FakeExceptionCall',
+    ('IIci', 0xccaf0): 'FindVectorEntry',
+    ('IIci', 0xccaf4): 'CalcVectorEntry',
+    ('IIci', 0xccb00): 'GetCTEGlobals',
+    ('IIci', 0xccb10): 'BitWalk8',
+    ('IIci', 0xccc30): 'BitWalk16',
+    ('IIci', 0xccd50): 'BitWalk32',
+    ('IIci', 0xcce28): 'INFODARTANIAN',
+    ('IIci', 0xcce60): 'InstallExceptionHandler',
+    ('IIci', 0xccecc): 'MSCTABLE',
+    ('IIci', 0xccee0): 'RemoveExceptionHandler',
+    ('IIci', 0xccf20): 'ExecuteDTM',
+    ('IIci', 0xccf70): 'SONORATABLE',
+    ('IIci', 0xcd014): 'NIAGRATABLE',
+    ('IIci', 0xcd030): 'AllocateBlock',
+    ('IIci', 0xcd070): 'ExecuteSubtest',
+    ('IIci', 0xcd0b8): 'DJMEMCTABLE',
+    ('IIci', 0xcd0d0): 'GI_InitInterface',
+    ('IIci', 0xcd1c0): 'GI_ExecuteDTM',
+    ('IIci', 0xcd1f0): 'GI_GetVersion',
+    ('IIci', 0xcd200): 'GI_AllocPermMem',
+    ('IIci', 0xcd220): 'GI_AllocTempMem',
+    ('IIci', 0xcd240): 'GI_FreeTempMem',
+    ('IIci', 0xcd260): 'GI_GetCommentary',
+    ('IIci', 0xcd270): 'GI_GetDefaultExecutionOptions',
+    ('IIci', 0xcd2b0): 'InitHeap',
+    ('IIci', 0xcd2f0): 'AllocPermMem',
+    ('IIci', 0xcd334): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xcd340): 'AllocTempMem',
+    ('IIci', 0xcd3a0): 'FreeTempMem',
+    ('IIci', 0xcd3b0): 'CTEDoIdle',
+    ('IIci', 0xcd3b4): 'INFOUNKNOWNUNKNOWN',
+    ('IIci', 0xcd3e0): 'USTUTEPADDING',
+    ('IIci', 0xcd490): 'BitWalk_a_No_By_Law_register',
+    ('IIci', 0xcd500): 'BitWalk_a_bit0_equals_0_register',
+    ('IIci', 0xcd570): 'Read_and_Invert',
+    ('IIci', 0xcd580): 'BitWalk_data_inverted_register',
+    ('IIci', 0xcd600): 'Read_and_shift_left_once',
+    ('IIci', 0xcd610): 'Read_and_shift_left_twice',
+    ('IIci', 0xcd620): 'BitWalk_data_shifted_register',
+    ('IIci', 0xcd6c0): 'SONIC_BitMarch',
+    ('IIci', 0xcdb90): 'SONIC_CAMDMA',
+    ('IIci', 0xcde10): 'SONIC_Loopback',
+    ('IIci', 0xce250): 'SetInterruptLevel',
+    ('IIci', 0xce270): 'GetInterruptLevel',
+    ('IIci', 0xce280): 'InstallExceptionVector',
+    ('IIci', 0xce290): 'ExceptionHandlerStub',
+    ('IIci', 0xce2d0): 'FakeExceptionCall',
+    ('IIci', 0xce2f0): 'FindVectorEntry',
+    ('IIci', 0xce2f4): 'CalcVectorEntry',
+    ('IIci', 0xce300): 'GetCTEGlobals',
+    ('IIci', 0xce310): 'BitWalk8',
+    ('IIci', 0xce430): 'BitWalk16',
+    ('IIci', 0xce550): 'BitWalk32',
+    ('IIci', 0xce660): 'InstallExceptionHandler',
+    ('IIci', 0xce6e0): 'RemoveExceptionHandler',
+    ('IIci', 0xce720): 'ExecuteDTM',
+    ('IIci', 0xce830): 'AllocateBlock',
+    ('IIci', 0xce870): 'ExecuteSubtest',
+    ('IIci', 0xce8d0): 'GI_InitInterface',
+    ('IIci', 0xce8e0): 'SONIC_InterruptHandler',
+    ('IIci', 0xce990): 'GI_ExecuteDTM',
+    ('IIci', 0xce9c0): 'GI_GetVersion',
+    ('IIci', 0xce9d0): 'GI_AllocPermMem',
+    ('IIci', 0xce9f0): 'GI_GetVersion',
+    ('IIci', 0xcea00): 'GI_AllocPermMem',
+    ('IIci', 0xcea10): 'GI_FreeTempMem',
+    ('IIci', 0xcea20): 'GI_AllocTempMem',
+    ('IIci', 0xcea30): 'GI_GetCommentary',
+    ('IIci', 0xcea40): 'GI_GetDefaultExecutionOptions',
+    ('IIci', 0xcea60): 'GI_GetCommentary',
+    ('IIci', 0xcea70): 'GI_GetDefaultExecutionOptions',
+    ('IIci', 0xcea80): 'InitHeap',
+    ('IIci', 0xceaa0): 'Timeout',
+    ('IIci', 0xceab0): 'InitHeap',
+    ('IIci', 0xceac0): 'AllocPermMem',
+    ('IIci', 0xcead0): 'GetMyPhysicalAddress',
+    ('IIci', 0xceaf0): 'AllocPermMem',
+    ('IIci', 0xceb10): 'AllocTempMem',
+    ('IIci', 0xceb30): 'SONIC_Init_CAMDMA_params',
+    ('IIci', 0xceb40): 'AllocTempMem',
+    ('IIci', 0xceb70): 'FreeTempMem',
+    ('IIci', 0xceb80): 'CTEDoIdle',
+    ('IIci', 0xceba0): 'FreeTempMem',
+    ('IIci', 0xcebb0): 'USTUTEPADDING',
+    ('IIci', 0xcebe0): 'USTUTEPADDING',
+    ('IIci', 0xcec60): 'BitWalk_a_No_By_Law_register',
+    ('IIci', 0xcec90): 'BitWalk_a_No_By_Law_register',
+    ('IIci', 0xcecd0): 'BitWalk_a_bit0_equals_0_register',
+    ('IIci', 0xced00): 'BitWalk_a_bit0_equals_0_register',
+    ('IIci', 0xced40): 'Read_and_Invert',
+    ('IIci', 0xced50): 'BitWalk_data_inverted_register',
+    ('IIci', 0xced70): 'Read_and_Invert',
+    ('IIci', 0xced80): 'BitWalk_data_inverted_register',
+    ('IIci', 0xcedd0): 'Read_and_shift_left_once',
+    ('IIci', 0xcede0): 'Read_and_shift_left_twice',
+    ('IIci', 0xcedf0): 'BitWalk_data_shifted_register',
+    ('IIci', 0xcee00): 'Read_and_shift_left_once',
+    ('IIci', 0xcee10): 'Read_and_shift_left_twice',
+    ('IIci', 0xcee20): 'BitWalk_data_shifted_register',
+    ('IIci', 0xcee90): 'SONIC_BitMarch',
+    ('IIci', 0xceec0): 'SONIC_BitMarch',
+    ('IIci', 0xceef0): 'Eclipse_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xcefb0): 'ci_PDS_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xceff0): 'Eclipse_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xcf0a0): 'ci_PDS_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xcf0e0): 'SONIC_Test',
+    ('IIci', 0xcf360): 'SONIC_CAMDMA',
+    ('IIci', 0xcf390): 'SONIC_CAMDMA',
+    ('IIci', 0xcf5e0): 'SONIC_Loopback',
+    ('IIci', 0xcf610): 'SONIC_Loopback',
+    ('IIci', 0xcfeba): 'CUDACALLSHIFTREGIRQ',
+    ('IIci', 0xcfece): 'CUDASHIFTREGIRQ',
+    ('IIci', 0xd00b0): 'SONIC_InterruptHandler',
+    ('IIci', 0xd00e0): 'SONIC_InterruptHandler',
+    ('IIci', 0xd026a): 'CUDATICKHANDLER',
+    ('IIci', 0xd0270): 'Timeout',
+    ('IIci', 0xd0288): 'CUDAINIT',
+    ('IIci', 0xd02a0): 'Timeout',
+    ('IIci', 0xd02d0): 'GetMyPhysicalAddress',
+    ('IIci', 0xd0300): 'SONIC_Init_CAMDMA_params',
+    ('IIci', 0xd0326): 'SENDCUDACMD',
+    ('IIci', 0xd0330): 'SONIC_Init_CAMDMA_params',
+    ('IIci', 0xd03b0): 'SONIC_Init_Loopback_params',
+    ('IIci', 0xd03e0): 'SONIC_Init_Loopback_params',
+    ('IIci', 0xd0426): 'REALABORT',
+    ('IIci', 0xd0438): 'IRQMISSED',
+    ('IIci', 0xd06c0): 'Eclipse_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xd06f0): 'Eclipse_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xd0780): 'ci_PDS_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xd07b0): 'ci_PDS_SONIC_Install_Interrupt_Handler',
+    ('IIci', 0xd07c0): 'Eclipse_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xd07f0): 'Eclipse_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xd0870): 'ci_PDS_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xd08a0): 'ci_PDS_SONIC_Remove_Interrupt_Handler',
+    ('IIci', 0xd08b0): 'SONIC_Test',
+    ('IIci', 0xd08e0): 'SONIC_Test',
+    ('IIci', 0xd0abc): 'INFODARTANIAN',
+    ('IIci', 0xd0b60): 'MSCTABLE',
+    ('IIci', 0xd0c04): 'SONORATABLE',
+    ('IIci', 0xd0ca8): 'NIAGRATABLE',
+    ('IIci', 0xd0d4c): 'DJMEMCTABLE',
+    ('IIci', 0xd0fbc): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xd103c): 'INFOUNKNOWNUNKNOWN',
+    ('IIci', 0xd164a): 'UNIMPLEMENTED_96_BIOS',
+    ('IIci', 0xd1650): 'DOSCSISTAT_96_BIOS',
+    ('IIci', 0xd167a): 'UNIMPLEMENTED_96_BIOS',
+    ('IIci', 0xd1680): 'DOSCSISTAT_96_BIOS',
+    ('IIci', 0xd16a0): 'DOSCSIRESET_96_BIOS',
+    ('IIci', 0xd16c2): 'CUDACALLSHIFTREGIRQ',
+    ('IIci', 0xd16d0): 'DOSCSIRESET_96_BIOS',
+    ('IIci', 0xd16d6): 'CUDASHIFTREGIRQ',
+    ('IIci', 0xd1706): 'DOSCSIGET_96_BIOS',
+    ('IIci', 0xd1736): 'DOSCSIGET_96_BIOS',
+    ('IIci', 0xd1762): 'DOSCSICMD_96_BIOS',
+    ('IIci', 0xd1786): 'NEWSCSIWBLIND_96_BIOS',
+    ('IIci', 0xd178a): 'NEWSCSIWRITE_96_BIOS',
+    ('IIci', 0xd178e): 'NEWSCSIRBLIND_96_BIOS',
+    ('IIci', 0xd1792): 'NEWSCSIREAD_96_BIOS',
+    ('IIci', 0xd17b6): 'NEWSCSIWBLIND_96_BIOS',
+    ('IIci', 0xd17ba): 'NEWSCSIWRITE_96_BIOS',
+    ('IIci', 0xd17be): 'NEWSCSIRBLIND_96_BIOS',
+    ('IIci', 0xd17c2): 'NEWSCSIREAD_96_BIOS',
+    ('IIci', 0xd1822): 'DOSCSICOMPLETE_96_BIOS',
+    ('IIci', 0xd1852): 'DOSCSICOMPLETE_96_BIOS',
+    ('IIci', 0xd18c6): 'DOSCSIMSGIN_96_BIOS',
+    ('IIci', 0xd18e4): 'DOSCSIMSGOUT_96_BIOS',
+    ('IIci', 0xd18e8): 'DOSCSIMSGIN_96_BIOS',
+    ('IIci', 0xd18f6): 'DOSCSIMSGIN_96_BIOS',
+    ('IIci', 0xd1906): 'DOSCSIMSGOUT_96_BIOS',
+    ('IIci', 0xd1914): 'DOSCSIMSGOUT_96_BIOS',
+    ('IIci', 0xd1aa0): 'INFODARTANIAN',
+    ('IIci', 0xd1ac8): 'CUDATICKHANDLER',
+    ('IIci', 0xd1ae6): 'CUDAINIT',
+    ('IIci', 0xd1b44): 'MSCTABLE',
+    ('IIci', 0xd1b76): 'CYCLEPHASE_96_BIOS',
+    ('IIci', 0xd1b84): 'SENDCUDACMD',
+    ('IIci', 0xd1be8): 'SONORATABLE',
+    ('IIci', 0xd1c32): 'CYCLEPHASE_96_BIOS',
+    ('IIci', 0xd1c62): 'CYCLEPHASE_96_BIOS',
+    ('IIci', 0xd1c8c): 'NIAGRATABLE',
+    ('IIci', 0xd1c8e): 'REALABORT',
+    ('IIci', 0xd1ca6): 'IRQMISSED',
+    ('IIci', 0xd1cc4): 'ERROR_BIOS',
+    ('IIci', 0xd1ccc): 'SCSIERR_96_BIOS',
+    ('IIci', 0xd1d30): 'DJMEMCTABLE',
+    ('IIci', 0xd1d66): 'TRANSFER_96_BIOS',
+    ('IIci', 0xd1d80): 'ERROR_BIOS',
+    ('IIci', 0xd1d88): 'SCSIERR_96_BIOS',
+    ('IIci', 0xd1db0): 'ERROR_BIOS',
+    ('IIci', 0xd1db8): 'SCSIERR_96_BIOS',
+    ('IIci', 0xd1dee): 'SLOWREAD_96_BIOS',
+    ('IIci', 0xd1e6e): 'TRANSFER_96_BIOS',
+    ('IIci', 0xd1e9e): 'TRANSFER_96_BIOS',
+    ('IIci', 0xd1ef6): 'SLOWREAD_96_BIOS',
+    ('IIci', 0xd1f26): 'SLOWREAD_96_BIOS',
+    ('IIci', 0xd1f28): 'SLOWWRITE_96_BIOS',
+    ('IIci', 0xd1fac): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xd202c): 'SLOWWRITE_96_BIOS',
+    ('IIci', 0xd2036): 'FASTWRITE_96_BIOS',
+    ('IIci', 0xd205c): 'SLOWWRITE_96_BIOS',
+    ('IIci', 0xd213c): 'FASTWRITE_96_BIOS',
+    ('IIci', 0xd214a): 'FASTREAD_96_BIOS',
+    ('IIci', 0xd216c): 'FASTWRITE_96_BIOS',
+    ('IIci', 0xd225e): 'FASTREAD_96_BIOS',
+    ('IIci', 0xd2288): 'RESETBUS_96_BIOS',
+    ('IIci', 0xd228e): 'FASTREAD_96_BIOS',
+    ('IIci', 0xd2290): 'HANDLESELINPROG_BIOS',
+    ('IIci', 0xd22e4): 'WT4DREQORINT_BIOS',
+    ('IIci', 0xd2324): 'FASTCOMP_96_BIOS',
+    ('IIci', 0xd23aa): 'RESETBUS_96_BIOS',
+    ('IIci', 0xd23b2): 'HANDLESELINPROG_BIOS',
+    ('IIci', 0xd23c4): 'SLOWCOMP_96_BIOS',
+    ('IIci', 0xd23da): 'RESETBUS_96_BIOS',
+    ('IIci', 0xd23e0): 'INFODARTANIAN',
+    ('IIci', 0xd23e2): 'HANDLESELINPROG_BIOS',
+    ('IIci', 0xd2406): 'WT4DREQORINT_BIOS',
+    ('IIci', 0xd2436): 'WT4DREQORINT_BIOS',
+    ('IIci', 0xd2446): 'FASTCOMP_96_BIOS',
+    ('IIci', 0xd2476): 'FASTCOMP_96_BIOS',
+    ('IIci', 0xd24b4): 'BUSERRHANDLER_96_BIOS',
+    ('IIci', 0xd24e6): 'SLOWCOMP_96_BIOS',
+    ('IIci', 0xd2516): 'SLOWCOMP_96_BIOS',
+    ('IIci', 0xd2594): 'MSCTABLE',
+    ('IIci', 0xd25d6): 'BUSERRHANDLER_96_BIOS',
+    ('IIci', 0xd2606): 'BUSERRHANDLER_96_BIOS',
+    ('IIci', 0xd2638): 'SONORATABLE',
+    ('IIci', 0xd26dc): 'NIAGRATABLE',
+    ('IIci', 0xd2780): 'DJMEMCTABLE',
+    ('IIci', 0xd2824): 'ARDBEGTABLE',
+    ('IIci', 0xd2ab6): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xd2b36): 'INFOUNKNOWNUNKNOWN',
+    ('IIci', 0xd2ce0): 'INFODARTANIAN',
+    ('IIci', 0xd2d84): 'MSCTABLE',
+    ('IIci', 0xd2da4): 'INFODARTANIAN',
+    ('IIci', 0xd2e28): 'SONORATABLE',
+    ('IIci', 0xd2e48): 'MSCTABLE',
+    ('IIci', 0xd2ecc): 'NIAGRATABLE',
+    ('IIci', 0xd2eec): 'SONORATABLE',
+    ('IIci', 0xd2f70): 'DJMEMCTABLE',
+    ('IIci', 0xd2f90): 'NIAGRATABLE',
+    ('IIci', 0xd3034): 'DJMEMCTABLE',
+    ('IIci', 0xd31ec): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xd326c): 'INFOUNKNOWNUNKNOWN',
+    ('IIci', 0xd32b0): 'UNKNOWNDECODERTABLE',
+    ('IIci', 0xd3330): 'INFOUNKNOWNUNKNOWN',
+    ('IIci', 0xe63f2): 'BacklightOpen', #leak
+    ('IIci', 0xe63f6): 'BacklightPrime', #leak
+    ('IIci', 0xe63fa): 'BacklightControl', #leak
+    ('IIci', 0xe63fe): 'BacklightStatus', #leak
+    ('IIci', 0xe6402): 'BacklightClose', #leak
+}
+
+
 import argparse
-import math
-import struct
+import binascii
 import re
+import struct
+from os import path
 from collections import defaultdict
 
 
-COND_NAMES = ['Plus', 'SE', 'II', 'Portable', 'IIci', 'SuperMario',
-    'noPatchProtector', 'notVM', 'notAUX', 'hasHMMU', 'hasPMMU',
-    'hasMemoryDispatch', 'has800KDriver', 'hasFDHDDriver', 'hasIWM',
-    'hasEricksonOverpatchMistake', 'hasEricksonSoundMgr', 'notEricksonSoundMgr',
-    'using24BitHeaps', 'using32BitHeaps', 'notTERROR', 'hasTERROR', 'hasC96',
-    'hasPwrMgr']
+# Regex used to find the output of macros
+# ACBDADFB should only ever be produced by these macros
+OLD_ROUTINE_RE = rb'''
+    (?P<peaOld>             \x2f\x3c \xac\xbd\xad\xfb) |
+    (?P<jsrOld>             \x4e\xb9 \xac\xbd\xad\xfb) |
+    (?P<bccOld>    \x65\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bcsOld>    \x64\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<beqOld>    \x66\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bgeOld>    \x6d\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bgtOld>    \x6f\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bhiOld>    \x63\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bleOld>    \x6e\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<blsOld>    \x62\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bltOld>    \x6c\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bmiOld>    \x6a\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bneOld>    \x67\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bplOld>    \x6b\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bvcOld>    \x69\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<bvsOld>    \x68\x06 \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<jmpOld>             \x4e\xf9 \xac\xbd\xad\xfb) |
+    (?P<leaOld_a0>          \x20\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_a1>          \x22\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_a2>          \x24\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_a3>          \x26\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_a4>          \x28\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_a5>          \x2a\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_a6>          \x2c\x7c \xac\xbd\xad\xfb) |
+    (?P<leaOld_sp>          \x2e\x7c \xac\xbd\xad\xfb) |
+    (?P<dcOld>                       \xac\xbd\xad\xfb)
+'''
+
+# Modify the above regex to find relocated references to hardcoded ROM locations
+ROM_ROUTINE_RE = OLD_ROUTINE_RE.replace(rb'\xac\xbd\xad\xfb', rb'$').replace(rb'Old', rb'ROM')
 
 
-global_sym_names = {}
-def name(jt_offset):
-    retval = '%03X' % jt_offset
-    betterval = global_sym_names.get(jt_offset, None)
-    if betterval:
-        return retval + ' ' + betterval
-    else:
-        return retval
-
-def parse_res_file(f):
-    import macresources
-
-    res = macresources.parse_rez_code(open(f, 'rb').read())
-    res = (r for r in res if r.type == b'lpch')
-    return sorted((r.id,r.data) for r in res)
-
-def parse_raw_files(ff):
-    biglist = []
-    for f in ff:
-        num = ''
-        for char in reversed(f):
-            if char not in '0123456789': break
-            num = char + num
-        num = int(num)
-
-        dat = open(f, 'rb').read()
-
-        biglist.append((num, dat))
-
-    return sorted(biglist)
-
-def exact_log(n):
-    if not n: return None
-    sh = 0
-    while n & 1 == 0:
-        sh += 2
-        n >>= 1
-    if n != 1: return None
-    return sh
-
-def count_bits(n):
-    cnt = 0
+# List of bit-shift values, least significant first
+def bits(n):
+    retval = []
+    shift = 0
     while n:
-        if n & 1: cnt += 1
+        if n & 1: retval.append(shift)
         n >>= 1
-    return cnt
+        shift += 1
+    return retval
 
 
-class Mod:
-    def __init__(self):
-        self.entry_points = []
-        self.references = []
-        self.rom_references = []
-        self.offset = -1
-        self.stop = -1
-        self.jt_entry = -1
-        self.rsrc_id = 0
+# The MacsBug symbol format as described in DisAsmLookup
+def macsbugsym(proc):
+    for i in range(0, len(proc), 2):
+        try:
+            if proc[i:i+2] in (b'\x4e\x75', b'\x4e\xd0'): # rts / jmp (a0)
+                i += 2
+            elif proc[i:i+2] == b'\x4e\x74': # rtd #$....
+                i += 4
+            else:
+                continue
 
-    def __str__(self):
-        return 'PROC ' + name(self.jt_entry)
+            if proc[i] == 0x80:
+                namestart = i+2
+                namestop = i+2 + proc[i+1]
+            elif 0x81 <= proc[i] <= 0x9f:
+                namestart = i+1
+                namestop = i+1 + (proc[i]&0x7f)
+            else:
+                continue
+
+            if len(proc) < namestop: continue
+            sym = proc[namestart:namestop]
+            if not re.match(rb'^[A-Za-z0-9 %_]+$', sym): continue
+
+            return sym.decode('ascii')
+
+            # Don't bother: the symbol is followed by a word containing the number of bytes of constants
+
+        except IndexError:
+            continue
 
 
-class Ent:
-    def __init__(self):
-        self.offset = -1
-        self.jt_entry = -1
-
-    def __str__(self):
-        return 'ENTRY ' + name(self.jt_entry)
-
-
-class Ref:
-    def __init__(self):
-        self.offset = -1
-        self.opcode = -1
-        self.jt_entry = -1
-        self.force_resident = False
-
-    @property
-    def assembly(self):
-        x = (
-            'leaY x,A0',
-            'leaY x,A1',
-            'leaY x,A2',
-            'leaY x,A3',
-            'leaY x,A4',
-            'leaY x,A5',
-            'leaY x,A6',
-            'leaY x,A7',
-            'peaY x',
-            'jsrY x',
-            'jmpY x',
-            'unknown11Y x',
-            'unknown12Y x',
-            'unknown13Y x',
-            'unknown14Y x',
-            'dcImportY x',
-        )[self.opcode]
-
-        x = x.replace('x', name(self.jt_entry))
-        x = x.replace('Y', 'Resident' if self.force_resident else '')
-
-        return x    
-
-    def __str__(self):
-        return self.assembly
-
-global_romref_names = {}
-class RomRef:
-    def __init__(self):
-        self.offset = -1
-        self.romofs_pairs = []
-
-    def __str__(self):
-        retval = ','.join('(%s,$%x)' % (k, v) for k, v in self.romofs_pairs)
-        betterval = global_romref_names.get(retval, None)
-        if betterval:
-            return 'ROM ' + betterval
+# A corruption of "A Proposal for Proquints"
+# https://arxiv.org/html/0901.4016
+# Arbitrary names for code modules that should be reasonably stable across rebuilds
+def prosept(x):
+    quint = list('???????')
+    for i in range(len(quint)):
+        if i & 1:
+            quint[i] = 'aiou'[x & 0x3]
+            x >>= 2
         else:
-            return retval
+            quint[i] = 'bdfghjklmnprstvz'[x & 0xf]
+            x >>= 4
+    return ''.join(reversed(quint))
 
 
-parser = argparse.ArgumentParser(description='''
-    Very hacky. 
-''')
-
-parser.add_argument('src', nargs='+', action='store', help='Source file (.rdump) or files (numbered)')
-parser.add_argument('-roms', nargs='+', default=['Plus', 'SE', 'II', 'Portable', 'IIci', 'SuperMario'])
-parser.add_argument('-pt', action='store_true', help='Print raw module tokens')
-parser.add_argument('-pm', action='store_true', help='Print information about modules and code references')
-parser.add_argument('-pr', action='store_true', help='Print information about ROM references')
-parser.add_argument('-pj', action='store_true', help='Print jump table')
-parser.add_argument('-pjh', action='store_true', help='Print jump table (hex)')
-parser.add_argument('-pp', action='store_true', help='Print patch names')
-parser.add_argument('-rh', action='store', help='LinkedPatches.lib, so we know how to name ROM references')
-parser.add_argument('-sh', action='store', help='output of LinkedPatch -l, so we know how to name symbols')
-parser.add_argument('-oo', action='store', help='Base destination path to dump resources as raw files')
-parser.add_argument('-oc', action='store', help='Base destination path to dump code files')
-parser.add_argument('-oe', action='store', help='Base destination path to dump code files with refs changed to NOPs')
-parser.add_argument('-w', action='store', dest='width', type=int, default=128, help='Width in chars')
-
+# The whole flow of this file is directed by the command line args
+parser = argparse.ArgumentParser(
+    description='''Dump lpch or gpch resources to annotated hexadecimal.
+    Recommended to be used with rfx, to access inside resource forks.''',
+    prog='rfx patch_rip2.py',
+)
+parser.add_argument('src', nargs='+', action='store', metavar='[System//lpch | System//gpch/N]')
+parser.add_argument('--lib', action='store', help='LinkedPatches.lib, so we know how to name ROM references')
+parser.add_argument('-l', action='store', help='text file with module names (from LinkedPatch -l)')
+parser.add_argument('-c', action='store', help='module name cache')
 args = parser.parse_args()
 
-if len(args.src) == 1:
-    lpch_list = parse_res_file(args.src[0])
-else:
-    lpch_list = parse_raw_files(args.src)
+
+# Slurp our cache of module names (will update later)
+pq_cache = {}
+if args.c:
+    try:
+        with open(args.c) as f:
+            for l in f.readlines():
+                try:
+                    pq, name = l.split()
+                    pq_cache[pq] = name
+                except:
+                    pass
+    except FileNotFoundError:
+        pass
 
 
-# Check that we have the right number of declared ROMs...
-roms_now = len(args.roms)
-roms_at_build = int(math.log(lpch_list[-1][0] + 1, 2.0))
+# Maintain a database of the best-possible name for each module
+name_sources = ('linker', 'macsbug', 'hash')
+namedb = defaultdict(lambda:[None,None,None])
+def setname(jt, name, kind):
+    if not name: return
+    kind = name_sources.index(kind)
+    namedb[jt][kind] = name
 
-if roms_now != roms_at_build:
-    print('Warning: %d ROMs specified but there were %d at build time' % (roms_now, roms_at_build))
+def getname(jt):
+    for i in reversed(range(jt+1)):
+        for kind, name in zip(name_sources, namedb[i]):
+            if name is not None:
+                if kind == 'hash': name = prosept(name)
 
+                if kind == 'hash' and name in pq_cache:
+                    name = pq_cache[name]
 
-# Sort the ROMs so that the most inclusive ones come first
-lpch_list.sort(key=lambda rsrc: (-count_bits(rsrc[0]), rsrc[0]))
+                if jt != i: name += '_%d' % (jt-i+1)
+                return name
 
-########################################################################
-
-# LinkedPatches.lib, so we know how to name ROM references
-# mutates global_romref_names, which the RomRef class can read
-if args.rh:
-    library = open(args.rh, 'rb').read()
-    name_map = defaultdict(list)
-    for m in re.finditer(rb'BIND\$([A-Za-z0-9@%]+)\$(\d+)\$(\d+)\$', library):
-        name_map[m.group(1).decode('ascii')].append((int(m.group(2)), int(m.group(3))))
-    for rname, rlist in name_map.items():
-        rlist.sort()
-        keystring = ','.join('(%s,$%x)' % (COND_NAMES[k], v) for k, v in rlist)
-        global_romref_names[keystring] = rname
-
-# output of LinkedPatch -l, so we know how to name symbols
-if args.sh:
-    for l in open(args.sh):
-        l = l.split()
-        if len(l) == 2:
-            sym_number = int(l[0], 16)
-            sym_name = l[1]
-            global_sym_names[sym_number] = sym_name
-
-########################################################################
-
-large_rom_table = []
-large_jump_table = []
-
-all_modules = []
-
-code_list = [] # this is getting hackier and hackier
-
-for num, data in lpch_list:
-    if args.oo: open(args.oo + str(num), 'wb').write(data)
-
-    if exact_log(num) is not None:
-        is_single = True
-    else:
-        is_single = False
-
-    if num == lpch_list[0][0]:
-        is_all = True
-    else:
-        is_all = False
-
-    matches_roms = []
-    for i, r in enumerate(args.roms):
-        if (num >> i) & 1: matches_roms.append(r)
+    return '_%03X' % jt # last resort
 
 
-    idx = 0
-
-    if is_single:
-        num_lpch_for_this_rom, = struct.unpack_from('>H', data, offset=idx); idx += 2
-        counted = len([xnum for (xnum,xdata,*_) in lpch_list if xnum & num])
-        assert num_lpch_for_this_rom == counted
-
-    if is_all:
-        bound_rom_addr_table_cnt, jump_table_cnt = struct.unpack_from('>HH', data, offset=idx); idx += 4
-
-    code_size, = struct.unpack_from('>I', data, offset=idx); idx += 4
-    code = data[idx:idx+code_size]; idx += code_size
-    code_list.append(code)
+# Slurp the linker's listing of module names
+if args.l:
+    with open(args.l) as f:
+        for l in f.readlines():
+            try:
+                jt, name = l.split()
+                setname(int(jt, 16), name, 'linker')
+            except:
+                pass
 
 
-    if args.pt or args.pm or args.pr:
-        if not is_all: print()
-        print('lpch %d\t\t%db(%db)\t\t%s' % (num, len(data), code_size, ','.join(matches_roms)))
+# Slurp the lpch/gpch resources
+files = {path.basename(fn): open(fn, 'rb').read() for fn in args.src}
+lpches = {}
+if len(files) > 1: # multiple lpch resources
+    for fn, fbin in files.items():
+        num = int(re.search(r'\d+$', fn).group(0))
+        lpches[num] = (fn, 0)
+else: # single gpch wrapper
+    fn, fbin = next(iter(files.items()))
+    if not fbin.startswith(b'\x00\x01'): raise ValueError('%r not a valid gpch' % fn)
+    ofs = 18
+    for i in range(struct.unpack_from('>H', fbin, 16)[0]):
+        num, size = struct.unpack_from('>hL', fbin, ofs)
+        lpches[num] = (fn, ofs + 6)
+        ofs += 6 + size
 
 
-    if args.oc:
-        open(args.oc + str(num), 'wb').write(code)
+# Things that we know just based on the number of ROMs
+nroms = len(bits(max(lpches)))
+condnames = ['Plus','SE','II','Portable','IIci','SuperMario'][:nroms] + [
+    'noPatchProtector',
+    'notVM',
+    'notAUX',
+    'hasHMMU',
+    'hasPMMU',
+    'hasMemoryDispatch',
+    'has800KDriver',
+    'hasFDHDDriver',
+    'hasIWM',
+    'hasEricksonOverpatchMistake',
+    'hasEricksonSoundMgr',
+    'notEricksonSoundMgr',
+    'using24BitHeaps',
+    'using32BitHeaps',
+    'notTERROR',
+    'hasTERROR',
+    'hasC96',
+    'hasPwrMgr',
+]
 
 
-    # do the rom table
+# Something like '(Plus,SE,II,IIci,notAUX)'
+def condstr(bitfields):
+    return '(' + ','.join(condnames[b] for b in bits(bitfields)) + ')'
 
-    rom_table_start, = struct.unpack_from('>H', data, offset=idx); idx += 2
-    if rom_table_start == 0xFFFF: rom_table_start = None
-    rom_table = []
-    if rom_table_start is not None:
+
+# Something like '((Portable,$5ec8),(IIci,$ae96))'
+def romaddrspec(offset_list):
+    concrete = []
+    for romname, romaddr in zip(condnames, offset_list):
+        if romaddr is not None:
+            concrete.append('(%s,$%x)' % (romname, romaddr))
+    return '(' + ','.join(concrete) + ')'
+
+
+# Take the same data as above, and get 'AfterFreezeTimeInRmvTime'
+def romaddrsym(offset_list):
+    abstract = set()
+    for romname, romaddr in zip(condnames, offset_list):
+        if romaddr is not None:
+            found = ROMLOCS.get((romname, romaddr), None)
+            if found:
+                abstract.add(found)
+
+    return '/'.join(abstract)
+
+
+# Sort the resources from most inclusive to least inclusive,
+# because interpretation of later resources depends on metadata from earlier ones
+lpches = dict(sorted(lpches.items(), key=lambda kv:(-len(bits(kv[0])), kv[0])))
+
+
+# First pass. Populate modtable.
+modtable = {} # modtable[jt] = (tuple of useful information) # written by this loop
+rom_binds = {} # rom_binds[idx] = [plus_addr, se_addr, ...] # written and read by this loop
+for num, (fn, ofs) in lpches.items():
+    data = files[fn]
+
+    if len(bits(num)) == 1:
+        ofs += 2 # skip "number of 'lpch' resources for this ROM"
+    elif num == max(lpches):
+        ofs += 2 # skip "number of entries in the bound ROM address table"
+        ofs += 2 # skip "number of entries in the jump table"
+
+    codelen, = struct.unpack_from('>L', data, ofs); ofs += 4
+    codeofs = ofs
+    ofs += codelen
+
+    # Unpack this resource's contribution to the table of ROM addresses
+    bind_idx, = struct.unpack_from('>H', data, ofs); ofs += 2
+    if bind_idx != 0xffff:
         while 1:
-            romofs_pairs = []
-            human_readable_idx = idx
-            for r in reversed(matches_roms): # data packed from newest to oldest rom
-                the_int = int.from_bytes(data[idx:idx+3], byteorder='big'); idx += 3
-                romofs_pairs.append((r, the_int & 0x7FFFFF))
-            romofs_pairs.reverse()
+            for rom in reversed(bits(num)):
+                addr = struct.unpack_from('>L', data, ofs-1)[0] & 0xffffff; ofs += 3
+                rom_binds.setdefault(bind_idx, [None]*nroms)[rom] = addr & 0x7fffff
 
-            rom_table.append(romofs_pairs)
+            bind_idx += 1
 
-            if args.pr:
-                rom_lookup_name = ','.join('(%s,$%x)' % (k, v) for k, v in romofs_pairs)
-                print(global_romref_names.get(rom_lookup_name, rom_lookup_name))
+            if addr & 0x800000: break
 
-            if the_int & 0x800000:
-                break
-
-        while len(large_rom_table) < rom_table_start + len(rom_table):
-            large_rom_table.append(None)
-
-        large_rom_table[rom_table_start:rom_table_start+len(rom_table)] = rom_table
-
-        if args.pr: print('ROM table entries are %d:%d' % (rom_table_start, rom_table_start+len(rom_table)))
-
-
-    # Figure out where all the ROM references are
-
-    rom_exception_table = []
-    for i in range(10):
-        the_int = int.from_bytes(data[idx:idx+3], byteorder='big'); idx += 3
-        if the_int == 0:
-            break
-        else:
-            rom_exception_table.append(the_int)
-
-    rom_references = [] # this is what we can salvage from the foregoing overcooked code
-    for code_offset in rom_exception_table:
-        while 1:
-            link, which_rom_part = struct.unpack_from('>HH', code, offset=code_offset)
-            rom_references.append(RomRef())
-            rom_references[-1].offset = code_offset
-            rom_references[-1].romofs_pairs = large_rom_table[which_rom_part]
-            if link == 0: break
-            code_offset += 4 + 2 * link
-
-
-    tokens = []
-    # do the exception table
+    # Unpack the multiple linked lists of locations where a ROM address must be inserted
+    rom_fixups = [] # list of (offset_from_code_start, bind_idx)
     while 1:
-        opcode = data[idx]; idx += 1
-        this_is_an_entry = False
+        head = struct.unpack_from('>L', data, ofs-1)[0] & 0xffffff; ofs += 3
+        if head == 0: break
 
-        if opcode <= 251:
-            tok = ('distance', opcode * 2)
+        tail = head
+        while 1:
+            link, bind_idx = struct.unpack_from('>HH', data, codeofs + tail)
+            rom_fixups.append((codeofs + tail, rom_binds[bind_idx]))
+
+            if link == 0: break
+            tail += 4 + 2*link
+
+    # Unpack: modules; their JT index; their ref list head; their entry points and entry points' JT indices
+    mm_offsets = [codeofs];
+    mm_jts = defaultdict(lambda:0); mm_refheads = defaultdict(lambda:None); mm_ents = defaultdict(list)
+    mofs = codeofs
+    while 1:
+        opcode = data[ofs]; ofs += 1
+        midx = len(mm_offsets) - 1
+
+        if opcode <= 251 or opcode == 255: # distance opcode
+            if opcode == 255:
+                distance, = struct.unpack_from('>H', data, offset=ofs); ofs += 2
+            else:
+                distance = 2*opcode
+
+            mofs += distance
+
+            if data[ofs] == 253: # this is a ref list header
+                ofs += 1
+                mm_refheads[midx] = mofs
+            elif data[ofs] == 254: # this is an entry, not a fresh module
+                ofs += 1
+                mm_ents[midx].append(mofs)
+            else:
+                mm_jts[midx+1] = mm_jts[midx] + 1 + len(mm_ents[midx])
+                mm_offsets.append(mofs)
 
         elif opcode == 252: # skip entries in the jump table
-            opcode2 = data[idx]; idx += 1
+            opcode2 = data[ofs]; ofs += 1
+            if opcode2 == 0: break
 
-            if opcode2 == 0: # end of packed jump table
-                tok = ('end', None)
-            elif 1 <= opcode2 <= 254: # number of jump table entries to skip
-                tok = ('skipjt', opcode2)
+            if 1 <= opcode2 <= 254: # number of jump table entries to skip
+                skip = opcode2
             elif opcode2 == 255: # word follows with number of jump table entries to skip
-                opcode3, = struct.unpack_from('>H', data, offset=idx); idx += 2
-                tok = ('skipjt', opcode3)
+                skip, = struct.unpack_from('>H', data, offset=ofs); ofs += 2
 
-        elif opcode == 253: # previous was reference list head for this module
-            tok = ('prev=ref_list_head', None)
+            mm_jts[midx] += skip
 
-        elif opcode == 254: # previous was an entry, not a new module
-            tok = ('prev=entry_not_module', None)
+        else:
+            raise ValueError
 
-        elif opcode == 255: # word distance from current position in the code to next
-                            # entry or module specified in the packed jump table follows
-            opcode2, = struct.unpack_from('>H', data, offset=idx); idx += 2
-            tok = ('distance', opcode2)
+    # so far, mm_offsets is all boundaries, including before first and after last mod
+    mm_ends = mm_offsets[1:]
+    mm_offsets = mm_offsets[:-1]
 
-        tokens.append(tok)
-        if tok[0] == 'end': break
+    # Unpack the table of "exports"
+    if num == max(lpches):
+        jtpatches = defaultdict(list) # each value is tuple of (trap, condbits)
 
-    # Mutate the tokens list to merge the 'prev=' tokens
-    for i in reversed(range(len(tokens) - 1)):
-        if tokens[i+1][0].startswith('prev='):
-            assert tokens[i][0] == 'distance'
-            tokens[i] = (tokens[i][0] + tokens[i+1][0][4:],) + tokens[i][1:]
-            del tokens[i+1]
-
-    # From here on, a 'distance' token can be treated as 'distance=module_end'
-
-    if args.pt:
-        daccum = 0
-        for i, (a, b) in enumerate(tokens):
-            if a.startswith('distance'):
-                daccum += b
-                print('%02d'%i, a, hex(b), '='+hex(daccum))
-            elif b is None:
-                print('%02d'%i, a)
-            else:
-                print('%02d'%i, a, hex(b))
-
-
-    if is_all:
-        patches = defaultdict(list) # mapping from jt number to (trap, cond_names)
-        curjt = 0
-        end_of_table = False
-        while not end_of_table:
-            conds = int.from_bytes(data[idx:idx+3], byteorder='big'); idx += 3
-            #print('conds', hex(conds))
-            cond_names = []
-            for i, n in enumerate(COND_NAMES):
-                if conds & (1 << i): cond_names.append(n)
-            cond_names = ','.join(cond_names)
+        jt = 0
+        done = False
+        while not done:
+            cbytes = (len(condnames) + 7) // 8 # bytes needed for enough bits
+            condbits = int.from_bytes(data[ofs:ofs+cbytes], byteorder='big'); ofs += cbytes
 
             while 1:
-                delta = data[idx]; idx += 1
-                #print('  delta', hex(delta))
+                delta = data[ofs]; ofs += 1
+
                 if delta == 254:
-                    break # get new condition set
+                    break # break out of inner loop, get new condition set
                 elif delta == 255:
-                    delta, = struct.unpack_from('>H', data, idx); idx += 2
-                    #print('  delta2', hex(delta))
+                    delta, = struct.unpack_from('>H', data, ofs); ofs += 2
                     if delta == 0:
-                        end_of_table = True; break
-                curjt += delta
+                        done = True # break out of outer loop
+                        break
 
-                trap, = struct.unpack_from('>H', data, idx); idx += 2
-                #print('  trap', hex(trap))
-                patches[curjt].append((trap, cond_names))
+                jt += delta
+                trap, = struct.unpack_from('>H', data, ofs); ofs += 2
+                jtpatches[jt].append((trap, condbits))
 
+    # Populate modtable with each module in this resource
+    for i, mofs in enumerate(mm_offsets):
+        mend = mm_ends[i]
 
-    jt_offset = 0
-    cur_offset = 0
+        # Adjust all these to be relative to the module start (which itself is relative to the file)
+        mjt = mm_jts[i]
+        mrefhead = mm_refheads[i]; mrefhead = mrefhead-mofs if mrefhead is not None else None
+        ments = [x-mofs for x in mm_ents[i]]
 
-    modules = []
+        # Lightly modify this as we go, to replace "fixed-up" data with FF
+        mdata = bytearray(data[mofs:mend])
 
-    modules.append(Mod())
-    modules[-1].offset = 0
-    modules[-1].__hack_refhead = -1
-    modules[-1].rsrc_id = num
+        # References to other code modules via the jump table
+        tcoderefs = []
+        if mrefhead is not None:
+            while 1:
+                packed, = struct.unpack_from('>L', mdata, mrefhead)
+                struct.pack_into('>L', mdata, mrefhead, 0xfffff000) # all but targ_jt are useful for the hash
 
-    for tok, arg in tokens:
-        if tok == 'skipjt':
-            jt_offset += arg
+                resident = bool(packed & 0x80000000)
+                link = ((packed >> 16) & 0x7fff) * 2
+                opcode = (packed >> 12) & 0xf
+                targ_jt = packed & 0xfff
 
-        if tok.startswith('distance'):
-            if modules[-1].jt_entry == -1:
-                modules[-1].jt_entry = jt_offset
-                jt_offset += 1
+                tcoderefs.append((mrefhead, 4, opcode, resident, targ_jt))
 
-            cur_offset += arg
+                if link == 0: break
+                mrefhead += link
 
-        if tok == 'distance': # to end of module
-            modules[-1].stop = cur_offset
-            modules.append(Mod())
-            modules[-1].offset = cur_offset
-            modules[-1].__hack_refhead = -1
-            modules[-1].rsrc_id = num
+        # References to well-known fixed ROM locations
+        tromrefs = []
+        for fofs, romaddrs in rom_fixups:
+            if mofs <= fofs < mend:
+                match = re.search(ROM_ROUTINE_RE, mdata[:fofs-mofs], flags=re.VERBOSE) # guaranteed to match
+                matchstart, matchend = match.start(), match.end()
+                macroname, text = next(i for i in match.groupdict().items() if i[1] or 'dc' in i[0])
+                macroname = macroname.replace('_', ' ')
 
-        if tok == 'distance=entry_not_module':
-            modules[-1].entry_points.append(Ent())
-            modules[-1].entry_points[-1].offset = cur_offset
-            modules[-1].entry_points[-1].jt_entry = jt_offset
+                matchend += 4
+                tromrefs.append((matchstart, matchend-matchstart, macroname, romaddrs))
 
-            jt_offset += 1
+                # Hash the target name and stuff it where the address would go, for the ultimate hash below
+                targ = romaddrsym(romaddrs) or romaddrspec(romaddrs)
+                struct.pack_into('>L', mdata, matchend-4, binascii.crc32(targ.encode('ascii')))
 
-        if tok == 'distance=ref_list_head':
-            modules[-1].__hack_refhead = cur_offset
+        # References from patch modules to "the old version", represented as ACBDADFB
+        toldrefs = []
+        oldrefmatches = re.finditer(OLD_ROUTINE_RE, mdata, flags=re.VERBOSE)
+        for match in oldrefmatches:
+            matchstart, matchend = match.start(), match.end()
+            macroname, text = next(i for i in match.groupdict().items() if i[1] or 'dc' in i[0])
+            macroname = macroname.replace('_', ' ')
 
-    modules.pop()
+            toldrefs.append((matchstart, matchend-matchstart, macroname))
 
-    if modules: assert modules[-1].stop == code_size
+        # Provide a name if possible
+        setname(mjt, binascii.crc32(mdata), 'hash')
+        setname(mjt, macsbugsym(mdata), 'macsbug')
 
-
-    for m in modules:
-        m.rom_references = [r for r in rom_references if m.offset <= r.offset < m.stop]
-
-
-    for m in modules:
-        if m.__hack_refhead == -1: continue
-
-        while 1:
-            word1, word2 = struct.unpack_from('>HH', code, offset=m.__hack_refhead)
-
-            m.references.append(Ref())
-            m.references[-1].offset = m.__hack_refhead
-            m.references[-1].jt_entry = word2 & 0xFFF
-            m.references[-1].opcode = word2 >> 12
-            m.references[-1].force_resident = bool(word1 & 0x8000)
-
-            dist_to_next = word1 & 0x7FFF
-            dist_to_next *= 2
-            if dist_to_next == 0: break
-            m.__hack_refhead += dist_to_next
+        modtable[mjt] = (num, fn, mofs, mend, ments, tcoderefs, tromrefs, toldrefs)
 
 
-    if args.pm:
-        for m in modules:
-            print(m)
+# Second pass. Read modtable and print a listing to stdout.
+for mjt, (num, filename, ofs, end, ents, coderefs, romrefs, oldrefs) in sorted(modtable.items()):
+    realjt = mjt
+    raw = bytearray(files[filename][ofs:end])
+
+    ents = [0] + ents # the module start needs a try
+
+    # So we can pop from the end of these lists in O(1) time
+    ents = ents[::-1]
+    coderefs = coderefs[::-1]
+    romrefs = romrefs[::-1]
+    oldrefs = oldrefs[::-1]
+
+    lines = []
+    ofs = 0
+    while ofs <= len(raw):
+        line_ofs = ofs
+
+        # Determine what kind of code goes at this line
+        nextline = None
+        if coderefs and coderefs[-1][0] == ofs:
+            _, reflen, opcode, resident, targ_jt = coderefs.pop()
+            opcode = (
+                'lea%s %s,a0', 'lea%s %s,a1', 'lea%s %s,a2', 'lea%s %s,a3',
+                'lea%s %s,a4', 'lea%s %s,a5', 'lea%s %s,a6', 'lea%s %s,sp',
+                'pea%s %s',    'jsr%s %s',    'jmp%s %s',    None,
+                'opcode12?',   'opcode13?',   'opcode14?',   'dcImport%s %s')[opcode]
+            opcode = opcode % ('Resident' * resident, getname(targ_jt))
+            nextline = (ofs, reflen, opcode)
+            ofs += reflen
+
+        elif romrefs and romrefs[-1][0] == ofs:
+            _, reflen, macroname, romaddrs = romrefs.pop()
+            macroname = macroname.replace('ROM', 'ROM ' + romaddrspec(romaddrs) + ',').rstrip(',')
+            nextline = (ofs, reflen, macroname)
+            ofs += reflen
+
+        elif oldrefs and oldrefs[-1][0] == ofs:
+            _, reflen, oldref = oldrefs.pop()
+            nextline = (ofs, reflen, oldref)
+            ofs += reflen
+
+        elif ofs < len(raw):
+            nextline = (ofs, 1, None)
+            ofs += 1
+
+        else:
+            ofs += 1
+
+        # Now create labels that should precede the actual line of code
+        for label_ofs in range(line_ofs, ofs):
+            if ents and ents[-1] == label_ofs:
+                ents.pop()
+
+                for trap, condbits in jtpatches[mjt]:
+                    if trap:
+                        lines.append((None, 0, '# PatchProc $%X,%s' % (trap, condstr(condbits))))
+                    else:
+                        lines.append((None, 0, '# InstallProc %s' % (condstr(condbits))))
+
+                label = getname(mjt)
+                if label_ofs > line_ofs:
+                    label += ' equ *+%d' % (label_ofs-line_ofs)
+                else:
+                    label += ':'
+                lines.append((None, 0, label))
+
+                mjt += 1 # advance to the next jump table entry
+
+        # Now issue the line of code
+        if nextline: lines.append(nextline)
+
+    linebytes = 16
+    brokenlines = []
+    for line_ofs, line_len, line in lines:
+        if line is None and brokenlines and brokenlines[-1][2] is None and brokenlines[-1][1] < linebytes:
+            brokenlines[-1] = (brokenlines[-1][0], brokenlines[-1][1] + line_len, line)
+        else:
+            brokenlines.append((line_ofs, line_len, line))
+
+    print('#', condstr(num))
+
+    for line_ofs, line_len, line in brokenlines:
+        if line is None:
+            line = ''
+            for i in range(line_ofs, line_ofs+line_len):
+                line += '%02x' % raw[i]
+                if i % 2: line += ' '
+
+            line = line.ljust(linebytes*5//2 + 2)
+            line += bytes(c if 33 <= c < 127 else ord('.') for c in raw[line_ofs:line_ofs+line_len]).decode('ascii').ljust(linebytes)
+
+            line = '    ' + line
+
+        elif line_len > 0:
+            line = '   *' + line
+
+        print(line)
+
+    print()
 
 
-    edited_code = bytearray(code)
-    # Now edit the code to look more sexier...
-    for m in modules:
-        for r in m.references:
-            try:
-                opcode = [0x206D,0x226D,0x246D,0x266D,0x286D,0x2A6D,0x2C6D,0x2E6D,0x2F2D,0x4EAD,0x4EED][r.opcode]
-                nu = struct.pack('>HH', opcode, r.jt_entry)
-            except IndexError:
-                nu = b'NqNq'
-            edited_code[r.offset:r.offset+4] = nu
-    if args.oe:
-        open(args.oe + str(num), 'wb').write(edited_code)
+# Write out the cache of module names.
+if args.c:
+    for _, (realname, *_, fakename) in namedb.items():
+        if realname and fakename:
+            pq_cache[fakename] = realname
 
-    all_modules.extend(modules)
-
-
-for el in large_rom_table:
-    assert el is not None
-
-
-if args.pp:
-    for jt, v in sorted(patches.items()):
-        for trap, cond_names in v:
-            print(f'    MakePatch {name(jt)}, _{trap:04X}, ({cond_names})')
-
-
-if args.pj or args.pjh:
-    nums = [num for num, data in lpch_list]
-
-    CHARWID = 2.5 if args.pjh else 1 # for hex
-
-    def render_line(ofs, line):
-        return '%05x: %s' % (ofs, line)
-
-    def render_code(start, stop):
-        ofs = start
-
-        while ofs < stop:
-            ofs2 = ofs + args.width; ofs2 -= ofs2 % args.width; ofs2 = min(ofs2, stop)
-            line = code[ofs:ofs2]
-            if not line:
-                print('expected', stop, 'got', len(code))
-                raise ValueError()
-            if args.pjh:
-                line = ' '.join(line[o:o+2].hex() for o in range(0, len(line), 2))
-            else:
-                line = bytes(x if (32 < x and x != 127 and x != 0xF0 and x < 127) else 46 for x in line).decode('mac_roman')
-            line = ' ' * int(CHARWID * (ofs % args.width)) + line
-
-            yield render_line(ofs, line)
-
-            ofs = ofs2
-
-    def render_offset(ofs, line):
-        return '%05x: %s%s' % (ofs, ' ' * int(CHARWID * (ofs % args.width)), line)
-
-    def render_sep(ofs):
-        return '%05x: %s' % (ofs, '=' * args.width)
-
-    last_rsrc = -1
-    rsrc_print_progress = [0] * len(nums)
-
-    all_modules.sort(key=lambda mod: mod.jt_entry)
-    for mod in all_modules:
-        rsrc_idx = nums.index(mod.rsrc_id)
-
-        everything = sorted([mod] + mod.entry_points + mod.references + mod.rom_references, key=lambda x: x.offset)
-        code = code_list[rsrc_idx]
-        last_printed = 0
-
-        leftside = str(mod.rsrc_id).zfill(2) + ':'
-        def myprint(*args, **kwargs):
-            if args: args = (leftside + str(args[0]), *args[1:])
-            return print(*args, **kwargs)
-
-        def print_up_to(ofs):
-            for jank in render_code(rsrc_print_progress[rsrc_idx], ofs):
-                myprint(jank)
-            rsrc_print_progress[rsrc_idx] = ofs
-
-        if last_rsrc != mod.rsrc_id:
-            myprint(render_sep(mod.offset))
-            matches_roms = []
-            for i, r in enumerate(args.roms):
-                if (mod.rsrc_id >> i) & 1: matches_roms.append(r)
-            myprint(render_line(mod.offset, ','.join(matches_roms)))
-            # print()
-            last_rsrc = mod.rsrc_id
-
-        for mod_ent in everything + [None]:
-            print_up_to(mod_ent.offset if mod_ent else mod.stop)
-
-            if mod_ent:
-                myprint(render_offset(mod_ent.offset, '(' + str(mod_ent) + ')'))
-
-                try:
-                    for trap, cond_names in patches[mod_ent.jt_entry]:
-                        myprint(render_offset(mod_ent.offset, f'${trap:X},({cond_names})'))
-                except AttributeError:
-                    pass
-
-                if not (isinstance(mod_ent, Mod) or isinstance(mod_ent, Ent)):
-                    rsrc_print_progress[rsrc_idx] += 4 # close enough
-
-# print(large_jump_table)
-# print(large_rom_table)
-
-
-
+    with open(args.c, 'w') as f:
+        for k, v in pq_cache.items():
+            print(k, v, file=f)
